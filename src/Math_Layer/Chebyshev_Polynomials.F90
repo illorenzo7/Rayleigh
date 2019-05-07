@@ -28,7 +28,7 @@ Module Chebyshev_Polynomials
     Logical :: DeAlias = .true.
     Logical :: Parity = .true.
     Logical :: initialized = .false.
-    Logical, Private :: use_extrema = .false. ! Set to true to use extrema points instead of zeros for T_Nmax
+    Logical, Private :: use_extrema = .true. ! Set to true to use extrema points instead of zeros for T_Nmax
 
     Type, Public :: Cheby_Grid
         Integer :: domain_count = 0  ! Number of subdomains for this grid object
