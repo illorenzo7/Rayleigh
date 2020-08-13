@@ -232,7 +232,7 @@ Contains
         Integer :: read_magnetism = 0, read_hydro = 0
         Integer, Allocatable :: rinds(:), gpars(:,:)
         Real*8 :: dt_pars(3),dt,new_dt
-        Real*8, Allocatable :: old_radius(:), radius_old(:)
+        Real*8, Allocatable :: old_radius(:), radius_old_loc(:)
         Real*8, Allocatable :: tempfield1(:,:,:,:), tempfield2(:,:,:,:)
         Character*120 :: autostring, cfile,  dstring, iterstring, access_type
         Character*256 :: grid_file, checkfile, input_file
@@ -240,6 +240,8 @@ Contains
         Character*13 :: szstr
         Logical :: legacy_format, fexist
         Integer :: ncheby_old(1:nsubmax)
+        Integer :: idom, n_r_loc, n_r_old_loc, irmin, irmax, irmin_old, irmax_old
+        Logical :: first_time_interpolating = .True.
 
         read_hydro = read_pars(1)
         read_magnetism = read_pars(2)
@@ -577,16 +579,16 @@ Contains
             n_r_old_loc = ncheby_old(idom)
             n_r_loc = ncheby(idom)
             
-            ! Increment the rmin/rmax indices for each domain switch
+            ! Increment (decrement?) the rmin/rmax indices for each domain switch
             If (idom .gt. 1) Then
                 irmin_old = irmin_old - ncheby_old(idom - 1)
                 irmax_old = irmax_old - ncheby_old(idom)
-                irmin = irmin_old - ncheby(idom - 1)
+                irmin = irmin - ncheby(idom - 1)
                 irmax = irmax - ncheby(idom)
             Endif
 
             ! Interpolate if necessary (in each domain separately)
-            If  ((n_r_old_loc .ne. n_r_old) .or. (grid_type_old .ne. grid_type) ) Then
+            If  ((n_r_old_loc .ne. n_r_loc) .or. (grid_type_old .ne. grid_type) ) Then
                 ! Interpolate
                 ! We will assume the user kept the same radial domain bounds.
                 ! If they  have not, this will end badly.
@@ -605,29 +607,58 @@ Contains
                     Call stdout%print('------ Current grid_type: '//TRIM(szstr))
                     Write(szstr,'(i13)')n_r_old_loc
                     Call stdout%print('------ Old N_R:           '//TRIM(szstr))
-                    Write(szstr,'(i13)')n_r_loC
+                    Write(szstr,'(i13)')n_r_loc
                     Call stdout%print('------ Current N_R:       '//TRIM(szstr))
                     Call stdout%print(' ')
                 Endif
 
-                If (n_r_old_loc .lt. n_r_old) Then
-
+                If (n_r_old_loc .lt. n_r_loc) Then
+                    If (my_rank .eq. 0) Then
+                        Write(6,*) "n_r_old_loc = ", n_r_old_loc
+                        Write(6,*) "n_r_loc = ", n_r_loc
+                        Write(6,*) "irmax = ", irmax
+                        Write(6,*) "irmin = ", irmin
+                        Write(6,*) "irmax_old = ", irmax_old
+                        Write(6,*) "irmin_old = ", irmin_old
+                    Endif
                     ! The fields are OK - they are already in chebyshev space
                     fields(irmax:irmax+n_r_old_loc-1,:,:,1:numfields) = chktmp%p1b(irmax_old:irmin_old,:,:,1:numfields)
 
                     ! The AB terms are stored in physical space (in radius).
                     ! They need to be transformed, coefficients copied, and transformed back..
                     ! First, we need to initialize the old chebyshev grid.
-                    Allocate(radius_old(1:n_r_old))
-                    Call cheby_info%Init(radius_old,rmin,rmax)  ! We assume that rmax and rmin do not change
+                    If (my_rank .eq. 0) Then
+                        Write(6,*) "about to allocate radius_old_loc"
+                    Endif
+                    Allocate(radius_old_loc(1:n_r_old_loc))
+                    If (my_rank .eq. 0) Then
+                        Write(6,*) "about to intialize cheby_info"
+                    Endif
+                    Call cheby_info%Init(radius_old_loc,radius(irmin),radius(irmax))  ! We assume that the domain bounds do not change
                     fcount(:,:) = numfields
-                    Call chktmp2%init(field_count = fcount, config = 'p1a')
+                    If (first_time_interpolating) Then ! Can only initialize chktmp2 once
+                        If (my_rank .eq. 0) Then
+                            Write(6,*) "about to initialize chktmp2"
+                            Write(6,*) "idom = ", idom
+                        Endif
+                        Call chktmp2%init(field_count = fcount, config = 'p1a')
+                        first_time_interpolating = .False.
+                    Endif
+                    If (my_rank .eq. 0) Then
+                        Write(6,*) "about to construct chktmp2%p1a"
+                    Endif
                     Call chktmp2%construct('p1a')
                     chktmp2%p1a(:,:,:,:) = 0.0d0
                     ! Allocate tempfield1, tempfield2
                     lb = lbound(chktmp%p1b,3)
                     ub = ubound(chktmp%p1b,3)
+                    If (my_rank .eq. 0) Then
+                        Write(6,*) "about to allocate tempfield1"
+                    Endif
                     Allocate(tempfield1(1:n_r_old_loc,1:2,lb:ub,1))
+                    If (my_rank .eq. 0) Then
+                        Write(6,*) "about to allocate tempfield2"
+                    Endif
                     Allocate(tempfield2(1:n_r_old_loc,1:2,lb:ub,1))
 
                     Do i = 1, numfields
@@ -635,7 +666,7 @@ Contains
                         tempfield2(:,:,:,:) = 0.0d0
                         tempfield1(1:n_r_old_loc,:,:,1) = chktmp%p1b(irmax_old:irmin_old,:,:,numfields+i)
                         call cheby_info%tospec4d(tempfield1,tempfield2)
-                        chktmp2%p1a(irmax_loc:irmax_loc+n_r_old_loc-1,:,:,i) = tempfield2(1:n_r_old_loc,:,:,1)
+                        chktmp2%p1a(irmax:irmax+n_r_old_loc-1,:,:,i) = tempfield2(1:n_r_old_loc,:,:,1)
                     Enddo
                     DeAllocate(tempfield1,tempfield2)
 
@@ -644,22 +675,31 @@ Contains
                     !Normal transform(p1a,p1b)
                     Call gridcp%From_Spectral(chktmp2%p1a,chktmp2%p1b)
 
-                    abterms(:,:,:,1:numfields) = chktmp2%p1b(:,:,:,1:numfields)
+                    fields(irmax:irmax+n_r_old_loc-1,:,:,1:numfields) = chktmp%p1b(irmax_old:irmin_old,:,:,1:numfields)
+
+                    abterms(irmax:irmax+n_r_old_loc-1,:,:,1:numfields) = chktmp2%p1b(irmax_old:irmin_old,:,:,1:numfields)
                     Call cheby_info%destroy()
                     Call chktmp2%deconstruct('p1a')
                     Call chktmp2%deconstruct('p1b')
-                    Deallocate(radius_old)
+                    Deallocate(radius_old_loc)
                 Endif
 
-            Else
+            Else ! n_r_old_loc = n_r_loc
+                If (my_rank .eq. 0) Then
+                    Write(6,*) "In domain: ", idom
+                    Write(6,*) "n_r_old_loc = n_r_loc"
+                    Write(6,*) "n_r_old_loc = n_r_loc"
+                Endif
+                    
 
                 ! Interpolation is complete, now we just copy into the other arrays
-                fields(:,:,:,1:numfields) = chktmp%p1b(:,:,:,1:numfields)
-                abterms(:,:,:,1:numfields) = chktmp%p1b(:,:,:,numfields+1:numfields*2)
+                fields(irmax:irmin,:,:,1:numfields) = chktmp%p1b(irmax_old:irmax_old+n_r_loc-1,:,:,1:numfields)
+                abterms(irmax:irmin,:,:,1:numfields) = chktmp%p1b(irmax_old:irmax_old+n_r_loc-1,:,:,numfields+1:numfields*2)
 
             Endif
-            Call chktmp%deconstruct('p1b')
-            DeAllocate(old_radius)
+        Enddo
+        DeAllocate(old_radius)
+        Call chktmp%deconstruct('p1b')
 
     End Subroutine Read_Checkpoint
 
