@@ -613,52 +613,25 @@ Contains
                 Endif
 
                 If (n_r_old_loc .lt. n_r_loc) Then
-                    If (my_rank .eq. 0) Then
-                        Write(6,*) "n_r_old_loc = ", n_r_old_loc
-                        Write(6,*) "n_r_loc = ", n_r_loc
-                        Write(6,*) "irmax = ", irmax
-                        Write(6,*) "irmin = ", irmin
-                        Write(6,*) "irmax_old = ", irmax_old
-                        Write(6,*) "irmin_old = ", irmin_old
-                    Endif
                     ! The fields are OK - they are already in chebyshev space
                     fields(irmax:irmax+n_r_old_loc-1,:,:,1:numfields) = chktmp%p1b(irmax_old:irmin_old,:,:,1:numfields)
 
                     ! The AB terms are stored in physical space (in radius).
                     ! They need to be transformed, coefficients copied, and transformed back..
                     ! First, we need to initialize the old chebyshev grid.
-                    If (my_rank .eq. 0) Then
-                        Write(6,*) "about to allocate radius_old_loc"
-                    Endif
                     Allocate(radius_old_loc(1:n_r_old_loc))
-                    If (my_rank .eq. 0) Then
-                        Write(6,*) "about to intialize cheby_info"
-                    Endif
                     Call cheby_info%Init(radius_old_loc,radius(irmin),radius(irmax))  ! We assume that the domain bounds do not change
                     fcount(:,:) = numfields
                     If (first_time_interpolating) Then ! Can only initialize chktmp2 once
-                        If (my_rank .eq. 0) Then
-                            Write(6,*) "about to initialize chktmp2"
-                            Write(6,*) "idom = ", idom
-                        Endif
                         Call chktmp2%init(field_count = fcount, config = 'p1a')
                         first_time_interpolating = .False.
-                    Endif
-                    If (my_rank .eq. 0) Then
-                        Write(6,*) "about to construct chktmp2%p1a"
                     Endif
                     Call chktmp2%construct('p1a')
                     chktmp2%p1a(:,:,:,:) = 0.0d0
                     ! Allocate tempfield1, tempfield2
                     lb = lbound(chktmp%p1b,3)
                     ub = ubound(chktmp%p1b,3)
-                    If (my_rank .eq. 0) Then
-                        Write(6,*) "about to allocate tempfield1"
-                    Endif
                     Allocate(tempfield1(1:n_r_old_loc,1:2,lb:ub,1))
-                    If (my_rank .eq. 0) Then
-                        Write(6,*) "about to allocate tempfield2"
-                    Endif
                     Allocate(tempfield2(1:n_r_old_loc,1:2,lb:ub,1))
 
                     Do i = 1, numfields
@@ -685,13 +658,6 @@ Contains
                 Endif
 
             Else ! n_r_old_loc = n_r_loc
-                If (my_rank .eq. 0) Then
-                    Write(6,*) "In domain: ", idom
-                    Write(6,*) "n_r_old_loc = n_r_loc"
-                    Write(6,*) "n_r_old_loc = n_r_loc"
-                Endif
-                    
-
                 ! Interpolation is complete, now we just copy into the other arrays
                 fields(irmax:irmin,:,:,1:numfields) = chktmp%p1b(irmax_old:irmax_old+n_r_loc-1,:,:,1:numfields)
                 abterms(irmax:irmin,:,:,1:numfields) = chktmp%p1b(irmax_old:irmax_old+n_r_loc-1,:,:,numfields+1:numfields*2)
