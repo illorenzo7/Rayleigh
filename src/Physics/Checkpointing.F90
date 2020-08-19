@@ -637,9 +637,9 @@ Contains
                     Do i = 1, numfields
                         tempfield1(:,:,:,:) = 0.0d0
                         tempfield2(:,:,:,:) = 0.0d0
-                        tempfield1(1:n_r_old_loc,:,:,1) = chktmp%p1b(irmax_old:irmin_old,:,:,numfields+i)
-                        call cheby_info%tospec4d(tempfield1,tempfield2)
-                        chktmp2%p1a(irmax:irmax+n_r_old_loc-1,:,:,i) = tempfield2(1:n_r_old_loc,:,:,1)
+                        tempfield1(:,:,:,1) = chktmp%p1b(irmax_old:irmin_old,:,:,numfields+i)
+                        Call cheby_info%tospec4d(tempfield1,tempfield2)
+                        chktmp2%p1a(irmax:irmax+n_r_old_loc-1,:,:,i) = tempfield2(:,:,:,1)
                     Enddo
                     DeAllocate(tempfield1,tempfield2)
 
