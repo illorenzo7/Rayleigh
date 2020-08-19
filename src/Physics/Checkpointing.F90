@@ -648,8 +648,6 @@ Contains
                     !Normal transform(p1a,p1b)
                     Call gridcp%From_Spectral(chktmp2%p1a,chktmp2%p1b)
 
-                    fields(irmax:irmax+n_r_old_loc-1,:,:,1:numfields) = chktmp%p1b(irmax_old:irmin_old,:,:,1:numfields)
-
                     abterms(irmax:irmax+n_r_old_loc-1,:,:,1:numfields) = chktmp2%p1b(irmax_old:irmin_old,:,:,1:numfields)
                     Call cheby_info%destroy()
                     Call chktmp2%deconstruct('p1a')
@@ -757,6 +755,8 @@ Contains
         ncheby_tmp(1:nsubmax) = ncheby(1:nsubmax) 
         domain_bounds_tmp(1:nsubmax+1)  = domain_bounds(1:nsubmax+1) 
         dealias_by_tmp(1:nsubmax)  = dealias_by(1:nsubmax) 
+        n_uniform_domains_tmp = n_uniform_domains
+        uniform_bounds_tmp = uniform_bounds
 
         ! Read problemsize_namelist of input_file
         Open(unit=20, file=input_file, status="old", position="rewind")
@@ -783,6 +783,8 @@ Contains
         ncheby(1:nsubmax) = ncheby_tmp(1:nsubmax) 
         domain_bounds(1:nsubmax+1)  = domain_bounds_tmp(1:nsubmax+1) 
         dealias_by(1:nsubmax)  = dealias_by_tmp(1:nsubmax) 
+        n_uniform_domains = n_uniform_domains_tmp
+        uniform_bounds = uniform_bounds_tmp
     End Subroutine Get_Old_Ncheby
 
 End Module Checkpointing
