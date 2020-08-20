@@ -648,7 +648,7 @@ Contains
                     !Normal transform(p1a,p1b)
                     Call gridcp%From_Spectral(chktmp2%p1a,chktmp2%p1b)
 
-                    abterms(irmax:irmax+n_r_old_loc-1,:,:,1:numfields) = chktmp2%p1b(irmax_old:irmin_old,:,:,1:numfields)
+                    abterms(irmax:irmin,:,:,1:numfields) = chktmp2%p1b(irmax:irmin,:,:,1:numfields)
                     Call cheby_info%destroy()
                     Call chktmp2%deconstruct('p1a')
                     Call chktmp2%deconstruct('p1b')
