@@ -95,6 +95,7 @@
 
 Module Diagnostics_Custom
     Use Diagnostics_Base
+    Use Diagnostics_ADotGradB
     Implicit None
 Contains
 
@@ -105,77 +106,989 @@ Contains
 
         !=============================================
         ! Edit Below This Line (you may define your own variables below)
-        ! Real*8 :: mtmp1, mtmp2, mtmp3   ! temporary variables for use as needed
 
+        Real*8, Allocatable :: ind_work_r(:,:,:), ind_work_t(:,:,:), ind_work_p(:,:,:)
+        Real*8, Allocatable :: ind_work_r2(:,:,:), ind_work_t2(:,:,:), ind_work_p2(:,:,:)
+        Real*8, Allocatable :: cbuffer(:,:,:,:)
+        Real*8 :: del2b
+        Real*8, Allocatable :: ovstheta(:), ovs2theta(:)
+        Allocate(cbuffer(1:n_phi,my_r%min:my_r%max,my_theta%min:my_theta%max,1:3))
+        Allocate(ind_work_r(1:n_phi,my_r%min:my_r%max,my_theta%min:my_theta%max))
+        Allocate(ind_work_t(1:n_phi,my_r%min:my_r%max,my_theta%min:my_theta%max))
+        Allocate(ind_work_p(1:n_phi,my_r%min:my_r%max,my_theta%min:my_theta%max))
+        Allocate(ind_work_r2(1:n_phi,my_r%min:my_r%max,my_theta%min:my_theta%max))
+        Allocate(ind_work_t2(1:n_phi,my_r%min:my_r%max,my_theta%min:my_theta%max))
+        Allocate(ind_work_p2(1:n_phi,my_r%min:my_r%max,my_theta%min:my_theta%max))
+        Allocate(ovstheta(1:N_theta), ovs2theta(1:N_theta)) ! 1/sin; 1/sin^2
+        ovstheta = 1.0d0/sintheta
+        ovs2theta = 1.0d0/sin2theta
 
-        ! TUTORIAL EXAMPLE 1:
-        ! We begin with an example of cross helicity
-        ! Note:  qty is defined and allocated elsewhere
-        !        it is dimensioned as qty(1:n_phi,my_r%min:my_r%max,my_theta%min:my_theta%max)
+        !//////////////////////////////////////////////////
+        !   Part 1.    Terms resulting full v cross full B.
+        ! /////////////////////////////////////////////////
 
-        If (compute_quantity(cross_helicity)) Then
-            !Note the call to compute_quantity. This must always be done before adding a diagnostic.
-            !The function compute_quantity peforms two functions:
-            !   1.  It returns True or False based on whether or not it's time to
-            !       output this particular diagnostic.
-            !   2.  It sets internal flags in the IO module that allow us to add the diagnostic.
+        !shear: B dot grad v
+        Call ADotGradB(buffer,buffer,cbuffer,aindices = bindex, bindices=vindex)
+
+        If (compute_quantity(ishear_work_r)) Then
             DO_PSI
-                qty(PSI) = buffer(PSI,vr)*buffer(PSI,br)
-                qty(PSI) = qty(PSI)+buffer(PSI,vtheta)*buffer(PSI,btheta)
-                qty(PSI) = qty(PSI)+buffer(PSI,vphi)*buffer(PSI,vphi)
+                qty(PSI) = cbuffer(PSI,1)*buffer(PSI,br)
             END_DO
-            ! After we have assigned values to qty, we have to send that quantity to the IO
-            ! module for processing (slicing, averaging, etc.)
-            ! This is done with a call to Add_quantity as below.
             Call Add_Quantity(qty)
         Endif
 
-        !  TUTORIAL EXAMPLE 2:
-        !   Quantities in fbuffer are identical to those in buffer except
-        !   that their m = 0 component has been subtracted off.  fbuffer
-        !   is defined and allocated elsewhere.  We might be concerned with
-        !   the turbulent cross helicity:  v' dot B '.  Calculating this is
-        !   a simple modification to the code above:
-        If (compute_quantity(turb_cross_helicity)) Then
-            !Note the call to compute_quantity. This must always be done before adding a diagnostic.
-            !The function compute_quantity peforms two functions:
-            !   1.  It returns True or False based on whether or not it's time to
-            !       output this particular diagnostic.
-            !   2.  It sets internal flags in the IO module that allow us to add the diagnostic.
+        If (compute_quantity(ishear_work_t)) Then
             DO_PSI
-                qty(PSI) = fbuffer(PSI,vr)*fbuffer(PSI,br)
-                qty(PSI) = qty(PSI)+fbuffer(PSI,vtheta)*fbuffer(PSI,btheta)
-                qty(PSI) = qty(PSI)+fbuffer(PSI,vphi)*fbuffer(PSI,vphi)
+                qty(PSI) = cbuffer(PSI,2)*buffer(PSI,btheta)
             END_DO
-            ! After we have assigned values to qty, we have to send that quantity to the IO
-            ! module for processing (slicing, averaging, etc.)
-            ! This is done with a call to Add_quantity as below.
             Call Add_Quantity(qty)
         Endif
 
+        If (compute_quantity(ishear_work_p)) Then
+            DO_PSI
+                qty(PSI) = cbuffer(PSI,3)*buffer(PSI,bphi)
+            END_DO
+            Call Add_Quantity(qty)
+        Endif
 
-        !NOTE: we have made use of the macros defined at the top of this file.
-        !The DO_PSI loop above is shorthand for the following:
-        !
-        ! Do t = my_theta%min, my_theta%max
-        !    Do r = my_r%min, my_r%max
-        !        Do k = 1, n_phi
-        !            qty(k,r,t) = buffer(k,r,t,vr)*buffer(k,r,t,br)
-        !            qty(k,r,t) = qty(k,r,t)+buffer(k,r,t,vtheta)*buffer(k,r,t,btheta)
-        !            qty(k,r,t) = qty(k,r,t)+buffer(k,r,t,vphi)*buffer(k,r,t,vphi)
-        !        Enddo
-        !    Enddo
-        ! Enddo
-        !
-        ! We highly encourage you to use the PSI macros.
-        ! Doing so tends to lead to fewer bugs.
+        If (compute_quantity(induct_work_r)) Then
+            DO_PSI
+                ind_work_r(PSI) = cbuffer(PSI,1)*buffer(PSI,br)
+            END_DO
+        Endif
 
+        If (compute_quantity(induct_work_t)) Then
+            DO_PSI
+                ind_work_t(PSI) = cbuffer(PSI,2)*buffer(PSI,btheta)
+            END_DO
+        Endif
 
-        !  Tutorial Exercise 1:
-        !    After examining the example above, try adding your own code to compute
-        !    the vb_angle diagnostic (the cosine of the angle between v and B)
+        If (compute_quantity(induct_work_p)) Then
+            DO_PSI
+                ind_work_p(PSI) = cbuffer(PSI,3)*buffer(PSI,bphi)
+            END_DO
+        Endif
 
-        ! YOUR CODE GOES HERE
+        ! advection: -v dot grad B
+        Call ADotGradB(buffer,buffer,cbuffer,aindices = vindex, bindices=bindex)
+
+        If (compute_quantity(iadvec_work_r)) Then
+            DO_PSI
+                qty(PSI) = -cbuffer(PSI,1)*buffer(PSI,br)
+            END_DO
+            Call Add_Quantity(qty)
+        Endif
+        If (compute_quantity(iadvec_work_t)) Then
+            DO_PSI
+                qty(PSI) = -cbuffer(PSI,2)*buffer(PSI,btheta)
+            END_DO
+            Call Add_Quantity(qty)
+        Endif
+        If (compute_quantity(iadvec_work_p)) Then
+            DO_PSI
+                qty(PSI) = -cbuffer(PSI,3)*buffer(PSI,bphi)
+            END_DO
+            Call Add_Quantity(qty)
+        Endif
+
+        If (compute_quantity(induct_work_r)) Then
+            DO_PSI
+                ind_work_r(PSI) = ind_work_r(PSI)-&
+                                cbuffer(PSI,1)*buffer(PSI,br)
+            END_DO
+        Endif
+        If (compute_quantity(induct_work_t)) Then
+            DO_PSI
+                ind_work_t(PSI) = ind_work_t(PSI)-&
+                                cbuffer(PSI,2)*buffer(PSI,btheta)
+            END_DO
+        Endif
+        If (compute_quantity(induct_work_p)) Then
+            DO_PSI
+                ind_work_p(PSI) = ind_work_p(PSI)-&
+                                cbuffer(PSI,3)*buffer(PSI,bphi)
+            END_DO
+        Endif
+
+        ! compression: -B (div v)
+        If (compute_quantity(induct_work_r)) Then
+            DO_PSI
+                ind_work_r(PSI) = ind_work_r(PSI)+&
+                    buffer(PSI,vr)*ref%dlnrho(r)*buffer(PSI,br)**2
+            END_DO
+            Call Add_Quantity(ind_work_r)
+        Endif
+
+        If (compute_quantity(induct_work_t)) Then
+            DO_PSI
+                ind_work_t(PSI) = ind_work_t(PSI)+&
+                    buffer(PSI,vr)*ref%dlnrho(r)*buffer(PSI,btheta)**2
+            END_DO
+            Call Add_Quantity(ind_work_t)
+        Endif
+        If (compute_quantity(induct_work_p)) Then
+            DO_PSI
+                ind_work_p(PSI) = ind_work_p(PSI)+&
+                    buffer(PSI,vr)*ref%dlnrho(r)*buffer(PSI,bphi)**2
+            END_DO
+            Call Add_Quantity(ind_work_p)
+        Endif
+
+        If (compute_quantity(icomp_work_r)) Then
+            DO_PSI
+                qty(PSI) = buffer(PSI,vr)*ref%dlnrho(r)*&
+                    buffer(PSI,br)**2
+            END_DO
+            Call Add_Quantity(qty)
+        Endif
+
+        If (compute_quantity(icomp_work_t)) Then
+            DO_PSI
+                qty(PSI) = buffer(PSI,vr)*ref%dlnrho(r)*&
+                    buffer(PSI,btheta)**2
+            END_DO
+            Call Add_Quantity(qty)
+        Endif
+        
+        If (compute_quantity(icomp_work_p)) Then
+            DO_PSI
+                qty(PSI) = buffer(PSI,vr)*ref%dlnrho(r)*&
+                    buffer(PSI,bphi)**2
+            END_DO
+            Call Add_Quantity(qty)
+        Endif
+
+        ! diffusion: del X (eta del X B)
+
+        If (compute_quantity(idiff_work_r)) Then
+            DO_PSI
+                ! Del^2 {B_r}
+                del2b = DDBUFF(PSI,dbrdrdr)+Two_Over_R(r)*buffer(PSI,dbrdr)
+                del2b = del2b+OneOverRSquared(r)*(DDBUFF(PSI,dbrdtdt)+cottheta(t)*buffer(PSI,dbrdt))
+                del2b = del2b+OneOverRSquared(r)*DDBUFF(PSI,dbrdpdp)*ovs2theta(t)
+
+                !Add geometric terms to make this { Del^2{B} }_r
+                del2b = del2b-2.0d0*OneOverRsquared(r)*( &
+                        buffer(PSI,br) + &
+                        buffer(PSI,dbtdt)+buffer(PSI,btheta)*cottheta(t) + &
+                        ovstheta(t)*buffer(PSI,dbpdp) )
+
+                qty(PSI) = eta(r)*del2b
+                qty(PSI) = qty(PSI)*buffer(PSI,br)
+            END_DO
+            Call Add_Quantity(qty)
+        Endif
+
+        If (compute_quantity(idiff_work_t)) Then
+
+            DO_PSI
+                ! Del^2 {B_theta}
+                del2b = DDBUFF(PSI,dbtdrdr)+Two_Over_R(r)*buffer(PSI,dbtdr)
+                del2b = del2b+OneOverRSquared(r)*(DDBUFF(PSI,dbtdtdt)+cottheta(t)*buffer(PSI,dbtdt))
+                del2b = del2b+OneOverRSquared(r)*DDBUFF(PSI,dbtdpdp)*ovs2theta(t)
+
+                !Add geometric terms to make this { Del^2{B} }_theta
+                del2b = del2b +OneOverRSquared(r)*( 2.0d0*buffer(PSI,dbrdt) - &
+                        ovs2theta(t)*(   buffer(PSI,btheta) + &
+                        2.0d0*costheta(t)*buffer(PSI,dbpdp) ) )
+
+                ! Add the contribution from a gradient in eta
+                qty(PSI) = eta(r)*(del2b+buffer(PSI,curlbphi)*dlneta(r))
+                qty(PSI) = qty(PSI)*buffer(PSI,btheta)
+            END_DO
+            Call Add_Quantity(qty)
+        Endif
+
+        If (compute_quantity(idiff_work_p)) Then
+            DO_PSI
+                ! build Del^2{B_phi}
+                del2b = DDBUFF(PSI,dbpdrdr)+Two_Over_R(r)*buffer(PSI,dbpdr)
+                del2b = del2b+OneOverRSquared(r)*(DDBUFF(PSI,dbpdtdt)+cottheta(t)*buffer(PSI,dbpdt))
+                del2b = del2b+OneOverRSquared(r)*DDBUFF(PSI,dbpdpdp)*ovs2theta(t)
+
+                !Add geometric terms to make this { Del^2{u} }_phi
+                del2b = del2b +OneOverRSquared(r)*( 2.0d0*buffer(PSI,dbrdp)*ovstheta(t) - &
+                        ovs2theta(t)*(   buffer(PSI,bphi) - &
+                        2.0d0*costheta(t)*buffer(PSI,dbtdp) ) )
+
+                qty(PSI) = eta(r)*(del2b-buffer(PSI,curlbtheta)*dlneta(r))
+                qty(PSI) = qty(PSI)*buffer(PSI,bphi)
+            END_DO
+            Call Add_Quantity(qty)
+        Endif
+
+        !//////////////////////////////////////////////////
+        !   Part 2.    Terms resulting <v> cross B'
+        ! /////////////////////////////////////////////////
+
+        !shear: B dot grad v
+        Call ADotGradB(fbuffer,m0_values,cbuffer,aindices = bindex, bindices=vindex)
+
+        If (compute_quantity(ishear_work_pmp_r)) Then
+            DO_PSI
+                qty(PSI) = cbuffer(PSI,1)*fbuffer(PSI,br)
+            END_DO
+            Call Add_Quantity(qty)
+        Endif
+
+        If (compute_quantity(ishear_work_pmp_t)) Then
+            DO_PSI
+                qty(PSI) = cbuffer(PSI,2)*fbuffer(PSI,btheta)
+            END_DO
+            Call Add_Quantity(qty)
+        Endif
+
+        If (compute_quantity(ishear_work_pmp_p)) Then
+            DO_PSI
+                qty(PSI) = cbuffer(PSI,3)*fbuffer(PSI,bphi)
+            END_DO
+            Call Add_Quantity(qty)
+        Endif
+
+        If (compute_quantity(induct_work_pmp_r)) Then
+            DO_PSI
+                ind_work_r(PSI) = cbuffer(PSI,1)*fbuffer(PSI,br)
+            END_DO
+        Endif
+
+        If (compute_quantity(induct_work_pmp_t)) Then
+            DO_PSI
+                ind_work_t(PSI) = cbuffer(PSI,2)*fbuffer(PSI,btheta)
+            END_DO
+        Endif
+
+        If (compute_quantity(induct_work_pmp_p)) Then
+            DO_PSI
+                ind_work_p(PSI) = cbuffer(PSI,3)*fbuffer(PSI,bphi)
+            END_DO
+        Endif
+
+        ! advection: -v dot grad B
+        Call ADotGradB(m0_values,fbuffer,cbuffer,aindices = vindex, bindices=bindex)
+
+        If (compute_quantity(iadvec_work_pmp_r)) Then
+            DO_PSI
+                qty(PSI) = -cbuffer(PSI,1)*fbuffer(PSI,br)
+            END_DO
+            Call Add_Quantity(qty)
+        Endif
+        If (compute_quantity(iadvec_work_pmp_t)) Then
+            DO_PSI
+                qty(PSI) = -cbuffer(PSI,2)*fbuffer(PSI,btheta)
+            END_DO
+            Call Add_Quantity(qty)
+        Endif
+        If (compute_quantity(iadvec_work_pmp_p)) Then
+            DO_PSI
+                qty(PSI) = -cbuffer(PSI,3)*fbuffer(PSI,bphi)
+            END_DO
+            Call Add_Quantity(qty)
+        Endif
+
+        If (compute_quantity(induct_work_pmp_r)) Then
+            DO_PSI
+                ind_work_r(PSI) = ind_work_r(PSI)-&
+                                cbuffer(PSI,1)*fbuffer(PSI,br)
+            END_DO
+        Endif
+        If (compute_quantity(induct_work_pmp_t)) Then
+            DO_PSI
+                ind_work_t(PSI) = ind_work_t(PSI)-&
+                                cbuffer(PSI,2)*fbuffer(PSI,btheta)
+            END_DO
+        Endif
+        If (compute_quantity(induct_work_pmp_p)) Then
+            DO_PSI
+                ind_work_p(PSI) = ind_work_p(PSI)-&
+                                cbuffer(PSI,3)*fbuffer(PSI,bphi)
+            END_DO
+        Endif
+
+        ! compression: -B (div v)
+        If (compute_quantity(induct_work_pmp_r)) Then
+            DO_PSI
+                ind_work_r(PSI) = ind_work_r(PSI)+&
+                    m0_values(PSI2,vr)*ref%dlnrho(r)*fbuffer(PSI,br)**2
+            END_DO
+            Call Add_Quantity(ind_work_r)
+        Endif
+
+        If (compute_quantity(induct_work_pmp_t)) Then
+            DO_PSI
+                ind_work_t(PSI) = ind_work_t(PSI)+&
+                    m0_values(PSI2,vr)*ref%dlnrho(r)*fbuffer(PSI,btheta)**2
+            END_DO
+            Call Add_Quantity(ind_work_t)
+        Endif
+        If (compute_quantity(induct_work_pmp_p)) Then
+            DO_PSI
+                ind_work_p(PSI) = ind_work_p(PSI)+&
+                    m0_values(PSI2,vr)*ref%dlnrho(r)*fbuffer(PSI,bphi)**2
+            END_DO
+            Call Add_Quantity(ind_work_p)
+        Endif
+
+        If (compute_quantity(icomp_work_pmp_r)) Then
+            DO_PSI
+                qty(PSI) = m0_values(PSI2,vr)*ref%dlnrho(r)*&
+                    fbuffer(PSI,br)**2
+            END_DO
+            Call Add_Quantity(qty)
+        Endif
+
+        If (compute_quantity(icomp_work_pmp_t)) Then
+            DO_PSI
+                qty(PSI) = m0_values(PSI2,vr)*ref%dlnrho(r)*&
+                    fbuffer(PSI,btheta)**2
+            END_DO
+            Call Add_Quantity(qty)
+        Endif
+        
+        If (compute_quantity(icomp_work_pmp_p)) Then
+            DO_PSI
+                qty(PSI) = m0_values(PSI2,vr)*ref%dlnrho(r)*&
+                    fbuffer(PSI,bphi)**2
+            END_DO
+            Call Add_Quantity(qty)
+        Endif
+
+        ! diffusion: calculate in ppp and mmm
+
+        !//////////////////////////////////////////////////
+        !   Part 3.    Terms resulting v' cross <B>
+        ! /////////////////////////////////////////////////
+
+        !shear: B dot grad v
+        Call ADotGradB(m0_values,fbuffer,cbuffer,aindices = bindex, bindices=vindex)
+
+        If (compute_quantity(ishear_work_ppm_r)) Then
+            DO_PSI
+                qty(PSI) = cbuffer(PSI,1)*fbuffer(PSI,br)
+            END_DO
+            Call Add_Quantity(qty)
+        Endif
+
+        If (compute_quantity(ishear_work_ppm_t)) Then
+            DO_PSI
+                qty(PSI) = cbuffer(PSI,2)*fbuffer(PSI,btheta)
+            END_DO
+            Call Add_Quantity(qty)
+        Endif
+
+        If (compute_quantity(ishear_work_ppm_p)) Then
+            DO_PSI
+                qty(PSI) = cbuffer(PSI,3)*fbuffer(PSI,bphi)
+            END_DO
+            Call Add_Quantity(qty)
+        Endif
+
+        If (compute_quantity(induct_work_ppm_r)) Then
+            DO_PSI
+                ind_work_r(PSI) = cbuffer(PSI,1)*fbuffer(PSI,br)
+            END_DO
+        Endif
+
+        If (compute_quantity(induct_work_ppm_t)) Then
+            DO_PSI
+                ind_work_t(PSI) = cbuffer(PSI,2)*fbuffer(PSI,btheta)
+            END_DO
+        Endif
+
+        If (compute_quantity(induct_work_ppm_p)) Then
+            DO_PSI
+                ind_work_p(PSI) = cbuffer(PSI,3)*fbuffer(PSI,bphi)
+            END_DO
+        Endif
+
+        ! advection: -v' dot grad <B>
+        Call ADotGradB(fbuffer,m0_values,cbuffer,aindices = vindex, bindices=bindex)
+
+        If (compute_quantity(iadvec_work_ppm_r)) Then
+            DO_PSI
+                qty(PSI) = -cbuffer(PSI,1)*fbuffer(PSI,br)
+            END_DO
+            Call Add_Quantity(qty)
+        Endif
+        If (compute_quantity(iadvec_work_ppm_t)) Then
+            DO_PSI
+                qty(PSI) = -cbuffer(PSI,2)*fbuffer(PSI,btheta)
+            END_DO
+            Call Add_Quantity(qty)
+        Endif
+        If (compute_quantity(iadvec_work_ppm_p)) Then
+            DO_PSI
+                qty(PSI) = -cbuffer(PSI,3)*fbuffer(PSI,bphi)
+            END_DO
+            Call Add_Quantity(qty)
+        Endif
+
+        If (compute_quantity(induct_work_ppm_r)) Then
+            DO_PSI
+                ind_work_r(PSI) = ind_work_r(PSI)-&
+                                cbuffer(PSI,1)*fbuffer(PSI,br)
+            END_DO
+        Endif
+        If (compute_quantity(induct_work_ppm_t)) Then
+            DO_PSI
+                ind_work_t(PSI) = ind_work_t(PSI)-&
+                                cbuffer(PSI,2)*fbuffer(PSI,btheta)
+            END_DO
+        Endif
+        If (compute_quantity(induct_work_ppm_p)) Then
+            DO_PSI
+                ind_work_p(PSI) = ind_work_p(PSI)-&
+                                cbuffer(PSI,3)*fbuffer(PSI,bphi)
+            END_DO
+        Endif
+
+        ! compression: -B (div v)
+        If (compute_quantity(induct_work_ppm_r)) Then
+            DO_PSI
+                ind_work_r(PSI) = ind_work_r(PSI)+&
+                    fbuffer(PSI,vr)*ref%dlnrho(r)*fbuffer(PSI,br)*m0_values(PSI2,br)
+            END_DO
+            Call Add_Quantity(ind_work_r)
+        Endif
+
+        If (compute_quantity(induct_work_ppm_t)) Then
+            DO_PSI
+                ind_work_t(PSI) = ind_work_t(PSI)+&
+                    fbuffer(PSI,vr)*ref%dlnrho(r)*fbuffer(PSI,btheta)*m0_values(PSI2,btheta)
+            END_DO
+            Call Add_Quantity(ind_work_t)
+        Endif
+        If (compute_quantity(induct_work_ppm_p)) Then
+            DO_PSI
+                ind_work_p(PSI) = ind_work_p(PSI)+&
+                    fbuffer(PSI,vr)*ref%dlnrho(r)*fbuffer(PSI,bphi)*m0_values(PSI2,bphi)
+            END_DO
+            Call Add_Quantity(ind_work_p)
+        Endif
+
+        If (compute_quantity(icomp_work_ppm_r)) Then
+            DO_PSI
+                qty(PSI) = fbuffer(PSI,vr)*ref%dlnrho(r)*fbuffer(PSI,br)*m0_values(PSI2,br)
+            END_DO
+            Call Add_Quantity(qty)
+        Endif
+
+        If (compute_quantity(icomp_work_ppm_t)) Then
+            DO_PSI
+                qty(PSI) = fbuffer(PSI,vr)*ref%dlnrho(r)*fbuffer(PSI,btheta)*m0_values(PSI2,btheta)
+            END_DO
+            Call Add_Quantity(qty)
+        Endif
+        
+        If (compute_quantity(icomp_work_ppm_p)) Then
+            DO_PSI
+                qty(PSI) = fbuffer(PSI,vr)*ref%dlnrho(r)*fbuffer(PSI,bphi)*m0_values(PSI2,bphi)
+            END_DO
+            Call Add_Quantity(qty)
+        Endif
+
+        ! diffusion: calculate in ppp and mmm
+
+        !//////////////////////////////////////////////////
+        !   Part 4.    Terms resulting from <v> X <B>
+        ! /////////////////////////////////////////////////
+
+        !shear: <B> dot grad <v>
+        Call ADotGradB(m0_values,m0_values,cbuffer,aindices = bindex, bindices=vindex)
+
+        If (compute_quantity(ishear_work_mmm_r)) Then
+            DO_PSI
+                qty(PSI) = cbuffer(PSI,1)*m0_values(PSI2,br)
+            END_DO
+            Call Add_Quantity(qty)
+        Endif
+
+        If (compute_quantity(ishear_work_mmm_t)) Then
+            DO_PSI
+                qty(PSI) = cbuffer(PSI,2)*m0_values(PSI2,btheta)
+            END_DO
+            Call Add_Quantity(qty)
+        Endif
+
+        If (compute_quantity(ishear_work_mmm_p)) Then
+            DO_PSI
+                qty(PSI) = cbuffer(PSI,3)*m0_values(PSI2,bphi)
+            END_DO
+            Call Add_Quantity(qty)
+        Endif
+
+        If (compute_quantity(induct_work_mmm_r)) Then
+            DO_PSI
+                ind_work_r(PSI) = cbuffer(PSI,1)*m0_values(PSI2,br)
+            END_DO
+        Endif
+
+        If (compute_quantity(induct_work_mmm_t)) Then
+            DO_PSI
+                ind_work_t(PSI) = cbuffer(PSI,2)*m0_values(PSI2,btheta)
+            END_DO
+        Endif
+
+        If (compute_quantity(induct_work_mmm_p)) Then
+            DO_PSI
+                ind_work_p(PSI) = cbuffer(PSI,3)*m0_values(PSI2,bphi)
+            END_DO
+        Endif
+
+        ! advection: -v dot grad B
+        Call ADotGradB(m0_values,m0_values,cbuffer,aindices = vindex, bindices=bindex)
+
+        If (compute_quantity(iadvec_work_mmm_r)) Then
+            DO_PSI
+                qty(PSI) = -cbuffer(PSI,1)*m0_values(PSI2,br)
+            END_DO
+            Call Add_Quantity(qty)
+        Endif
+        If (compute_quantity(iadvec_work_mmm_t)) Then
+            DO_PSI
+                qty(PSI) = -cbuffer(PSI,2)*m0_values(PSI2,btheta)
+            END_DO
+            Call Add_Quantity(qty)
+        Endif
+        If (compute_quantity(iadvec_work_mmm_p)) Then
+            DO_PSI
+                qty(PSI) = -cbuffer(PSI,3)*m0_values(PSI2,bphi)
+            END_DO
+            Call Add_Quantity(qty)
+        Endif
+
+        If (compute_quantity(induct_work_mmm_r)) Then
+            DO_PSI
+                ind_work_r(PSI) = ind_work_r(PSI)-&
+                                cbuffer(PSI,1)*m0_values(PSI2,br)
+            END_DO
+        Endif
+        If (compute_quantity(induct_work_t)) Then
+            DO_PSI
+                ind_work_t(PSI) = ind_work_t(PSI)-&
+                                cbuffer(PSI,2)*m0_values(PSI2,btheta)
+            END_DO
+        Endif
+        If (compute_quantity(induct_work_mmm_p)) Then
+            DO_PSI
+                ind_work_p(PSI) = ind_work_p(PSI)-&
+                                cbuffer(PSI,3)*m0_values(PSI2,bphi)
+            END_DO
+        Endif
+
+        ! compression: -B (div v)
+        If (compute_quantity(induct_work_mmm_r)) Then
+            DO_PSI
+                ind_work_r(PSI) = ind_work_r(PSI)+&
+                    m0_values(PSI2,vr)*ref%dlnrho(r)*m0_values(PSI2,br)**2
+            END_DO
+            Call Add_Quantity(ind_work_r)
+        Endif
+
+        If (compute_quantity(induct_work_mmm_t)) Then
+            DO_PSI
+                ind_work_t(PSI) = ind_work_t(PSI)+&
+                    m0_values(PSI2,vr)*ref%dlnrho(r)*m0_values(PSI2,btheta)**2
+            END_DO
+            Call Add_Quantity(ind_work_t)
+        Endif
+        If (compute_quantity(induct_work_mmm_p)) Then
+            DO_PSI
+                ind_work_p(PSI) = ind_work_p(PSI)+&
+                    m0_values(PSI2,vr)*ref%dlnrho(r)*m0_values(PSI2,bphi)**2
+            END_DO
+            Call Add_Quantity(ind_work_p)
+        Endif
+
+        If (compute_quantity(icomp_work_mmm_r)) Then
+            DO_PSI
+                qty(PSI) = m0_values(PSI2,vr)*ref%dlnrho(r)*&
+                    m0_values(PSI2,br)**2
+            END_DO
+            Call Add_Quantity(qty)
+        Endif
+
+        If (compute_quantity(icomp_work_mmm_t)) Then
+            DO_PSI
+                qty(PSI) = m0_values(PSI2,vr)*ref%dlnrho(r)*&
+                    m0_values(PSI2,btheta)**2
+            END_DO
+            Call Add_Quantity(qty)
+        Endif
+        
+        If (compute_quantity(icomp_work_mmm_p)) Then
+            DO_PSI
+                qty(PSI) = m0_values(PSI2,vr)*ref%dlnrho(r)*&
+                    m0_values(PSI2,bphi)**2
+            END_DO
+            Call Add_Quantity(qty)
+        Endif
+
+        ! diffusion: del X (eta del X B)
+
+        If (compute_quantity(idiff_work_mm_r)) Then
+            DO_PSI
+                ! Del^2 {B_r}
+                del2b = d2_m0(PSI2,dbrdrdr)+Two_Over_R(r)*m0_values(PSI2,dbrdr)
+                del2b = del2b+OneOverRSquared(r)*(d2_m0(PSI2,dbrdtdt)+cottheta(t)*m0_values(PSI2,dbrdt))
+                del2b = del2b+OneOverRSquared(r)*d2_m0(PSI2,dbrdpdp)*ovs2theta(t)
+
+                !Add geometric terms to make this { Del^2{B} }_r
+                del2b = del2b-2.0d0*OneOverRsquared(r)*( &
+                        m0_values(PSI2,br) + &
+                        m0_values(PSI2,dbtdt)+m0_values(PSI2,btheta)*cottheta(t) + &
+                        ovstheta(t)*m0_values(PSI2,dbpdp) )
+
+                qty(PSI) = eta(r)*del2b
+                qty(PSI) = qty(PSI)*m0_values(PSI2,br)
+            END_DO
+            Call Add_Quantity(qty)
+        Endif
+
+        If (compute_quantity(idiff_work_mm_t)) Then
+
+            DO_PSI
+                ! Del^2 {B_theta}
+                del2b = d2_m0(PSI2,dbtdrdr)+Two_Over_R(r)*m0_values(PSI2,dbtdr)
+                del2b = del2b+OneOverRSquared(r)*(d2_m0(PSI2,dbtdtdt)+cottheta(t)*m0_values(PSI2,dbtdt))
+                del2b = del2b+OneOverRSquared(r)*d2_m0(PSI2,dbtdpdp)*ovs2theta(t)
+
+                !Add geometric terms to make this { Del^2{B} }_theta
+                del2b = del2b +OneOverRSquared(r)*( 2.0d0*m0_values(PSI2,dbrdt) - &
+                        ovs2theta(t)*(   m0_values(PSI2,btheta) + &
+                        2.0d0*costheta(t)*m0_values(PSI2,dbpdp) ) )
+
+                ! Add the contribution from a gradient in eta
+                qty(PSI) = eta(r)*(del2b+m0_values(PSI2,curlbphi)*dlneta(r))
+                qty(PSI) = qty(PSI)*m0_values(PSI2,btheta)
+            END_DO
+            Call Add_Quantity(qty)
+        Endif
+
+        If (compute_quantity(idiff_work_mm_p)) Then
+            DO_PSI
+                ! build Del^2{B_phi}
+                del2b = d2_m0(PSI2,dbpdrdr)+Two_Over_R(r)*m0_values(PSI2,dbpdr)
+                del2b = del2b+OneOverRSquared(r)*(d2_m0(PSI2,dbpdtdt)+cottheta(t)*m0_values(PSI2,dbpdt))
+                del2b = del2b+OneOverRSquared(r)*d2_m0(PSI2,dbpdpdp)*ovs2theta(t)
+
+                !Add geometric terms to make this { Del^2{u} }_phi
+                del2b = del2b +OneOverRSquared(r)*( 2.0d0*m0_values(PSI2,dbrdp)*ovstheta(t) - &
+                        ovs2theta(t)*(   m0_values(PSI2,bphi) - &
+                        2.0d0*costheta(t)*m0_values(PSI2,dbtdp) ) )
+
+                qty(PSI) = eta(r)*(del2b-m0_values(PSI2,curlbtheta)*dlneta(r))
+                qty(PSI) = qty(PSI)*m0_values(PSI2,bphi)
+            END_DO
+            Call Add_Quantity(qty)
+        Endif
+
+        !//////////////////////////////////////////////////
+        !   Part 5.    Terms resulting v' cross B': ppp and mpp 
+        ! /////////////////////////////////////////////////
+
+        !shear: B' dot grad v'
+        Call ADotGradB(fbuffer,fbuffer,cbuffer,aindices = bindex, bindices=vindex)
+
+        If (compute_quantity(ishear_work_ppp_r)) Then
+            DO_PSI
+                qty(PSI) = cbuffer(PSI,1)*fbuffer(PSI,br)
+            END_DO
+            Call Add_Quantity(qty)
+        Endif
+
+        If (compute_quantity(ishear_work_mpp_r)) Then
+            DO_PSI
+                qty(PSI) = cbuffer(PSI,1)*m0_values(PSI2,br)
+            END_DO
+            Call Add_Quantity(qty)
+        Endif        
+
+        If (compute_quantity(ishear_work_ppp_t)) Then
+            DO_PSI
+                qty(PSI) = cbuffer(PSI,2)*fbuffer(PSI,btheta)
+            END_DO
+            Call Add_Quantity(qty)
+        Endif
+
+        If (compute_quantity(ishear_work_mpp_t)) Then
+            DO_PSI
+                qty(PSI) = cbuffer(PSI,2)*m0_values(PSI2,btheta)
+            END_DO
+            Call Add_Quantity(qty)
+        Endif
+
+        If (compute_quantity(ishear_work_ppp_p)) Then
+            DO_PSI
+                qty(PSI) = cbuffer(PSI,3)*fbuffer(PSI,bphi)
+            END_DO
+            Call Add_Quantity(qty)
+        Endif
+
+        If (compute_quantity(ishear_work_mpp_p)) Then
+            DO_PSI
+                qty(PSI) = cbuffer(PSI,3)*m0_values(PSI2,bphi)
+            END_DO
+            Call Add_Quantity(qty)
+        Endif
+
+        If (compute_quantity(induct_work_ppp_r)) Then
+            DO_PSI
+                ind_work_r(PSI) = cbuffer(PSI,1)*fbuffer(PSI,br)
+            END_DO
+        Endif
+
+        If (compute_quantity(induct_work_mpp_r)) Then
+            DO_PSI
+                ind_work_r2(PSI) = cbuffer(PSI,1)*m0_values(PSI2,br)
+            END_DO
+        Endif
+
+        If (compute_quantity(induct_work_ppp_t)) Then
+            DO_PSI
+                ind_work_t(PSI) = cbuffer(PSI,2)*fbuffer(PSI,btheta)
+            END_DO
+        Endif
+
+        If (compute_quantity(induct_work_mpp_t)) Then
+            DO_PSI
+                ind_work_t2(PSI) = cbuffer(PSI,2)*m0_values(PSI2,btheta)
+            END_DO
+        Endif
+
+        If (compute_quantity(induct_work_ppp_p)) Then
+            DO_PSI
+                ind_work_p(PSI) = cbuffer(PSI,3)*fbuffer(PSI,bphi)
+            END_DO
+        Endif
+
+        If (compute_quantity(induct_work_mpp_p)) Then
+            DO_PSI
+                ind_work_p2(PSI) = cbuffer(PSI,3)*m0_values(PSI2,bphi)
+            END_DO
+        Endif
+
+        ! advection: -v dot grad B
+        Call ADotGradB(fbuffer,fbuffer,cbuffer,aindices = vindex, bindices=bindex)
+
+        If (compute_quantity(iadvec_work_ppp_r)) Then
+            DO_PSI
+                qty(PSI) = -cbuffer(PSI,1)*fbuffer(PSI,br)
+            END_DO
+            Call Add_Quantity(qty)
+        Endif
+        If (compute_quantity(iadvec_work_mpp_r)) Then
+            DO_PSI
+                qty(PSI) = -cbuffer(PSI,1)*m0_values(PSI2,br)
+            END_DO
+            Call Add_Quantity(qty)
+        Endif
+
+        If (compute_quantity(iadvec_work_ppp_t)) Then
+            DO_PSI
+                qty(PSI) = -cbuffer(PSI,2)*fbuffer(PSI,btheta)
+            END_DO
+            Call Add_Quantity(qty)
+        Endif
+        If (compute_quantity(iadvec_work_mpp_t)) Then
+            DO_PSI
+                qty(PSI) = -cbuffer(PSI,2)*m0_values(PSI2,btheta)
+            END_DO
+            Call Add_Quantity(qty)
+        Endif
+
+        If (compute_quantity(iadvec_work_ppp_p)) Then
+            DO_PSI
+                qty(PSI) = -cbuffer(PSI,3)*fbuffer(PSI,bphi)
+            END_DO
+            Call Add_Quantity(qty)
+        Endif
+        If (compute_quantity(iadvec_work_mpp_p)) Then
+            DO_PSI
+                qty(PSI) = -cbuffer(PSI,3)*m0_values(PSI2,bphi)
+            END_DO
+            Call Add_Quantity(qty)
+        Endif
+
+        If (compute_quantity(induct_work_ppp_r)) Then
+            DO_PSI
+                ind_work_r(PSI) = ind_work_r(PSI)-&
+                                cbuffer(PSI,1)*fbuffer(PSI,br)
+            END_DO
+        Endif
+        If (compute_quantity(induct_work_ppp_t)) Then
+            DO_PSI
+                ind_work_t(PSI) = ind_work_t(PSI)-&
+                                cbuffer(PSI,2)*fbuffer(PSI,btheta)
+            END_DO
+        Endif
+        If (compute_quantity(induct_work_ppp_p)) Then
+            DO_PSI
+                ind_work_p(PSI) = ind_work_p(PSI)-&
+                                cbuffer(PSI,3)*fbuffer(PSI,bphi)
+            END_DO
+        Endif
+
+        ! mpp
+        If (compute_quantity(induct_work_mpp_r)) Then
+            DO_PSI
+                ind_work_r2(PSI) = ind_work_r2(PSI)-&
+                                cbuffer(PSI,1)*m0_values(PSI2,br)
+            END_DO
+        Endif
+        If (compute_quantity(induct_work_mpp_t)) Then
+            DO_PSI
+                ind_work_t2(PSI) = ind_work_t2(PSI)-&
+                                cbuffer(PSI,2)*m0_values(PSI2,btheta)
+            END_DO
+        Endif
+        If (compute_quantity(induct_work_mpp_p)) Then
+            DO_PSI
+                ind_work_p2(PSI) = ind_work_p2(PSI)-&
+                                cbuffer(PSI,3)*m0_values(PSI2,bphi)
+            END_DO
+        Endif
+
+        ! compression: -B (div v): don't need mpp (except for inductive bit),
+        ! since that equals ppm (already computed)
+
+        !ppp, induct
+        If (compute_quantity(induct_work_ppp_r)) Then
+            DO_PSI
+                ind_work_r(PSI) = ind_work_r(PSI)+&
+                    fbuffer(PSI,vr)*ref%dlnrho(r)*fbuffer(PSI,br)**2
+            END_DO
+            Call Add_Quantity(ind_work_r)
+        Endif
+        If (compute_quantity(induct_work_ppp_t)) Then
+            DO_PSI
+                ind_work_t(PSI) = ind_work_t(PSI)+&
+                    fbuffer(PSI,vr)*ref%dlnrho(r)*fbuffer(PSI,btheta)**2
+            END_DO
+            Call Add_Quantity(ind_work_t)
+        Endif
+        If (compute_quantity(induct_work_ppp_p)) Then
+            DO_PSI
+                ind_work_p(PSI) = ind_work_p(PSI)+&
+                    fbuffer(PSI,vr)*ref%dlnrho(r)*fbuffer(PSI,bphi)**2
+            END_DO
+            Call Add_Quantity(ind_work_p)
+        Endif
+        
+        !mpp,induct
+        If (compute_quantity(induct_work_mpp_r)) Then
+            DO_PSI
+                ind_work_r2(PSI) = ind_work_r2(PSI)+&
+                    fbuffer(PSI,vr)*ref%dlnrho(r)*fbuffer(PSI,br)*m0_values(PSI2,br)
+            END_DO
+            Call Add_Quantity(ind_work_r)
+        Endif
+        If (compute_quantity(induct_work_mpp_t)) Then
+            DO_PSI
+                ind_work_t2(PSI) = ind_work_t2(PSI)+&
+                    fbuffer(PSI,vr)*ref%dlnrho(r)*fbuffer(PSI,btheta)*m0_values(PSI2,btheta)
+            END_DO
+            Call Add_Quantity(ind_work_t)
+        Endif
+        If (compute_quantity(induct_work_mpp_p)) Then
+            DO_PSI
+                ind_work_p2(PSI) = ind_work_p2(PSI)+&
+                    fbuffer(PSI,vr)*ref%dlnrho(r)*fbuffer(PSI,bphi)*m0_values(PSI2,bphi)
+            END_DO
+            Call Add_Quantity(ind_work_p)
+        Endif
+   
+        !ppp, compression
+        If (compute_quantity(icomp_work_ppp_r)) Then
+            DO_PSI
+                qty(PSI) = fbuffer(PSI,vr)*ref%dlnrho(r)*&
+                    fbuffer(PSI,br)**2
+            END_DO
+            Call Add_Quantity(qty)
+        Endif
+
+        If (compute_quantity(icomp_work_ppp_t)) Then
+            DO_PSI
+                qty(PSI) = fbuffer(PSI,vr)*ref%dlnrho(r)*&
+                    fbuffer(PSI,btheta)**2
+            END_DO
+            Call Add_Quantity(qty)
+        Endif
+        
+        If (compute_quantity(icomp_work_ppp_p)) Then
+            DO_PSI
+                qty(PSI) = fbuffer(PSI,vr)*ref%dlnrho(r)*&
+                    fbuffer(PSI,bphi)**2
+            END_DO
+            Call Add_Quantity(qty)
+        Endif
+
+        ! diffusion: del X (eta del X B')
+
+        If (compute_quantity(idiff_work_pp_r)) Then
+            DO_PSI
+                ! Del^2 {B_r}
+                del2b = d2_fbuffer(PSI,dbrdrdr)+Two_Over_R(r)*fbuffer(PSI,dbrdr)
+                del2b = del2b+OneOverRSquared(r)*(d2_fbuffer(PSI,dbrdtdt)+cottheta(t)*fbuffer(PSI,dbrdt))
+                del2b = del2b+OneOverRSquared(r)*d2_fbuffer(PSI,dbrdpdp)*ovs2theta(t)
+
+                !Add geometric terms to make this { Del^2{B} }_r
+                del2b = del2b-2.0d0*OneOverRsquared(r)*( &
+                        fbuffer(PSI,br) + &
+                        fbuffer(PSI,dbtdt)+fbuffer(PSI,btheta)*cottheta(t) + &
+                        ovstheta(t)*fbuffer(PSI,dbpdp) )
+
+                qty(PSI) = eta(r)*del2b
+                qty(PSI) = qty(PSI)*fbuffer(PSI,br)
+            END_DO
+            Call Add_Quantity(qty)
+        Endif
+
+        If (compute_quantity(idiff_work_pp_t)) Then
+
+            DO_PSI
+                ! Del^2 {B_theta}
+                del2b = d2_fbuffer(PSI,dbtdrdr)+Two_Over_R(r)*fbuffer(PSI,dbtdr)
+                del2b = del2b+OneOverRSquared(r)*(d2_fbuffer(PSI,dbtdtdt)+cottheta(t)*fbuffer(PSI,dbtdt))
+                del2b = del2b+OneOverRSquared(r)*d2_fbuffer(PSI,dbtdpdp)*ovs2theta(t)
+
+                !Add geometric terms to make this { Del^2{B} }_theta
+                del2b = del2b +OneOverRSquared(r)*( 2.0d0*fbuffer(PSI,dbrdt) - &
+                        ovs2theta(t)*(   fbuffer(PSI,btheta) + &
+                        2.0d0*costheta(t)*fbuffer(PSI,dbpdp) ) )
+
+                ! Add the contribution from a gradient in eta
+                qty(PSI) = eta(r)*(del2b+fbuffer(PSI,curlbphi)*dlneta(r))
+                qty(PSI) = qty(PSI)*fbuffer(PSI,btheta)
+            END_DO
+            Call Add_Quantity(qty)
+        Endif
+
+        If (compute_quantity(idiff_work_pp_p)) Then
+            DO_PSI
+                ! build Del^2{B_phi}
+                del2b = d2_fbuffer(PSI,dbpdrdr)+Two_Over_R(r)*fbuffer(PSI,dbpdr)
+                del2b = del2b+OneOverRSquared(r)*(d2_fbuffer(PSI,dbpdtdt)+cottheta(t)*fbuffer(PSI,dbpdt))
+                del2b = del2b+OneOverRSquared(r)*d2_fbuffer(PSI,dbpdpdp)*ovs2theta(t)
+
+                !Add geometric terms to make this { Del^2{u} }_phi
+                del2b = del2b +OneOverRSquared(r)*( 2.0d0*fbuffer(PSI,dbrdp)*ovstheta(t) - &
+                        ovs2theta(t)*(   fbuffer(PSI,bphi) - &
+                        2.0d0*costheta(t)*fbuffer(PSI,dbtdp) ) )
+
+                qty(PSI) = eta(r)*(del2b-fbuffer(PSI,curlbtheta)*dlneta(r))
+                qty(PSI) = qty(PSI)*fbuffer(PSI,bphi)
+            END_DO
+            Call Add_Quantity(qty)
+        Endif
+
+        DeAllocate(ind_work_r)
+        DeAllocate(ind_work_t)
+        DeAllocate(ind_work_p)
+        DeAllocate(ind_work_r2)
+        DeAllocate(ind_work_t2)
+        DeAllocate(ind_work_p2)
+        DeAllocate(cbuffer)
+
 
 
         ! Edit Above This Line
@@ -190,48 +1103,6 @@ Contains
         Integer :: r,k, t
         !=============================================
         ! Edit Below This Line (you may define your own variables below)
-        ! Real*8 :: htmp1, htmp2, htmp3   ! temporary variables for use if needed
-
-        ! Tutorial Exercise 2:
-        !   Uncomment and modify the code below to assign
-        !   v dot grad {T or S} to qty and add it to the outputs.
-        !
-        !   Note that dtdp and dtdt contain {1/r} d{T or S}/dphi
-        !   and {1/r} d {T or S}/dtheta respectively (see comments at the top).
-        !
-        !   We begin by defining the phi-advection piece,
-        !   but note that this isn't added to the outputs yet.
-        !
-        !   You will need to mimic the compute_quantity/add_quantity
-        !   logic from custom_mhd_diagnostics to make this work.
-
-        !DO_PSI
-        !    qty(PSI) = wsp%p3a(PSI,vphi)*wsp%p3a(PSI,dtdp)*csctheta(t)  ! note
-        !END_DO
-
-        If (compute_quantity(ell0_vr)) Then
-            Write(6,*)'Ell0_vr', ell0_vr
-            DO_PSI
-                qty(PSI) = ell0_values(r,vr)
-            END_DO
-            Call Add_Quantity(qty)
-        Endif
-
-        If (compute_quantity(ell0_tvar)) Then
-            Write(6,*)'Ell0 tvar', ell0_tvar
-            DO_PSI
-                qty(PSI) = ell0_values(r,tvar)
-            END_DO
-            Call Add_Quantity(qty)
-        Endif
-
-        If (compute_quantity(ell0_dpdr)) Then
-            Write(6,*)'Ell0 tvar', ell0_dpdr
-            DO_PSI
-                qty(PSI) = ell0_values(r,dpdr)
-            END_DO
-            Call Add_Quantity(qty)
-        Endif
 
 
 
