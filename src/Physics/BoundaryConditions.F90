@@ -45,6 +45,12 @@ Module BoundaryConditions
     Logical :: Fix_poloidalfield_bottom = .False.
     Logical :: Impose_Dipole_Field = .False.
     Logical :: Dipole_Field_Bottom = .False.
+    Logical :: Potential_Field_Top = .True.
+    Logical :: Radial_Field_Top = .False.
+    Logical :: Perfect_Conductor_Top = .False.
+    Logical :: Potential_Field_Bottom = .True.
+    Logical :: Radial_Field_Bottom = .False.
+    Logical :: Perfect_Conductor_Bottom = .False.
 
     Real*8  :: T_Bottom     = 1.0d0
     Real*8  :: T_Top        = 0.0d0
@@ -80,7 +86,9 @@ Module BoundaryConditions
         C10_bottom, C10_top, C11_bottom, C11_top, C1m1_bottom, C1m1_top, Br_bottom, &
         dipole_tilt_degrees, impose_dipole_field, no_slip_top, no_slip_bottom, &
         stress_free_top, stress_free_bottom, T_top_file, T_bottom_file, dTdr_top_file, dTdr_bottom_file, &
-        C_top_file, C_bottom_file, dipole_field_bottom
+        C_top_file, C_bottom_file, dipole_field_bottom, &
+        Potential_Field_Top, Radial_Field_Top, Perfect_Conductor_Top, &
+        Potential_Field_Bottom, Radial_Field_Bottom, Perfect_Conductor_Bottom
 
 Contains
 
@@ -111,7 +119,6 @@ Contains
             ! Set B.C.'s on the poloidal vector
             ! potential using the value of Br at
             ! the lower boundary.
-
             fix_poloidalfield_bottom = .true.
             tilt_angle_radians = pi/180.0*dipole_tilt_degrees
             a = cos(tilt_angle_radians)*sqrt(4.0d0*Pi/3.0d0)
@@ -128,6 +135,36 @@ Contains
             C1m1_top =  0.0d0   ! worry about phasing in longitude.
 
         Endif
+
+        If (Potential_Field_Top) Then
+           Radial_Field_Top = .False.
+           Perfect_Conductor_Top = .False.
+        End If
+
+        If (Radial_Field_Top) Then
+           Potential_Field_Top = .False.
+           Perfect_Conductor_Top = .False.
+        End If
+
+        If (Perfect_Conductor_Top) Then
+           Potential_Field_Top = .False.
+           Radial_Field_Top = .False.
+        End If
+
+        If (Potential_Field_Bottom) Then
+           Radial_Field_Bottom = .False.
+           Perfect_Conductor_Bottom = .False.
+        End If
+
+        If (Radial_Field_Bottom) Then
+           Potential_Field_Bottom = .False.
+           Perfect_Conductor_Bottom = .False.
+        End If
+
+        If (Perfect_Conductor_Bottom) Then
+           Potential_Field_Bottom = .False.
+           Radial_Field_Bottom = .False.
+        End If
 
         Call Generate_Boundary_Mask()
 
@@ -319,6 +356,13 @@ Contains
         Fix_poloidalfield_top    = .False.
         Fix_poloidalfield_bottom = .False.
         Impose_Dipole_Field      = .False.
+
+        Potential_Field_Top = .True.
+        Radial_Field_Top = .False.
+        Perfect_Conductor_Top = .False.
+        Potential_Field_Bottom = .True.
+        Radial_Field_Bottom = .False.
+        Perfect_Conductor_Bottom = .False.
 
         T_Bottom     = 1.0d0
         T_Top        = 0.0d0
