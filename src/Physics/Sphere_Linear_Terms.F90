@@ -617,26 +617,80 @@ Contains
                 Call FEContinuity(ceq,lp,cvar,2,0)   ! C is continuous
                 Call FEContinuity(ceq,lp,cvar,1,1)          ! C' is continuous
 
+                ! Follow user-specified BCs for mag. field
+                If (Potential_Field_Top) Then
+                   r = 1
+                   ! Btor = 0
+                   Call Clear_Row(aeq,lp,r)
+                   Call Load_BC(lp,r,aeq,avar,one,0)
 
-                ! Match to a potential field at top and bottom
-                ! Btor = 0 at top and bottom
-                r = 1
-                Call Load_BC(lp,r,aeq,avar,one,0)
-                r = N_R
-                Call Load_BC(lp,r,aeq,avar,one,0)
+                   ! dBpol/dr+ell*Bpol/r = 0
+                   Call Clear_Row(ceq,lp,r)
+                   Call Load_BC(lp,r,ceq,cvar,one,1)
+                   samp = my_lm_lval(lp)*one_over_r(r)
+                   Call Load_BC(lp,r,ceq,cvar,samp,0)
+                End If
 
-                ! dBpol/dr+ell*Bpol/r = 0 at outer boundary
-                r = 1
-                Call Load_BC(lp,r,ceq,cvar,one,1)
-                samp = my_lm_lval(lp)*one_over_r(r)
-                Call Load_BC(lp,r,ceq,cvar,samp,0)
+                If (Radial_Field_Top) Then
+                   r = 1
+                   ! Btor = 0
+                   Call Clear_Row(aeq,lp,r)
+                   Call Load_BC(lp,r,aeq,avar,one,0)
+                   
+                   ! dBpol/dr = 0
+                   Call Clear_Row(ceq,lp,r)
+                   Call Load_BC(lp,r,ceq,cvar,one,1)
+                End If
 
-                ! dBpol/dr-(ell+1)*Bpol/r = 0 at inner boundary
-                r = N_R
-                Call Load_BC(lp,r,ceq,cvar,one,1)
-                samp = - (l+1)*One_Over_R(r)
-                Call Load_BC(lp,r,ceq,cvar,samp,0)
+                If (Perfect_Conductor_Top) Then
+                   r = 1
+                   Call Clear_Row(ceq,lp,r)
+                   ! Bpol = 0
+                   Call Load_BC(lp,r,ceq,cvar,one,0)
+                   ! d2Bpol/dr2 = 0
+                   Call Load_BC(lp,r,ceq,cvar,one,2)
 
+                   Call Clear_Row(aeq,lp,r)
+                   ! dBtor/dr = 0
+                   Call Load_BC(lp,r,aeq,avar,one,1)
+                End If
+                
+                If (Potential_Field_Bottom) Then
+                   r = N_R
+                   ! Btor = 0
+                   Call Clear_Row(aeq,lp,r)
+                   Call Load_BC(lp,r,aeq,avar,one,0)
+
+                   ! dBpol/dr-(ell+1)*Bpol/r = 0
+                   Call Clear_Row(ceq,lp,r)
+                   Call Load_BC(lp,r,ceq,cvar,one,1)    
+                   samp = - (l+1)*One_Over_R(r)
+                   Call Load_BC(lp,r,ceq,cvar,samp,0)    
+                End If
+
+                If (Radial_Field_Bottom) Then
+                   r = N_R
+                   ! Btor = 0
+                   Call Clear_Row(aeq,lp,r)
+                   Call Load_BC(lp,r,aeq,avar,one,0)
+                   
+                   ! dBpol/dr = 0
+                   Call Clear_Row(ceq,lp,r)
+                   Call Load_BC(lp,r,ceq,cvar,one,1)
+                End If
+
+                If (Perfect_Conductor_Bottom) Then
+                   r = N_R
+                   Call Clear_Row(ceq,lp,r)
+                   ! Bpol = 0
+                   Call Load_BC(lp,r,ceq,cvar,one,0)
+                   ! d2Bpol/dr2 = 0
+                   Call Load_BC(lp,r,ceq,cvar,one,2)
+
+                   Call Clear_Row(aeq,lp,r)
+                   ! dBtor/dr = 0
+                   Call Load_BC(lp,r,aeq,avar,one,1)
+                End If 
 
                 If (fix_poloidalfield_top) Then
                     Call Clear_Row(ceq,lp,1)
