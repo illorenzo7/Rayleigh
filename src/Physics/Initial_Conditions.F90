@@ -65,13 +65,17 @@ Module Initial_Conditions
     Character*120 :: z_init_file = '__nothing__'
     Character*120 :: c_init_file = '__nothing__'
     Character*120 :: a_init_file = '__nothing__'
+    Logical :: no_mag_in_rz = .false.
+    Logical :: no_t_in_rz = .false.
+    Real*8 :: rcut_mag = 0.0d0
+    Real*8 :: rcut_t = 0.0d0
 
     Namelist /Initial_Conditions_Namelist/ init_type, temp_amp, temp_w, restart_iter, &
             & magnetic_init_type,alt_check, mag_amp, conductive_profile, rescale_velocity, &
             & rescale_bfield, velocity_scale, bfield_scale, rescale_tvar, &
             & rescale_pressure, tvar_scale, pressure_scale, mdelta, &
             & t_init_file, w_init_file, p_init_file, z_init_file, &
-            & c_init_file, a_init_file
+            & c_init_file, a_init_file, no_mag_in_rz, no_t_in_rz, rcut_mag, rcut_t
 Contains
 
     Subroutine Initialize_Fields()
@@ -318,13 +322,14 @@ Contains
     !///////////////////////////////////////////////////////////
     !       Random Perturbation Initializaton Routines
     Subroutine Generate_Random_Field(rand_amp, field_ind, infield,rprofile, &
-                & ell0_profile)
+                & ell0_profile, rcut)
         Implicit None
         Integer :: ncombinations, i, m, r, seed(1), mp, l, ind1, ind2
         Integer :: mode_count, my_mode_start, my_mode_end, fcount(3,2)
         Integer, Intent(In) :: field_ind
         Real*8, Intent(In) :: rand_amp
         Real*8, Intent(In), Optional :: rprofile(my_r%min:), ell0_profile(1:)
+        Real*8, Intent(In), Optional :: rcut
         Real*8, Allocatable :: rand(:,:), rfunc(:), lpow(:)
         Real*8 :: amp, phase, lmid, alpha,x
 
@@ -340,7 +345,15 @@ Contains
 
             Do r = my_r%min, my_r%max
                 x = 2.0d0*pi*(radius(r)-r_inner)/(r_outer-r_inner)
-                rfunc(r) = 0.5d0*(1.0d0-Cos(x))
+                If (present(rcut)) Then
+                    If (radius(r) .le. rcut) Then ! give the field zero when r < rcut
+                        rfunc(r) = 0.0d0
+                    Else
+                        rfunc(r) = 0.5d0*(1.0d0-Cos(x))
+                    Endif
+                Else ! make rfunc nonzero everywhere
+                    rfunc(r) = 0.5d0*(1.0d0-Cos(x))
+                Endif
             Enddo
         Endif
 
@@ -476,8 +489,13 @@ Contains
         zero_profile = 0.0d0
         ! Randomize each field
         ! neither of the magnetic potentials has an ell=0 component (zero it out)
-        Call Generate_Random_Field(ampa, 1, a_and_c,ell0_profile = zero_profile)
-        Call Generate_Random_Field(ampc, 2, a_and_c,ell0_profile = zero_profile)
+        If (no_mag_in_rz) Then
+            Call Generate_Random_Field(ampa, 1, a_and_c,ell0_profile = zero_profile, rcut = rcut_mag)
+            Call Generate_Random_Field(ampc, 2, a_and_c,ell0_profile = zero_profile, rcut = rcut_mag)
+        Else
+            Call Generate_Random_Field(ampa, 1, a_and_c,ell0_profile = zero_profile)
+            Call Generate_Random_Field(ampc, 2, a_and_c,ell0_profile = zero_profile)
+        Endif
         DeAllocate(zero_profile)
         Call Set_RHS(aeq,a_and_c%p1b(:,:,:,1))
         Call Set_RHS(ceq,a_and_c%p1b(:,:,:,2))
@@ -517,7 +535,11 @@ Contains
 
             Endif
             ! Randomize the entropy
-            Call Generate_Random_Field(amp, 1, sbuffer,ell0_profile = profile0)
+            If (no_t_in_rz) Then
+                Call Generate_Random_Field(amp, 1, sbuffer,ell0_profile = profile0, rcut = rcut_t)
+            Else
+                Call Generate_Random_Field(amp, 1, sbuffer,ell0_profile = profile0)
+            Endif
             DeAllocate(profile0)
 
         Else
@@ -525,7 +547,11 @@ Contains
 
 
             ! Randomize the entropy
-            Call Generate_Random_Field(amp, 1, sbuffer)
+            If (no_t_in_rz) Then
+                Call Generate_Random_Field(amp, 1, sbuffer, rcut = rcut_t)
+            Else
+                Call Generate_Random_Field(amp, 1, sbuffer)
+            Endif
         Endif
 
         Call Set_RHS(teq,sbuffer%p1b(:,:,:,1))
