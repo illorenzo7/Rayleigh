@@ -344,7 +344,11 @@ Contains
         Else
 
             Do r = my_r%min, my_r%max
-                x = 2.0d0*pi*(radius(r)-r_inner)/(r_outer-r_inner)
+                If (present(rcut)) Then
+                    x = 2.0d0*pi*(radius(r)-rcut)/(r_outer-rcut)
+                Else
+                    x = 2.0d0*pi*(radius(r)-r_inner)/(r_outer-r_inner)
+                Endif
                 If (present(rcut)) Then
                     If (radius(r) .le. rcut) Then ! give the field zero when r < rcut
                         rfunc(r) = 0.0d0
