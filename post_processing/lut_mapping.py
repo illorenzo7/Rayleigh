@@ -3042,25 +3042,317 @@ name_given_code[2105] = "test_y22_sq"
 code_given_name["test_y22_sq"] = 2105
 tex_given_code[2105] = r""
 
-name_given_code[2201] = "cross_helicity"
-code_given_name["cross_helicity"] = 2201
-tex_given_code[2201] = r"v dot b"
+name_given_code[2201] = "induct_work_r"
+code_given_name["induct_work_r"] = 2201
+tex_given_code[2201] = r""
 
-name_given_code[2202] = "turb_cross_helicity"
-code_given_name["turb_cross_helicity"] = 2202
+name_given_code[2201] = "induct_work_pmp_r"
+code_given_name["induct_work_pmp_r"] = 2201
+tex_given_code[2201] = r""
+
+name_given_code[2201] = "induct_work_ppm_r"
+code_given_name["induct_work_ppm_r"] = 2201
+tex_given_code[2201] = r""
+
+name_given_code[2201] = "induct_work_mmm_r"
+code_given_name["induct_work_mmm_r"] = 2201
+tex_given_code[2201] = r""
+
+name_given_code[2201] = "induct_work_mpp_r"
+code_given_name["induct_work_mpp_r"] = 2201
+tex_given_code[2201] = r""
+
+name_given_code[2201] = "induct_work_ppp_r"
+code_given_name["induct_work_ppp_r"] = 2201
+tex_given_code[2201] = r""
+
+name_given_code[2202] = "induct_work_t"
+code_given_name["induct_work_t"] = 2202
 tex_given_code[2202] = r""
 
-name_given_code[2203] = "ell0_vr"
-code_given_name["ell0_vr"] = 2203
+name_given_code[2202] = "induct_work_pmp_t"
+code_given_name["induct_work_pmp_t"] = 2202
+tex_given_code[2202] = r""
+
+name_given_code[2202] = "induct_work_ppm_t"
+code_given_name["induct_work_ppm_t"] = 2202
+tex_given_code[2202] = r""
+
+name_given_code[2202] = "induct_work_mmm_t"
+code_given_name["induct_work_mmm_t"] = 2202
+tex_given_code[2202] = r""
+
+name_given_code[2202] = "induct_work_mpp_t"
+code_given_name["induct_work_mpp_t"] = 2202
+tex_given_code[2202] = r""
+
+name_given_code[2202] = "induct_work_ppp_t"
+code_given_name["induct_work_ppp_t"] = 2202
+tex_given_code[2202] = r""
+
+name_given_code[2203] = "induct_work_p"
+code_given_name["induct_work_p"] = 2203
 tex_given_code[2203] = r""
 
-name_given_code[2204] = "ell0_tvar"
-code_given_name["ell0_tvar"] = 2204
+name_given_code[2203] = "induct_work_pmp_p"
+code_given_name["induct_work_pmp_p"] = 2203
+tex_given_code[2203] = r""
+
+name_given_code[2203] = "induct_work_ppm_p"
+code_given_name["induct_work_ppm_p"] = 2203
+tex_given_code[2203] = r""
+
+name_given_code[2203] = "induct_work_mmm_p"
+code_given_name["induct_work_mmm_p"] = 2203
+tex_given_code[2203] = r""
+
+name_given_code[2203] = "induct_work_mpp_p"
+code_given_name["induct_work_mpp_p"] = 2203
+tex_given_code[2203] = r""
+
+name_given_code[2203] = "induct_work_ppp_p"
+code_given_name["induct_work_ppp_p"] = 2203
+tex_given_code[2203] = r""
+
+name_given_code[2204] = "ishear_work_r"
+code_given_name["ishear_work_r"] = 2204
 tex_given_code[2204] = r""
 
-name_given_code[2205] = "ell0_dpdr"
-code_given_name["ell0_dpdr"] = 2205
+name_given_code[2204] = "ishear_work_pmp_r"
+code_given_name["ishear_work_pmp_r"] = 2204
+tex_given_code[2204] = r""
+
+name_given_code[2204] = "ishear_work_ppm_r"
+code_given_name["ishear_work_ppm_r"] = 2204
+tex_given_code[2204] = r""
+
+name_given_code[2204] = "ishear_work_mmm_r"
+code_given_name["ishear_work_mmm_r"] = 2204
+tex_given_code[2204] = r""
+
+name_given_code[2204] = "ishear_work_mpp_r"
+code_given_name["ishear_work_mpp_r"] = 2204
+tex_given_code[2204] = r""
+
+name_given_code[2204] = "ishear_work_ppp_r"
+code_given_name["ishear_work_ppp_r"] = 2204
+tex_given_code[2204] = r""
+
+name_given_code[2205] = "ishear_work_t"
+code_given_name["ishear_work_t"] = 2205
 tex_given_code[2205] = r""
+
+name_given_code[2205] = "ishear_work_pmp_t"
+code_given_name["ishear_work_pmp_t"] = 2205
+tex_given_code[2205] = r""
+
+name_given_code[2205] = "ishear_work_ppm_t"
+code_given_name["ishear_work_ppm_t"] = 2205
+tex_given_code[2205] = r""
+
+name_given_code[2205] = "ishear_work_mmm_t"
+code_given_name["ishear_work_mmm_t"] = 2205
+tex_given_code[2205] = r""
+
+name_given_code[2205] = "ishear_work_mpp_t"
+code_given_name["ishear_work_mpp_t"] = 2205
+tex_given_code[2205] = r""
+
+name_given_code[2205] = "ishear_work_ppp_t"
+code_given_name["ishear_work_ppp_t"] = 2205
+tex_given_code[2205] = r""
+
+name_given_code[2206] = "ishear_work_p"
+code_given_name["ishear_work_p"] = 2206
+tex_given_code[2206] = r""
+
+name_given_code[2206] = "ishear_work_pmp_p"
+code_given_name["ishear_work_pmp_p"] = 2206
+tex_given_code[2206] = r""
+
+name_given_code[2206] = "ishear_work_ppm_p"
+code_given_name["ishear_work_ppm_p"] = 2206
+tex_given_code[2206] = r""
+
+name_given_code[2206] = "ishear_work_mmm_p"
+code_given_name["ishear_work_mmm_p"] = 2206
+tex_given_code[2206] = r""
+
+name_given_code[2206] = "ishear_work_mpp_p"
+code_given_name["ishear_work_mpp_p"] = 2206
+tex_given_code[2206] = r""
+
+name_given_code[2206] = "ishear_work_ppp_p"
+code_given_name["ishear_work_ppp_p"] = 2206
+tex_given_code[2206] = r""
+
+name_given_code[2207] = "iadvec_work_r"
+code_given_name["iadvec_work_r"] = 2207
+tex_given_code[2207] = r""
+
+name_given_code[2207] = "iadvec_work_pmp_r"
+code_given_name["iadvec_work_pmp_r"] = 2207
+tex_given_code[2207] = r""
+
+name_given_code[2207] = "iadvec_work_ppm_r"
+code_given_name["iadvec_work_ppm_r"] = 2207
+tex_given_code[2207] = r""
+
+name_given_code[2207] = "iadvec_work_mmm_r"
+code_given_name["iadvec_work_mmm_r"] = 2207
+tex_given_code[2207] = r""
+
+name_given_code[2207] = "iadvec_work_mpp_r"
+code_given_name["iadvec_work_mpp_r"] = 2207
+tex_given_code[2207] = r""
+
+name_given_code[2207] = "iadvec_work_ppp_r"
+code_given_name["iadvec_work_ppp_r"] = 2207
+tex_given_code[2207] = r""
+
+name_given_code[2208] = "iadvec_work_t"
+code_given_name["iadvec_work_t"] = 2208
+tex_given_code[2208] = r""
+
+name_given_code[2208] = "iadvec_work_pmp_t"
+code_given_name["iadvec_work_pmp_t"] = 2208
+tex_given_code[2208] = r""
+
+name_given_code[2208] = "iadvec_work_ppm_t"
+code_given_name["iadvec_work_ppm_t"] = 2208
+tex_given_code[2208] = r""
+
+name_given_code[2208] = "iadvec_work_mmm_t"
+code_given_name["iadvec_work_mmm_t"] = 2208
+tex_given_code[2208] = r""
+
+name_given_code[2208] = "iadvec_work_mpp_t"
+code_given_name["iadvec_work_mpp_t"] = 2208
+tex_given_code[2208] = r""
+
+name_given_code[2208] = "iadvec_work_ppp_t"
+code_given_name["iadvec_work_ppp_t"] = 2208
+tex_given_code[2208] = r""
+
+name_given_code[2209] = "iadvec_work_p"
+code_given_name["iadvec_work_p"] = 2209
+tex_given_code[2209] = r""
+
+name_given_code[2209] = "iadvec_work_pmp_p"
+code_given_name["iadvec_work_pmp_p"] = 2209
+tex_given_code[2209] = r""
+
+name_given_code[2209] = "iadvec_work_ppm_p"
+code_given_name["iadvec_work_ppm_p"] = 2209
+tex_given_code[2209] = r""
+
+name_given_code[2209] = "iadvec_work_mmm_p"
+code_given_name["iadvec_work_mmm_p"] = 2209
+tex_given_code[2209] = r""
+
+name_given_code[2209] = "iadvec_work_mpp_p"
+code_given_name["iadvec_work_mpp_p"] = 2209
+tex_given_code[2209] = r""
+
+name_given_code[2209] = "iadvec_work_ppp_p"
+code_given_name["iadvec_work_ppp_p"] = 2209
+tex_given_code[2209] = r""
+
+name_given_code[2210] = "icomp_work_r"
+code_given_name["icomp_work_r"] = 2210
+tex_given_code[2210] = r""
+
+name_given_code[2210] = "icomp_work_pmp_r"
+code_given_name["icomp_work_pmp_r"] = 2210
+tex_given_code[2210] = r""
+
+name_given_code[2210] = "icomp_work_ppm_r"
+code_given_name["icomp_work_ppm_r"] = 2210
+tex_given_code[2210] = r""
+
+name_given_code[2210] = "icomp_work_mmm_r"
+code_given_name["icomp_work_mmm_r"] = 2210
+tex_given_code[2210] = r""
+
+name_given_code[2210] = "icomp_work_ppp_r"
+code_given_name["icomp_work_ppp_r"] = 2210
+tex_given_code[2210] = r""
+
+name_given_code[2211] = "icomp_work_t"
+code_given_name["icomp_work_t"] = 2211
+tex_given_code[2211] = r""
+
+name_given_code[2211] = "icomp_work_pmp_t"
+code_given_name["icomp_work_pmp_t"] = 2211
+tex_given_code[2211] = r""
+
+name_given_code[2211] = "icomp_work_ppm_t"
+code_given_name["icomp_work_ppm_t"] = 2211
+tex_given_code[2211] = r""
+
+name_given_code[2211] = "icomp_work_mmm_t"
+code_given_name["icomp_work_mmm_t"] = 2211
+tex_given_code[2211] = r""
+
+name_given_code[2211] = "icomp_work_ppp_t"
+code_given_name["icomp_work_ppp_t"] = 2211
+tex_given_code[2211] = r""
+
+name_given_code[2212] = "icomp_work_p"
+code_given_name["icomp_work_p"] = 2212
+tex_given_code[2212] = r""
+
+name_given_code[2212] = "icomp_work_pmp_p"
+code_given_name["icomp_work_pmp_p"] = 2212
+tex_given_code[2212] = r""
+
+name_given_code[2212] = "icomp_work_ppm_p"
+code_given_name["icomp_work_ppm_p"] = 2212
+tex_given_code[2212] = r""
+
+name_given_code[2212] = "icomp_work_mmm_p"
+code_given_name["icomp_work_mmm_p"] = 2212
+tex_given_code[2212] = r""
+
+name_given_code[2212] = "icomp_work_ppp_p"
+code_given_name["icomp_work_ppp_p"] = 2212
+tex_given_code[2212] = r""
+
+name_given_code[2213] = "idiff_work_r"
+code_given_name["idiff_work_r"] = 2213
+tex_given_code[2213] = r""
+
+name_given_code[2213] = "idiff_work_mm_r"
+code_given_name["idiff_work_mm_r"] = 2213
+tex_given_code[2213] = r""
+
+name_given_code[2213] = "idiff_work_pp_r"
+code_given_name["idiff_work_pp_r"] = 2213
+tex_given_code[2213] = r""
+
+name_given_code[2214] = "idiff_work_t"
+code_given_name["idiff_work_t"] = 2214
+tex_given_code[2214] = r""
+
+name_given_code[2214] = "idiff_work_mm_t"
+code_given_name["idiff_work_mm_t"] = 2214
+tex_given_code[2214] = r""
+
+name_given_code[2214] = "idiff_work_pp_t"
+code_given_name["idiff_work_pp_t"] = 2214
+tex_given_code[2214] = r""
+
+name_given_code[2215] = "idiff_work_p"
+code_given_name["idiff_work_p"] = 2215
+tex_given_code[2215] = r""
+
+name_given_code[2215] = "idiff_work_mm_p"
+code_given_name["idiff_work_mm_p"] = 2215
+tex_given_code[2215] = r""
+
+name_given_code[2215] = "idiff_work_pp_p"
+code_given_name["idiff_work_pp_p"] = 2215
+tex_given_code[2215] = r""
 
 name_given_code[2701] = "production_buoyant_pke"
 code_given_name["production_buoyant_pke"] = 2701
@@ -3241,5 +3533,57 @@ tex_given_code[2825] = r"$\overline{\frac{\partial P}{\partial z}}$"
 name_given_code[2826] = "dpdz_p"
 code_given_name["dpdz_p"] = 2826
 tex_given_code[2826] = r"$\frac{\partial P^\prime}{\partial z}$"
+
+name_given_code[2901] = "avar_out"
+code_given_name["avar_out"] = 2901
+tex_given_code[2901] = r"$A$"
+
+name_given_code[2902] = "dadr_out"
+code_given_name["dadr_out"] = 2902
+tex_given_code[2902] = r"$\frac{\partial A}{\partial r}$"
+
+name_given_code[2903] = "d2adr2_out"
+code_given_name["d2adr2_out"] = 2903
+tex_given_code[2903] = r"$\frac{\partial^2 A}{\partial r^2}$"
+
+name_given_code[2904] = "a_hlaplace"
+code_given_name["a_hlaplace"] = 2904
+tex_given_code[2904] = r"$-\frac{\ell(\ell+1)}{r^2}A$"
+
+name_given_code[2905] = "avar_diff"
+code_given_name["avar_diff"] = 2905
+tex_given_code[2905] = r"$\eta\left( \frac{\partial^2 A}{\partial r^2} -\frac{\ell(\ell+1)}{r^2}A  \right) +\frac{\partial\eta}{\partial r}\frac{\partial A}{\partial r} $"
+
+name_given_code[2906] = "cvar_out"
+code_given_name["cvar_out"] = 2906
+tex_given_code[2906] = r"$C$"
+
+name_given_code[2907] = "dcdr_out"
+code_given_name["dcdr_out"] = 2907
+tex_given_code[2907] = r"$\frac{\partial C}{\partial r}$"
+
+name_given_code[2908] = "d2cdr2_out"
+code_given_name["d2cdr2_out"] = 2908
+tex_given_code[2908] = r"$\frac{\partial^2 C}{\partial r^2}$"
+
+name_given_code[2909] = "c_hlaplace"
+code_given_name["c_hlaplace"] = 2909
+tex_given_code[2909] = r"$-\frac{\ell(\ell+1)}{r^2}C$"
+
+name_given_code[2910] = "cvar_diff"
+code_given_name["cvar_diff"] = 2910
+tex_given_code[2910] = r"$\eta\left( \frac{\partial^2 C}{\partial r^2} -\frac{\ell(\ell+1)}{r^2}C  \right)$"
+
+name_given_code[2911] = "bdiffr_out"
+code_given_name["bdiffr_out"] = 2911
+tex_given_code[2911] = r"$B_r\,\,Diffusion$"
+
+name_given_code[2912] = "bdifft_out"
+code_given_name["bdifft_out"] = 2912
+tex_given_code[2912] = r"$B_\theta\,\,Diffusion$"
+
+name_given_code[2913] = "bdiffp_out"
+code_given_name["bdiffp_out"] = 2913
+tex_given_code[2913] = r"$B_\phi\,\,Diffusion$"
 
 
