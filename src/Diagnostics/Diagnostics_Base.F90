@@ -66,6 +66,7 @@ Module Diagnostics_Base
     include "amom_equation_codes.F"
     include "ke_equation_codes.F"
     include "me_equation_codes.F"
+
     
 
     ! We have some "known" outputs as well that allow us to verify that
@@ -89,7 +90,8 @@ Module Diagnostics_Base
 
     include "turbKE_codes.F"
     include "axial_field_codes.F"
-
+    include "linear_system_codes.F"
+    
 
     !///////////////////////////////////
     Real*8, Allocatable :: qty(:,:,:)   ! This variable holds each quantity that we output
