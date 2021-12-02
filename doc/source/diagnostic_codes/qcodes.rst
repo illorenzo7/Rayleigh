@@ -24,5 +24,6 @@ Quantity Codes
    me_equation
    turbKE
    axial_field
+   linear_system
 
 Note that we use the shorthand :math:`{\boldsymbol{\mathcal{J}}}` to denote the curl of :math:`{\boldsymbol{B}}`, namely :math:`{\boldsymbol{\mathcal{J}}\equiv\boldsymbol{\nabla}\times\boldsymbol{B}}`.   
