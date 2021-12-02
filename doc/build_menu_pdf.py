@@ -116,6 +116,7 @@ inprefs.append(['ke_equation'      ,2])
 inprefs.append(['me_equation'      ,2])
 inprefs.append(['turbKE'      ,2])
 inprefs.append(['axial_field'      ,2])
+inprefs.append(['linear_system'      ,2])
 
 
 
@@ -137,6 +138,7 @@ page_titles.append('Kinetic Energy Equation')
 page_titles.append('Magnetic Energy Equation')
 page_titles.append('Turbulent Kinetic Energy Generation')
 page_titles.append('Axial Field')
+page_titles.append('Stream Functions')
 
 
 #['mass_flux', 'vorticity_field', 'kinetic_energy', 'thermal_field', 'thermal_energy', 'magnetic_field', 'current_density', 'magnetic_energy', 'momentum_equation', 'thermal_equation']
