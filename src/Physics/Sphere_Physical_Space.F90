@@ -666,6 +666,25 @@ Contains
             wsp%p3a(:,:,:,dbpdr) = cobuffer%p3a(:,:,:,dbpdr_cb)
             wsp%p3a(:,:,:,dbpdt) = cobuffer%p3a(:,:,:, avar_cb)
             wsp%p3a(:,:,:,dbrdt) = cobuffer%p3a(:,:,:,dbrdt_cb)
+            
+            ! Potential Functions
+            wsp%p3a(:,:,:,avar_str) = cobuffer%p3a(:,:,:,avar_str_cb)            
+            wsp%p3a(:,:,:,cvar_str) = cobuffer%p3a(:,:,:,cvar_str_cb)
+            
+            wsp%p3a(:,:,:,avar_lap_str) = cobuffer%p3a(:,:,:,avar_lap_str_cb)            
+            wsp%p3a(:,:,:,cvar_lap_str) = cobuffer%p3a(:,:,:,cvar_lap_str_cb)            
+            
+            wsp%p3a(:,:,:,dadr_str) = cobuffer%p3a(:,:,:,dadr_str_cb)            
+            wsp%p3a(:,:,:,dcdr_str) = cobuffer%p3a(:,:,:,dcdr_str_cb)        
+            
+            wsp%p3a(:,:,:,d2adr2_str) = cobuffer%p3a(:,:,:,d2adr2_str_cb)            
+            wsp%p3a(:,:,:,d2cdr2_str) = cobuffer%p3a(:,:,:,d2cdr2_str_cb)         
+            
+            ! Spectral diffusion terms
+            wsp%p3a(:,:,:,bdiff_rs) = cobuffer%p3a(:,:,:,bdiff_rs_cb)            
+            wsp%p3a(:,:,:,bdiff_ts) = cobuffer%p3a(:,:,:,bdiff_ts_cb)                                     
+            wsp%p3a(:,:,:,bdiff_ps) = cobuffer%p3a(:,:,:,bdiff_ps_cb)  
+                                   
         Endif
 
         !Everything we need is in main buffer - reset the auxiliary buffer
@@ -704,6 +723,11 @@ Contains
 
             Call Compute_dbtheta_by_dtheta()
             Call Compute_dbphi_by_dtheta()
+
+            ! Spectral diffusion terms
+            Call rsintheta_div(bdiff_ts)
+            Call rsintheta_div(bdiff_ps)            
+
 
         Endif
 

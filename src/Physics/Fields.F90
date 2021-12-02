@@ -96,6 +96,23 @@ Module Fields
     !  Or maybe use "db" for diagnostics_buffer
     Integer :: dpdr_cb, dpdt_cb
     Integer :: dbrdr_cb, dbtdr_cb, dbpdr_cb, dbrdt_cb,avar_cb
+    
+    ! Streamfunction Outputs
+    Integer :: cvar_str_cb, avar_str_cb
+    Integer :: dadr_str_cb, dcdr_str_cb
+    Integer :: d2adr2_str_cb, d2cdr2_str_cb
+    Integer :: avar_lap_str_cb, cvar_lap_str_cb
+    
+    Integer :: cvar_str, avar_str
+    Integer :: dadr_str, dcdr_str
+    Integer :: d2adr2_str, d2cdr2_str
+    Integer :: avar_lap_str, cvar_lap_str   
+    
+    ! Spectral diffusion-related outputs
+    Integer :: adiff_cb, cdiff_cb, cdiff_dr_cb
+    Integer :: bdiff_rs_cb, bdiff_ts_cb, bdiff_ps_cb
+    Integer :: bdiff_rs, bdiff_ts, bdiff_ps 
+    
     !  These indices are used to reference the expanded workspace buffer during
     !  output iterations (for configurations s3a and p3a only)
     !  They are set in Diagnostics_Base.F90
@@ -314,7 +331,13 @@ Contains
         ! Config p1a
         config = 'p1a'
         Call co_indices%Add_Field(dpdr_cb,config)
-
+        If (magnetism) Then
+            ! All related to new potential and or spectral diffusion outputs
+            Call co_indices%Add_field(d2adr2_str_cb,config)
+            Call co_indices%Add_field(adiff_cb,config)     
+            Call co_indices%Add_field(cdiff_cb,config)
+            Call co_indices%Add_field(cdiff_dr_cb,config)                                   
+        Endif
 
         ! Config p2a
         config = 'p2a'
@@ -325,7 +348,25 @@ Contains
             Call co_indices%Add_Field(dbpdr_cb , config)
             Call co_indices%Add_Field(dbrdt_cb , config)
             Call co_indices%Add_Field( avar_cb , config)
+            
+            ! Potential outputs
+            Call co_indices%Add_Field(avar_str_cb,config)           
+            Call co_indices%Add_Field(cvar_str_cb,config)
+
+            Call co_indices%Add_Field(avar_lap_str_cb,config)           
+            Call co_indices%Add_Field(cvar_lap_str_cb,config)
+
+            Call co_indices%Add_Field(dadr_str_cb,config)           
+            Call co_indices%Add_Field(dcdr_str_cb,config)
+            
+            Call co_indices%Add_Field(d2cdr2_str_cb,config)       
+            
+            ! Spectral Diffusion
+            Call co_indices%Add_Field(bdiff_rs_cb,config)       
+            Call co_indices%Add_Field(bdiff_ts_cb,config)     
+            Call co_indices%Add_Field(bdiff_ps_cb,config)                                         
         Endif
+        
         cbfcount(:,:) = 0
         cbfcount(1,1) = co_indices%c1a_counter
         cbfcount(2,1) = co_indices%c2a_counter
@@ -356,6 +397,26 @@ Contains
             Call wsp_indices%Add_Field(dbrdp , config)
             Call wsp_indices%Add_Field(dbtdp , config)
             Call wsp_indices%Add_field(dbpdp , config)
+            
+            !/////////////////////////////////////////////
+            ! Potential functions
+            Call wsp_indices%Add_field(avar_str , config)            
+            Call wsp_indices%Add_field(cvar_str , config) 
+            
+            Call wsp_indices%Add_field(avar_lap_str , config)            
+            Call wsp_indices%Add_field(cvar_lap_str , config)
+            
+            Call wsp_indices%Add_field(dadr_str , config)            
+            Call wsp_indices%Add_field(dcdr_str , config)
+            
+            Call wsp_indices%Add_field(d2adr2_str , config)            
+            Call wsp_indices%Add_field(d2cdr2_str , config)                                    
+            !///////////////////////////////////////////////
+            ! Spectral B-field diffusion functions
+            Call wsp_indices%Add_field(bdiff_rs , config)            
+            Call wsp_indices%Add_field(bdiff_ts , config)  
+            Call wsp_indices%Add_field(bdiff_ps , config)                           
+            !///////////////////////////////////////////////
 
             bindex(1)  = br
             bindex(2)  = btheta

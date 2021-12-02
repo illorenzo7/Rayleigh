@@ -20,7 +20,7 @@ POBJ  = Controls.o ClockInfo.o ProblemSize.o PDE_Coefficients.o Fields.o \
         Diagnostics_Lorentz_Forces.o Diagnostics_Induction.o \
         Diagnostics_Inertial_Forces.o Diagnostics_Angular_Momentum.o \
         Diagnostics_TurbKE_Budget.o Diagnostics_KE_Flux.o Diagnostics_Poynting_Flux.o \
-        Diagnostics_Miscellaneous.o Diagnostics_Custom.o \
+        Diagnostics_Miscellaneous.o Diagnostics_Custom.o Diagnostics_Linear_System.o\
         Diagnostics_Mean_Correction.o \
         Diagnostics_Interface.o \
         Benchmarking.o Sphere_Linear_Terms.o \
