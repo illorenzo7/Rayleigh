@@ -82,11 +82,119 @@ Module Diagnostics_Base
     !//////////////////////////////////////////////////////////
     !  Custom Outputs:  range from ...
     Integer, Parameter :: custom_offset = dcheck_off+100 !2200
-    Integer, Parameter :: cross_helicity      = custom_offset + 1 ! v dot B
-    Integer, Parameter :: turb_cross_helicity = custom_offset+2
-    Integer, Parameter :: ell0_vr = custom_offset+3
-    Integer, Parameter :: ell0_tvar = custom_offset+4
-    Integer, Parameter :: ell0_dpdr = custom_offset+5
+    Integer, Parameter :: set_offset = 15 
+    Integer, Parameter :: set_offset2 = 12
+    Integer, Parameter :: set_offset3 = 9
+
+    ! total
+    Integer, Parameter :: induct_work_r     = custom_offset + 1
+    Integer, Parameter :: induct_work_t     = custom_offset + 2
+    Integer, Parameter :: induct_work_p     = custom_offset + 3
+
+    Integer, Parameter :: ishear_work_r     = custom_offset + 4
+    Integer, Parameter :: ishear_work_t     = custom_offset + 5
+    Integer, Parameter :: ishear_work_p     = custom_offset + 6
+
+    Integer, Parameter :: iadvec_work_r     = custom_offset + 7
+    Integer, Parameter :: iadvec_work_t     = custom_offset + 8
+    Integer, Parameter :: iadvec_work_p     = custom_offset + 9
+
+    Integer, Parameter :: icomp_work_r     = custom_offset + 10
+    Integer, Parameter :: icomp_work_t     = custom_offset + 11
+    Integer, Parameter :: icomp_work_p     = custom_offset + 12
+
+    Integer, Parameter :: idiff_work_r     = custom_offset + 13
+    Integer, Parameter :: idiff_work_t     = custom_offset + 14
+    Integer, Parameter :: idiff_work_p     = custom_offset + 15
+
+    !pmp
+    Integer, Parameter :: induct_work_pmp_r     = custom_offset + 1 + set_offset
+    Integer, Parameter :: induct_work_pmp_t     = custom_offset + 2 + set_offset
+    Integer, Parameter :: induct_work_pmp_p     = custom_offset + 3 + set_offset
+
+    Integer, Parameter :: ishear_work_pmp_r     = custom_offset + 4 + set_offset
+    Integer, Parameter :: ishear_work_pmp_t     = custom_offset + 5 + set_offset
+    Integer, Parameter :: ishear_work_pmp_p     = custom_offset + 6 + set_offset
+
+    Integer, Parameter :: iadvec_work_pmp_r     = custom_offset + 7 + set_offset
+    Integer, Parameter :: iadvec_work_pmp_t     = custom_offset + 8 + set_offset
+    Integer, Parameter :: iadvec_work_pmp_p     = custom_offset + 9 + set_offset
+
+    Integer, Parameter :: icomp_work_pmp_r     = custom_offset + 10 + set_offset
+    Integer, Parameter :: icomp_work_pmp_t     = custom_offset + 11 + set_offset
+    Integer, Parameter :: icomp_work_pmp_p     = custom_offset + 12 + set_offset
+
+    !ppm
+    Integer, Parameter :: induct_work_ppm_r     = custom_offset + 1 + set_offset + set_offset2
+    Integer, Parameter :: induct_work_ppm_t     = custom_offset + 2 + set_offset + set_offset2
+    Integer, Parameter :: induct_work_ppm_p     = custom_offset + 3 + set_offset + set_offset2
+
+    Integer, Parameter :: ishear_work_ppm_r     = custom_offset + 4 + set_offset + set_offset2
+    Integer, Parameter :: ishear_work_ppm_t     = custom_offset + 5 + set_offset + set_offset2
+    Integer, Parameter :: ishear_work_ppm_p     = custom_offset + 6 + set_offset + set_offset2
+
+    Integer, Parameter :: iadvec_work_ppm_r     = custom_offset + 7 + set_offset + set_offset2
+    Integer, Parameter :: iadvec_work_ppm_t     = custom_offset + 8 + set_offset + set_offset2
+    Integer, Parameter :: iadvec_work_ppm_p     = custom_offset + 9 + set_offset + set_offset2
+
+    Integer, Parameter :: icomp_work_ppm_r     = custom_offset + 10 + set_offset + set_offset2
+    Integer, Parameter :: icomp_work_ppm_t     = custom_offset + 11 + set_offset + set_offset2
+    Integer, Parameter :: icomp_work_ppm_p     = custom_offset + 12 + set_offset + set_offset2
+
+    !mmm
+    Integer, Parameter :: induct_work_mmm_r     = custom_offset + 1 + set_offset + 2*set_offset2
+    Integer, Parameter :: induct_work_mmm_t     = custom_offset + 2 + set_offset + 2*set_offset2
+    Integer, Parameter :: induct_work_mmm_p     = custom_offset + 3 + set_offset + 2*set_offset2
+
+    Integer, Parameter :: ishear_work_mmm_r     = custom_offset + 4 + set_offset + 2*set_offset2
+    Integer, Parameter :: ishear_work_mmm_t     = custom_offset + 5 + set_offset + 2*set_offset2
+    Integer, Parameter :: ishear_work_mmm_p     = custom_offset + 6 + set_offset + 2*set_offset2
+
+    Integer, Parameter :: iadvec_work_mmm_r     = custom_offset + 7 + set_offset + 2*set_offset2
+    Integer, Parameter :: iadvec_work_mmm_t     = custom_offset + 8 + set_offset + 2*set_offset2
+    Integer, Parameter :: iadvec_work_mmm_p     = custom_offset + 9 + set_offset + 2*set_offset2
+
+    Integer, Parameter :: icomp_work_mmm_r     = custom_offset + 10 + set_offset + 2*set_offset2
+    Integer, Parameter :: icomp_work_mmm_t     = custom_offset + 11 + set_offset + 2*set_offset2
+    Integer, Parameter :: icomp_work_mmm_p     = custom_offset + 12 + set_offset + 2*set_offset2
+
+    Integer, Parameter :: idiff_work_mm_r     = custom_offset + 13 + set_offset + 2*set_offset2
+    Integer, Parameter :: idiff_work_mm_t     = custom_offset + 14 + set_offset + 2*set_offset2
+    Integer, Parameter :: idiff_work_mm_p     = custom_offset + 15 + set_offset + 2*set_offset2
+
+    !mpp
+    Integer, Parameter :: induct_work_mpp_r     = custom_offset + 1 + 2*set_offset + 2*set_offset2
+    Integer, Parameter :: induct_work_mpp_t     = custom_offset + 2 + 2*set_offset + 2*set_offset2
+    Integer, Parameter :: induct_work_mpp_p     = custom_offset + 3 + 2*set_offset + 2*set_offset2
+
+    Integer, Parameter :: ishear_work_mpp_r     = custom_offset + 4 + 2*set_offset + 2*set_offset2
+    Integer, Parameter :: ishear_work_mpp_t     = custom_offset + 5 + 2*set_offset + 2*set_offset2
+    Integer, Parameter :: ishear_work_mpp_p     = custom_offset + 6 + 2*set_offset + 2*set_offset2
+
+    Integer, Parameter :: iadvec_work_mpp_r     = custom_offset + 7 + 2*set_offset + 2*set_offset2
+    Integer, Parameter :: iadvec_work_mpp_t     = custom_offset + 8 + 2*set_offset + 2*set_offset2
+    Integer, Parameter :: iadvec_work_mpp_p     = custom_offset + 9 + 2*set_offset + 2*set_offset2
+
+    !ppp
+    Integer, Parameter :: induct_work_ppp_r     = custom_offset + 1 + 2*set_offset + 2*set_offset2 + set_offset3
+    Integer, Parameter :: induct_work_ppp_t     = custom_offset + 2 + 2*set_offset + 2*set_offset2 + set_offset3
+    Integer, Parameter :: induct_work_ppp_p     = custom_offset + 3 + 2*set_offset + 2*set_offset2 + set_offset3
+
+    Integer, Parameter :: ishear_work_ppp_r     = custom_offset + 4 + 2*set_offset + 2*set_offset2 + set_offset3
+    Integer, Parameter :: ishear_work_ppp_t     = custom_offset + 5 + 2*set_offset + 2*set_offset2 + set_offset3
+    Integer, Parameter :: ishear_work_ppp_p     = custom_offset + 6 + 2*set_offset + 2*set_offset2 + set_offset3
+
+    Integer, Parameter :: iadvec_work_ppp_r     = custom_offset + 7 + 2*set_offset + 2*set_offset2 + set_offset3
+    Integer, Parameter :: iadvec_work_ppp_t     = custom_offset + 8 + 2*set_offset + 2*set_offset2 + set_offset3
+    Integer, Parameter :: iadvec_work_ppp_p     = custom_offset + 9 + 2*set_offset + 2*set_offset2 + set_offset3
+
+    Integer, Parameter :: icomp_work_ppp_r     = custom_offset + 10 + 2*set_offset + 2*set_offset2 + set_offset3
+    Integer, Parameter :: icomp_work_ppp_t     = custom_offset + 11 + 2*set_offset + 2*set_offset2 + set_offset3
+    Integer, Parameter :: icomp_work_ppp_p     = custom_offset + 12 + 2*set_offset + 2*set_offset2 + set_offset3
+
+    Integer, Parameter :: idiff_work_pp_r     = custom_offset + 13 + 2*set_offset + 2*set_offset2 + set_offset3
+    Integer, Parameter :: idiff_work_pp_t     = custom_offset + 14 + 2*set_offset + 2*set_offset2 + set_offset3
+    Integer, Parameter :: idiff_work_pp_p     = custom_offset + 15 + 2*set_offset + 2*set_offset2 + set_offset3
 
     include "turbKE_codes.F"
     include "axial_field_codes.F"
