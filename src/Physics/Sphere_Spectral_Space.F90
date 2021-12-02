@@ -38,8 +38,16 @@ Contains
 
     Subroutine Post_Solve()
         Implicit None
-        Integer :: m, i
+        Integer :: m, i, l
         Character*12 :: tstring, otstring
+        Integer, Allocatable :: llp1(:)
+        
+        Allocate(llp1(1:my_num_lm))
+        Do i = my_lm_min, my_lm_max
+            l = l_lm_values(i)
+            llp1(i-my_lm_min+1) = l*(l+1)
+        Enddo
+
 
         ! wsp%p1b is assumed to be allocated
         Call StopWatch(psolve_time)%startclock()
@@ -132,6 +140,9 @@ Contains
             ! Grab dpdr
             Call cobuffer%construct('p1a')
             cobuffer%p1a(:,:,:,dpdr_cb) = ctemp%p1b(:,:,:,2)
+            If (magnetism) Then
+                cobuffer%p1a(:,:,:,d2adr2_str_cb) = ctemp%p1b(:,:,:,5)
+            Endif
         Endif
 
 
@@ -185,15 +196,6 @@ Contains
         Call Add_Derivative(teq,tvar,0, wsp%p1b,wsp%p1a,tvar)
         Call Add_Derivative(weq,tvar,0, wsp%p1b,wsp%p1a,tvar)    ! gravity
 
-        ! Convert temperature to temperature/r (will take derivatives of this for advection)
-        ! As of April 30, 2017, we multiply by 1/r in physical space instead
-        !Do m = 1, my_num_lm
-        !    Do i = 1, 2
-        !        wsp%p1a(:,i,m,tvar) = wsp%p1a(:,i,m,tvar)/radius(:)
-        !    Enddo
-        !Enddo
-
-
         !///////////////////////////////
         !  Z Terms
 
@@ -241,11 +243,86 @@ Contains
                     wsp%p1a(:,i,m,pvar) = wsp%p1a(:,i,m,pvar)*ref%density(:)
                 Enddo
             Enddo
+            
+            If (magnetism) Then
+                ! Compute the diffusion terms  [not exactly efficient yet]
+                
+                ! First C
+                Do m = 1, my_num_lm
+                    Do i = 1, 2
+                        cobuffer%p1a(:,i,m,cdiff_cb) = &
+                            -llp1(m)*wsp%p1a(:,i,m,cvar)*OneOverRSquared(:) 
+                    Enddo                    
+                Enddo
+                
+                Do m = 1, my_num_lm
+                    Do i = 1, 2
+                        cobuffer%p1a(:,i,m,cdiff_cb) = &
+                          cobuffer%p1a(:,i,m,cdiff_cb)+wsp%p1a(:,i,m,d2cdr2)
+                    Enddo                    
+                Enddo             
+                
+                Do m = 1, my_num_lm
+                    Do i = 1, 2
+                        cobuffer%p1a(:,i,m,cdiff_cb) = &
+                          cobuffer%p1a(:,i,m,cdiff_cb)*eta(:)
+                    Enddo                    
+                Enddo              
+                
+                ! Then A
+                Do m = 1, my_num_lm
+                    Do i = 1, 2
+                        cobuffer%p1a(:,i,m,adiff_cb) = &
+                            -llp1(m)*wsp%p1a(:,i,m,avar)*OneOverRSquared(:) 
+                    Enddo                    
+                Enddo
+                
+                Do m = 1, my_num_lm
+                    Do i = 1, 2
+                        cobuffer%p1a(:,i,m,adiff_cb) = &
+                          cobuffer%p1a(:,i,m,adiff_cb)+&
+                          cobuffer%p1a(:,i,m,d2adr2_str_cb)
+                    Enddo                    
+                Enddo             
+                
+                Do m = 1, my_num_lm
+                    Do i = 1, 2
+                        cobuffer%p1a(:,i,m,adiff_cb) = &
+                          cobuffer%p1a(:,i,m,adiff_cb)*eta(:)
+                    Enddo                    
+                Enddo                     
+
+                Do m = 1, my_num_lm
+                    Do i = 1, 2
+                        cobuffer%p1a(:,i,m,adiff_cb) = &
+                          cobuffer%p1a(:,i,m,adiff_cb)+&
+                          wsp%p1a(:,i,m,dadr)*A_Diffusion_Coefs_1(:)
+                    Enddo                    
+                Enddo      
+
+                ! Finally, we need to get d_by_dr of cdiff..
+                ctemp%nf1a = 2  ! First create some workspace
+                ctemp%nf1b = 2
+                Call ctemp%construct('p1a')
+                Call ctemp%construct('p1b')
+                
+                
+                ctemp%p1a(:,:,:,1) = cobuffer%p1a(:,:,:,cdiff_cb)  ! Copy cdiff into temp buffer
+                Call gridcp%To_Spectral(ctemp%p1a,ctemp%p1b) ! transform to chebyshev space
+                Call gridcp%d_by_dr_cp(1,2,ctemp%p1b,1)  ! Take 1st derivative of cdiff in slot 1, store in slot 2
+                Call gridcp%From_Spectral(ctemp%p1b,ctemp%p1a) !transform to physical space
+                cobuffer%p1a(:,:,:,cdiff_dr_cb) = ctemp%p1a(:,:,:,2) ! copy d_cdiff_dr from slot 2 into cobuffer
+                Call ctemp%deconstruct('p1a')  ! clear out temp space
+                Call ctemp%deconstruct('p1b') 
+                
+            Endif
+            
             Call cobuffer%reform()
         Endif
         Call wsp%reform()    ! move from p1a to s2a
         Call StopWatch(ctranspose_time)%increment()
 
+        DeAllocate(llp1)
     End Subroutine Post_Solve
 
     Subroutine AdvanceTime
