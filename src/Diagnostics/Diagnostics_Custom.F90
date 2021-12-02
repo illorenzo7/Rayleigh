@@ -262,57 +262,21 @@ Contains
 
         If (compute_quantity(idiff_work_r)) Then
             DO_PSI
-                ! Del^2 {B_r}
-                del2b = DDBUFF(PSI,dbrdrdr)+Two_Over_R(r)*buffer(PSI,dbrdr)
-                del2b = del2b+OneOverRSquared(r)*(DDBUFF(PSI,dbrdtdt)+cottheta(t)*buffer(PSI,dbrdt))
-                del2b = del2b+OneOverRSquared(r)*DDBUFF(PSI,dbrdpdp)*ovs2theta(t)
-
-                !Add geometric terms to make this { Del^2{B} }_r
-                del2b = del2b-2.0d0*OneOverRsquared(r)*( &
-                        buffer(PSI,br) + &
-                        buffer(PSI,dbtdt)+buffer(PSI,btheta)*cottheta(t) + &
-                        ovstheta(t)*buffer(PSI,dbpdp) )
-
-                qty(PSI) = eta(r)*del2b
-                qty(PSI) = qty(PSI)*buffer(PSI,br)
+                qty(PSI) = buffer(PSI,bdiff_rs)*buffer(PSI,br)
             END_DO
             Call Add_Quantity(qty)
         Endif
 
         If (compute_quantity(idiff_work_t)) Then
-
             DO_PSI
-                ! Del^2 {B_theta}
-                del2b = DDBUFF(PSI,dbtdrdr)+Two_Over_R(r)*buffer(PSI,dbtdr)
-                del2b = del2b+OneOverRSquared(r)*(DDBUFF(PSI,dbtdtdt)+cottheta(t)*buffer(PSI,dbtdt))
-                del2b = del2b+OneOverRSquared(r)*DDBUFF(PSI,dbtdpdp)*ovs2theta(t)
-
-                !Add geometric terms to make this { Del^2{B} }_theta
-                del2b = del2b +OneOverRSquared(r)*( 2.0d0*buffer(PSI,dbrdt) - &
-                        ovs2theta(t)*(   buffer(PSI,btheta) + &
-                        2.0d0*costheta(t)*buffer(PSI,dbpdp) ) )
-
-                ! Add the contribution from a gradient in eta
-                qty(PSI) = eta(r)*(del2b+buffer(PSI,curlbphi)*dlneta(r))
-                qty(PSI) = qty(PSI)*buffer(PSI,btheta)
+                qty(PSI) = buffer(PSI,bdiff_ts)*buffer(PSI,btheta)
             END_DO
             Call Add_Quantity(qty)
         Endif
 
         If (compute_quantity(idiff_work_p)) Then
             DO_PSI
-                ! build Del^2{B_phi}
-                del2b = DDBUFF(PSI,dbpdrdr)+Two_Over_R(r)*buffer(PSI,dbpdr)
-                del2b = del2b+OneOverRSquared(r)*(DDBUFF(PSI,dbpdtdt)+cottheta(t)*buffer(PSI,dbpdt))
-                del2b = del2b+OneOverRSquared(r)*DDBUFF(PSI,dbpdpdp)*ovs2theta(t)
-
-                !Add geometric terms to make this { Del^2{u} }_phi
-                del2b = del2b +OneOverRSquared(r)*( 2.0d0*buffer(PSI,dbrdp)*ovstheta(t) - &
-                        ovs2theta(t)*(   buffer(PSI,bphi) - &
-                        2.0d0*costheta(t)*buffer(PSI,dbtdp) ) )
-
-                qty(PSI) = eta(r)*(del2b-buffer(PSI,curlbtheta)*dlneta(r))
-                qty(PSI) = qty(PSI)*buffer(PSI,bphi)
+                qty(PSI) = buffer(PSI,bdiff_ps)*buffer(PSI,bphi)
             END_DO
             Call Add_Quantity(qty)
         Endif
@@ -727,57 +691,21 @@ Contains
 
         If (compute_quantity(idiff_work_mm_r)) Then
             DO_PSI
-                ! Del^2 {B_r}
-                del2b = d2_m0(PSI2,dbrdrdr)+Two_Over_R(r)*m0_values(PSI2,dbrdr)
-                del2b = del2b+OneOverRSquared(r)*(d2_m0(PSI2,dbrdtdt)+cottheta(t)*m0_values(PSI2,dbrdt))
-                del2b = del2b+OneOverRSquared(r)*d2_m0(PSI2,dbrdpdp)*ovs2theta(t)
-
-                !Add geometric terms to make this { Del^2{B} }_r
-                del2b = del2b-2.0d0*OneOverRsquared(r)*( &
-                        m0_values(PSI2,br) + &
-                        m0_values(PSI2,dbtdt)+m0_values(PSI2,btheta)*cottheta(t) + &
-                        ovstheta(t)*m0_values(PSI2,dbpdp) )
-
-                qty(PSI) = eta(r)*del2b
-                qty(PSI) = qty(PSI)*m0_values(PSI2,br)
+                qty(PSI) = m0_values(PSI2,bdiff_rs)*m0_values(PSI2,br)
             END_DO
             Call Add_Quantity(qty)
         Endif
 
         If (compute_quantity(idiff_work_mm_t)) Then
-
             DO_PSI
-                ! Del^2 {B_theta}
-                del2b = d2_m0(PSI2,dbtdrdr)+Two_Over_R(r)*m0_values(PSI2,dbtdr)
-                del2b = del2b+OneOverRSquared(r)*(d2_m0(PSI2,dbtdtdt)+cottheta(t)*m0_values(PSI2,dbtdt))
-                del2b = del2b+OneOverRSquared(r)*d2_m0(PSI2,dbtdpdp)*ovs2theta(t)
-
-                !Add geometric terms to make this { Del^2{B} }_theta
-                del2b = del2b +OneOverRSquared(r)*( 2.0d0*m0_values(PSI2,dbrdt) - &
-                        ovs2theta(t)*(   m0_values(PSI2,btheta) + &
-                        2.0d0*costheta(t)*m0_values(PSI2,dbpdp) ) )
-
-                ! Add the contribution from a gradient in eta
-                qty(PSI) = eta(r)*(del2b+m0_values(PSI2,curlbphi)*dlneta(r))
-                qty(PSI) = qty(PSI)*m0_values(PSI2,btheta)
+                qty(PSI) = m0_values(PSI2,bdiff_ts)*m0_values(PSI2,btheta)
             END_DO
             Call Add_Quantity(qty)
         Endif
 
         If (compute_quantity(idiff_work_mm_p)) Then
             DO_PSI
-                ! build Del^2{B_phi}
-                del2b = d2_m0(PSI2,dbpdrdr)+Two_Over_R(r)*m0_values(PSI2,dbpdr)
-                del2b = del2b+OneOverRSquared(r)*(d2_m0(PSI2,dbpdtdt)+cottheta(t)*m0_values(PSI2,dbpdt))
-                del2b = del2b+OneOverRSquared(r)*d2_m0(PSI2,dbpdpdp)*ovs2theta(t)
-
-                !Add geometric terms to make this { Del^2{u} }_phi
-                del2b = del2b +OneOverRSquared(r)*( 2.0d0*m0_values(PSI2,dbrdp)*ovstheta(t) - &
-                        ovs2theta(t)*(   m0_values(PSI2,bphi) - &
-                        2.0d0*costheta(t)*m0_values(PSI2,dbtdp) ) )
-
-                qty(PSI) = eta(r)*(del2b-m0_values(PSI2,curlbtheta)*dlneta(r))
-                qty(PSI) = qty(PSI)*m0_values(PSI2,bphi)
+                qty(PSI) = m0_values(PSI2,bdiff_ps)*m0_values(PSI2,bphi)
             END_DO
             Call Add_Quantity(qty)
         Endif
@@ -1026,19 +954,7 @@ Contains
 
         If (compute_quantity(idiff_work_pp_r)) Then
             DO_PSI
-                ! Del^2 {B_r}
-                del2b = d2_fbuffer(PSI,dbrdrdr)+Two_Over_R(r)*fbuffer(PSI,dbrdr)
-                del2b = del2b+OneOverRSquared(r)*(d2_fbuffer(PSI,dbrdtdt)+cottheta(t)*fbuffer(PSI,dbrdt))
-                del2b = del2b+OneOverRSquared(r)*d2_fbuffer(PSI,dbrdpdp)*ovs2theta(t)
-
-                !Add geometric terms to make this { Del^2{B} }_r
-                del2b = del2b-2.0d0*OneOverRsquared(r)*( &
-                        fbuffer(PSI,br) + &
-                        fbuffer(PSI,dbtdt)+fbuffer(PSI,btheta)*cottheta(t) + &
-                        ovstheta(t)*fbuffer(PSI,dbpdp) )
-
-                qty(PSI) = eta(r)*del2b
-                qty(PSI) = qty(PSI)*fbuffer(PSI,br)
+                qty(PSI) = fbuffer(PSI,bdiff_rs)*fbuffer(PSI,br)
             END_DO
             Call Add_Quantity(qty)
         Endif
@@ -1046,37 +962,14 @@ Contains
         If (compute_quantity(idiff_work_pp_t)) Then
 
             DO_PSI
-                ! Del^2 {B_theta}
-                del2b = d2_fbuffer(PSI,dbtdrdr)+Two_Over_R(r)*fbuffer(PSI,dbtdr)
-                del2b = del2b+OneOverRSquared(r)*(d2_fbuffer(PSI,dbtdtdt)+cottheta(t)*fbuffer(PSI,dbtdt))
-                del2b = del2b+OneOverRSquared(r)*d2_fbuffer(PSI,dbtdpdp)*ovs2theta(t)
-
-                !Add geometric terms to make this { Del^2{B} }_theta
-                del2b = del2b +OneOverRSquared(r)*( 2.0d0*fbuffer(PSI,dbrdt) - &
-                        ovs2theta(t)*(   fbuffer(PSI,btheta) + &
-                        2.0d0*costheta(t)*fbuffer(PSI,dbpdp) ) )
-
-                ! Add the contribution from a gradient in eta
-                qty(PSI) = eta(r)*(del2b+fbuffer(PSI,curlbphi)*dlneta(r))
-                qty(PSI) = qty(PSI)*fbuffer(PSI,btheta)
+                qty(PSI) = fbuffer(PSI,bdiff_ts)*fbuffer(PSI,btheta)
             END_DO
             Call Add_Quantity(qty)
         Endif
 
         If (compute_quantity(idiff_work_pp_p)) Then
             DO_PSI
-                ! build Del^2{B_phi}
-                del2b = d2_fbuffer(PSI,dbpdrdr)+Two_Over_R(r)*fbuffer(PSI,dbpdr)
-                del2b = del2b+OneOverRSquared(r)*(d2_fbuffer(PSI,dbpdtdt)+cottheta(t)*fbuffer(PSI,dbpdt))
-                del2b = del2b+OneOverRSquared(r)*d2_fbuffer(PSI,dbpdpdp)*ovs2theta(t)
-
-                !Add geometric terms to make this { Del^2{u} }_phi
-                del2b = del2b +OneOverRSquared(r)*( 2.0d0*fbuffer(PSI,dbrdp)*ovstheta(t) - &
-                        ovs2theta(t)*(   fbuffer(PSI,bphi) - &
-                        2.0d0*costheta(t)*fbuffer(PSI,dbtdp) ) )
-
-                qty(PSI) = eta(r)*(del2b-fbuffer(PSI,curlbtheta)*dlneta(r))
-                qty(PSI) = qty(PSI)*fbuffer(PSI,bphi)
+                qty(PSI) = fbuffer(PSI,bdiff_ps)*fbuffer(PSI,bphi)
             END_DO
             Call Add_Quantity(qty)
         Endif
