@@ -70,8 +70,11 @@ Contains
         Call Allocate_rlm_Field(ftemp1)
         Call Allocate_rlm_Field(ftemp2)
 
-        If (output_iteration) Call Hybrid_Output_Initial()
-
+        If (output_iteration) Then
+            Call Stream_Save()
+            Call Compute_Bdiff_Spec()
+            Call Hybrid_Output_Initial()
+        Endif
         Call Velocity_Components()
         Call Velocity_Derivatives()
         Call d_by_dtheta(wsp%s2a,tvar,dtdt)
@@ -413,6 +416,45 @@ Contains
         END_DO
     End Subroutine Compute_BandCurlB
 
+    Subroutine Compute_Bdiff_Spec()
+        Implicit None
+        Integer ::  m, mp,  r, imi
+        ! variables to define:
+        ! adiff_cb, cdiff_cb, cdiff_dr_cb
+        ! bdiff_rs_cb   -- r = radial, t = theta, p = phi, s = spectral
+        ! bdiff_ts_cb
+        ! bdiff_ps_cb
+        
+        If (magnetism) Then
+         If (my_rank .eq. 0) Write(6,*)'computing spectral diffusion terms'
+
+        ! R-hat  (Br_diff)
+        DO_IDX2
+            ASBUFFA(IDX2,bdiff_rs_cb) = l_l_plus1(m:l_max)*ASBUFFA(IDX2,cdiff_cb)* &
+                                        OneOverRSquared(r)
+        END_DO
+
+        ! Theta-hat
+        ! We compute r sintheta x Btheta_diff
+        Call d_by_dtheta(cobuffer%s2a,cdiff_dr_cb,ftemp1)
+        Call d_by_dphi(cobuffer%s2a,adiff_cb,    ftemp2)
+
+        DO_IDX2
+            ASBUFFA(IDX2,bdiff_ts_cb) = ftemp1(mp)%data(IDX2)+ftemp2(mp)%data(IDX2)
+        END_DO
+
+        ! Phi-hat
+        ! Now r sintheta x Bphi_diff
+        Call   d_by_dphi(cobuffer%s2a,cdiff_dr_cb,    ftemp1)
+        Call d_by_dtheta(cobuffer%s2a,adiff_cb,ftemp2)
+
+        DO_IDX2
+            ASBUFFA(IDX2,bdiff_ps_cb) = ftemp1(mp)%data(IDX2)-ftemp2(mp)%data(IDX2)
+        END_DO
+        Endif
+    End Subroutine Compute_Bdiff_spec
+
+
     Subroutine Bfield_Derivatives()
         Implicit None
         Integer :: r, m, mp, imi
@@ -510,6 +552,52 @@ Contains
 
         Endif
     End Subroutine Hybrid_Output_Initial
+
+
+    Subroutine Stream_Save()
+        Implicit None
+        Integer :: r, m, mp, imi 
+        
+        If (magnetism) Then
+            !If (my_rank .eq. 0) Write(6,*)'loading streamfunctions into buffer'
+            ! The Potential functions
+            DO_IDX2
+                ASBUFFA(IDX2,avar_str_cb) = SBUFFA(IDX2,avar)            
+            END_DO     
+            DO_IDX2
+                ASBUFFA(IDX2,cvar_str_cb) = SBUFFA(IDX2,cvar)            
+            END_DO                 
+
+            ! Horizontal Laplacian Terms
+            DO_IDX2
+                ASBUFFA(IDX2,avar_lap_str_cb) = -l_l_plus1(m:l_max)* &
+                                        SBUFFA(IDX2,avar)*OneOverRSquared(r)            
+            END_DO     
+            DO_IDX2
+                ASBUFFA(IDX2,cvar_lap_str_cb) = -l_l_plus1(m:l_max)* &
+                                        SBUFFA(IDX2,cvar)*OneOverRSquared(r)            
+            END_DO     
+            
+            ! First Radial Derivatives
+            DO_IDX2
+                ASBUFFA(IDX2,dadr_str_cb) = SBUFFA(IDX2,dadr)
+            END_DO
+            
+            DO_IDX2
+                ASBUFFA(IDX2,dcdr_str_cb) = SBUFFA(IDX2,dcdr)
+            END_DO
+            
+            ! Second Radial Derivatives
+            ! d2adr2 was saved to the buffer in spectral space
+            DO_IDX2
+                ASBUFFA(IDX2,d2cdr2_str_cb)  = SBUFFA(IDX2,d2cdr2)
+            END_DO
+                        
+
+        Endif
+    
+    End Subroutine Stream_Save
+
 
     Subroutine Hybrid_Output_Final()
         Implicit None

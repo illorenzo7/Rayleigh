@@ -60,6 +60,8 @@ Module Diagnostics_Interface
     Use Diagnostics_Miscellaneous
 
     Use Diagnostics_Custom
+    
+    Use Diagnostics_Linear_System
 
     Implicit None
 
@@ -239,7 +241,11 @@ Contains
                     Call Compute_Magnetic_Energy(buffer)
                     Call Compute_Poynting_Flux(buffer)
                     Call Custom_MHD_Diagnostics(buffer)
+                    Call Compute_Linear_System_Mag(buffer)
                 Endif
+                
+
+                
                 If (pass_num .eq. 1) Call Finalize_Averages()
             Enddo
 
