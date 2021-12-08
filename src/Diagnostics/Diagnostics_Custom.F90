@@ -129,6 +129,13 @@ Contains
 
         !shear: B dot grad v
         Call ADotGradB(buffer,buffer,cbuffer,aindices = bindex, bindices=vindex)
+        ! Remove canceling curvature terms
+        DO_PSI
+            cbuffer(PSI,1) = cbuffer(PSI,1) + (buffer(PSI,vtheta)*buffer(PSI,btheta) +&
+               &buffer(PSI,vphi)*buffer(PSI,bphi))/radius(r)
+            cbuffer(PSI,2) = cbuffer(PSI,2) + (buffer(PSI,vphi)*buffer(PSI,bphi))*cottheta(t)/radius(r)
+        END_DO
+
 
         If (compute_quantity(ishear_work_r)) Then
             DO_PSI
@@ -171,6 +178,12 @@ Contains
 
         ! advection: -v dot grad B
         Call ADotGradB(buffer,buffer,cbuffer,aindices = vindex, bindices=bindex)
+        ! Remove canceling curvature terms
+        DO_PSI
+            cbuffer(PSI,1) = cbuffer(PSI,1) + (buffer(PSI,vtheta)*buffer(PSI,btheta) +&
+               &buffer(PSI,vphi)*buffer(PSI,bphi))/radius(r)
+            cbuffer(PSI,2) = cbuffer(PSI,2) + (buffer(PSI,vphi)*buffer(PSI,bphi))*cottheta(t)/radius(r)
+        END_DO
 
         If (compute_quantity(iadvec_work_r)) Then
             DO_PSI
@@ -287,6 +300,12 @@ Contains
 
         !shear: B dot grad v
         Call ADotGradB(fbuffer,m0_values,cbuffer,aindices = bindex, bindices=vindex)
+        ! Remove canceling curvature terms
+        DO_PSI
+            cbuffer(PSI,1) = cbuffer(PSI,1) + (m0_values(PSI2,vtheta)*fbuffer(PSI,btheta) +&
+               &m0_values(PSI2,vphi)*fbuffer(PSI,bphi))/radius(r)
+            cbuffer(PSI,2) = cbuffer(PSI,2) + (m0_values(PSI2,vphi)*fbuffer(PSI,bphi))*cottheta(t)/radius(r)
+        END_DO
 
         If (compute_quantity(ishear_work_pmp_r)) Then
             DO_PSI
@@ -329,6 +348,12 @@ Contains
 
         ! advection: -v dot grad B
         Call ADotGradB(m0_values,fbuffer,cbuffer,aindices = vindex, bindices=bindex)
+        ! Remove canceling curvature terms
+        DO_PSI
+            cbuffer(PSI,1) = cbuffer(PSI,1) + (m0_values(PSI2,vtheta)*fbuffer(PSI,btheta) +&
+               &m0_values(PSI2,vphi)*fbuffer(PSI,bphi))/radius(r)
+            cbuffer(PSI,2) = cbuffer(PSI,2) + (m0_values(PSI2,vphi)*fbuffer(PSI,bphi))*cottheta(t)/radius(r)
+        END_DO
 
         If (compute_quantity(iadvec_work_pmp_r)) Then
             DO_PSI
@@ -424,6 +449,12 @@ Contains
 
         !shear: B dot grad v
         Call ADotGradB(m0_values,fbuffer,cbuffer,aindices = bindex, bindices=vindex)
+        ! Remove canceling curvature terms
+        DO_PSI
+            cbuffer(PSI,1) = cbuffer(PSI,1) + (m0_values(PSI2,btheta)*fbuffer(PSI,vtheta) +&
+               &m0_values(PSI2,bphi)*fbuffer(PSI,vphi))/radius(r)
+            cbuffer(PSI,2) = cbuffer(PSI,2) + (m0_values(PSI2,bphi)*fbuffer(PSI,vphi))*cottheta(t)/radius(r)
+        END_DO
 
         If (compute_quantity(ishear_work_ppm_r)) Then
             DO_PSI
@@ -466,6 +497,12 @@ Contains
 
         ! advection: -v' dot grad <B>
         Call ADotGradB(fbuffer,m0_values,cbuffer,aindices = vindex, bindices=bindex)
+        ! Remove canceling curvature terms
+        DO_PSI
+            cbuffer(PSI,1) = cbuffer(PSI,1) + (m0_values(PSI2,btheta)*fbuffer(PSI,vtheta) +&
+               &m0_values(PSI2,bphi)*fbuffer(PSI,vphi))/radius(r)
+            cbuffer(PSI,2) = cbuffer(PSI,2) + (m0_values(PSI2,bphi)*fbuffer(PSI,vphi))*cottheta(t)/radius(r)
+        END_DO
 
         If (compute_quantity(iadvec_work_ppm_r)) Then
             DO_PSI
@@ -558,6 +595,12 @@ Contains
 
         !shear: <B> dot grad <v>
         Call ADotGradB(m0_values,m0_values,cbuffer,aindices = bindex, bindices=vindex)
+        ! Remove canceling curvature terms
+        DO_PSI
+            cbuffer(PSI,1) = cbuffer(PSI,1) + (m0_values(PSI2,btheta)*m0_values(PSI2,vtheta) +&
+               &m0_values(PSI2,bphi)*m0_values(PSI2,vphi))/radius(r)
+            cbuffer(PSI,2) = cbuffer(PSI,2) + (m0_values(PSI2,bphi)*m0_values(PSI2,vphi))*cottheta(t)/radius(r)
+        END_DO
 
         If (compute_quantity(ishear_work_mmm_r)) Then
             DO_PSI
@@ -600,6 +643,12 @@ Contains
 
         ! advection: -v dot grad B
         Call ADotGradB(m0_values,m0_values,cbuffer,aindices = vindex, bindices=bindex)
+        ! Remove canceling curvature terms
+        DO_PSI
+            cbuffer(PSI,1) = cbuffer(PSI,1) + (m0_values(PSI2,btheta)*m0_values(PSI2,vtheta) +&
+               &m0_values(PSI2,bphi)*m0_values(PSI2,vphi))/radius(r)
+            cbuffer(PSI,2) = cbuffer(PSI,2) + (m0_values(PSI2,bphi)*m0_values(PSI2,vphi))*cottheta(t)/radius(r)
+        END_DO
 
         If (compute_quantity(iadvec_work_mmm_r)) Then
             DO_PSI
@@ -716,6 +765,12 @@ Contains
 
         !shear: B' dot grad v'
         Call ADotGradB(fbuffer,fbuffer,cbuffer,aindices = bindex, bindices=vindex)
+        ! Remove canceling curvature terms
+        DO_PSI
+            cbuffer(PSI,1) = cbuffer(PSI,1) + (fbuffer(PSI,vtheta)*fbuffer(PSI,btheta) +&
+               &fbuffer(PSI,vphi)*fbuffer(PSI,bphi))/radius(r)
+            cbuffer(PSI,2) = cbuffer(PSI,2) + (fbuffer(PSI,vphi)*fbuffer(PSI,bphi))*cottheta(t)/radius(r)
+        END_DO
 
         If (compute_quantity(ishear_work_ppp_r)) Then
             DO_PSI
@@ -797,6 +852,12 @@ Contains
 
         ! advection: -v dot grad B
         Call ADotGradB(fbuffer,fbuffer,cbuffer,aindices = vindex, bindices=bindex)
+        ! Remove canceling curvature terms
+        DO_PSI
+            cbuffer(PSI,1) = cbuffer(PSI,1) + (fbuffer(PSI,vtheta)*fbuffer(PSI,btheta) +&
+               &fbuffer(PSI,vphi)*fbuffer(PSI,bphi))/radius(r)
+            cbuffer(PSI,2) = cbuffer(PSI,2) + (fbuffer(PSI,vphi)*fbuffer(PSI,bphi))*cottheta(t)/radius(r)
+        END_DO
 
         If (compute_quantity(iadvec_work_ppp_r)) Then
             DO_PSI
