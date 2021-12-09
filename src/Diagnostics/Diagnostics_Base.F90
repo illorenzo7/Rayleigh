@@ -223,22 +223,26 @@ Module Diagnostics_Base
     Integer, Parameter :: ialtadvec_work_r1     = custom_offset + 200 + 7
     Integer, Parameter :: ialtadvec_work_r2     = custom_offset + 200 + 8
     Integer, Parameter :: ialtadvec_work_r3     = custom_offset + 200 + 9
-    Integer, Parameter :: ialtadvec_work_r4     = custom_offset + 200 + 10
+    Integer, Parameter :: ialtadvec_work_r4     = custom_offset + 200 + 10 ! 1 curv term
+
     Integer, Parameter :: ialtadvec_work_t1     = custom_offset + 200 + 11
     Integer, Parameter :: ialtadvec_work_t2     = custom_offset + 200 + 12
     Integer, Parameter :: ialtadvec_work_t3     = custom_offset + 200 + 13
     Integer, Parameter :: ialtadvec_work_t4     = custom_offset + 200 + 14
-    Integer, Parameter :: ialtadvec_work_p1     = custom_offset + 200 + 15
-    Integer, Parameter :: ialtadvec_work_p2     = custom_offset + 200 + 16
-    Integer, Parameter :: ialtadvec_work_p3     = custom_offset + 200 + 17
-    Integer, Parameter :: ialtadvec_work_p4     = custom_offset + 200 + 18
+    Integer, Parameter :: ialtadvec_work_t5     = custom_offset + 200 + 15 ! 2 curv terms
 
-    Integer, Parameter :: ialtcomp_work_r1     = custom_offset + 200 + 19
-    Integer, Parameter :: ialtcomp_work_r2     = custom_offset + 200 + 20
-    Integer, Parameter :: ialtcomp_work_t1     = custom_offset + 200 + 21
-    Integer, Parameter :: ialtcomp_work_t2     = custom_offset + 200 + 22
-    Integer, Parameter :: ialtcomp_work_p1     = custom_offset + 200 + 23
-    Integer, Parameter :: ialtcomp_work_p2     = custom_offset + 200 + 24
+    Integer, Parameter :: ialtadvec_work_p1     = custom_offset + 200 + 16
+    Integer, Parameter :: ialtadvec_work_p2     = custom_offset + 200 + 17
+    Integer, Parameter :: ialtadvec_work_p3     = custom_offset + 200 + 18
+    Integer, Parameter :: ialtadvec_work_p4     = custom_offset + 200 + 19
+    Integer, Parameter :: ialtadvec_work_p5     = custom_offset + 200 + 20 ! 2 curv terms
+
+    Integer, Parameter :: ialtcomp_work_r1     = custom_offset + 200 + 21
+    Integer, Parameter :: ialtcomp_work_r2     = custom_offset + 200 + 22
+    Integer, Parameter :: ialtcomp_work_t1     = custom_offset + 200 + 23
+    Integer, Parameter :: ialtcomp_work_t2     = custom_offset + 200 + 24
+    Integer, Parameter :: ialtcomp_work_p1     = custom_offset + 200 + 25
+    Integer, Parameter :: ialtcomp_work_p2     = custom_offset + 200 + 26
 
     include "turbKE_codes.F"
     include "axial_field_codes.F"
