@@ -103,7 +103,7 @@ Contains
         Implicit None
         Real*8, Intent(InOut) :: buffer(1:,my_r%min:,my_theta%min:,1:)
         Integer :: r,k, t
-        Integer :: jmax
+        Integer :: j, jmax
 
         !=============================================
         ! Edit Below This Line (you may define your own variables below)
@@ -1073,7 +1073,23 @@ Contains
         !   Part 1.    Terms resulting full v cross full B.
         ! /////////////////////////////////////////////////
 
-        !ALTERNATE shear (use cbuffer for this --- it's already there)
+        ! total production (triple product)
+        DO_PSI
+            Do j=1, jmax
+                buff1(PSI,j) = buffer(PSI,j)
+                buff2(PSI,j) = buffer(PSI,j)
+                buff3(PSI,j) = buffer(PSI,j)
+            Enddo
+        END_DO
+
+        ! Get B field
+        DO_PSI
+            bfieldtmp(PSI,1) = buff3(PSI,br)
+            bfieldtmp(PSI,2) = buff3(PSI,btheta)
+            bfieldtmp(PSI,3) = buff3(PSI,bphi)
+        END_DO
+
+        ! Get Shear
         DO_PSI
             cbuffer(PSI,1) = buffer(PSI,btheta)*buffer(PSI,dvrdt)/radius(r) +&
                 &buffer(PSI,bphi)*buffer(PSI,dvrdp)/radius(r)/sintheta(t)
