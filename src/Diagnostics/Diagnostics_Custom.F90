@@ -103,6 +103,7 @@ Contains
         Implicit None
         Real*8, Intent(InOut) :: buffer(1:,my_r%min:,my_theta%min:,1:)
         Integer :: r,k, t
+        Integer :: jmax
 
         !=============================================
         ! Edit Below This Line (you may define your own variables below)
@@ -110,8 +111,17 @@ Contains
         Real*8, Allocatable :: ind_work_r(:,:,:), ind_work_t(:,:,:), ind_work_p(:,:,:)
         Real*8, Allocatable :: ind_work_r2(:,:,:), ind_work_t2(:,:,:), ind_work_p2(:,:,:)
         Real*8, Allocatable :: cbuffer(:,:,:,:)
+        Real*8, Allocatable :: buff1(:,:,:,:),buff2(:,:,:,:),buff3(:,:,:,:)
+        Real*8, Allocatable :: inducttmp(:,:,:,:), sheartmp(:,:,:,:), advtmp(:,:,:,:), comptmp(:,:,:,:), bfieldtmp(:,:,:,:)
+        Real*8, Allocatable :: sheartmp1(:,:,:,:), sheartmp2(:,:,:,:)
+        Real*8, Allocatable :: advtmp1(:,:,:,:), advtmp2(:,:,:,:), advtmp3(:,:,:,:), advtmp4(:,:,:,:), advtmp5(:,:,:,:)
+        Real*8, Allocatable :: comptmp1(:,:,:,:), comptmp2(:,:,:,:)
+
+
         Real*8 :: del2b
         Real*8, Allocatable :: ovstheta(:), ovs2theta(:)
+
+        jmax = size(buffer,4)
         Allocate(cbuffer(1:n_phi,my_r%min:my_r%max,my_theta%min:my_theta%max,1:3))
         Allocate(ind_work_r(1:n_phi,my_r%min:my_r%max,my_theta%min:my_theta%max))
         Allocate(ind_work_t(1:n_phi,my_r%min:my_r%max,my_theta%min:my_theta%max))
@@ -120,6 +130,29 @@ Contains
         Allocate(ind_work_t2(1:n_phi,my_r%min:my_r%max,my_theta%min:my_theta%max))
         Allocate(ind_work_p2(1:n_phi,my_r%min:my_r%max,my_theta%min:my_theta%max))
         Allocate(ovstheta(1:N_theta), ovs2theta(1:N_theta)) ! 1/sin; 1/sin^2
+
+        Allocate(buff1(1:n_phi,my_r%min:my_r%max,my_theta%min:my_theta%max,1:jmax))
+        Allocate(buff2(1:n_phi,my_r%min:my_r%max,my_theta%min:my_theta%max,1:jmax))
+        Allocate(buff3(1:n_phi,my_r%min:my_r%max,my_theta%min:my_theta%max,1:jmax))
+
+        Allocate(inducttmp(1:n_phi,my_r%min:my_r%max,my_theta%min:my_theta%max,1:3))
+        Allocate(sheartmp(1:n_phi,my_r%min:my_r%max,my_theta%min:my_theta%max,1:3))
+        Allocate(advtmp(1:n_phi,my_r%min:my_r%max,my_theta%min:my_theta%max,1:3))
+        Allocate(comptmp(1:n_phi,my_r%min:my_r%max,my_theta%min:my_theta%max,1:3))
+        Allocate(bfieldtmp(1:n_phi,my_r%min:my_r%max,my_theta%min:my_theta%max,1:3))
+
+        Allocate(sheartmp1(1:n_phi,my_r%min:my_r%max,my_theta%min:my_theta%max,1:3))
+        Allocate(sheartmp2(1:n_phi,my_r%min:my_r%max,my_theta%min:my_theta%max,1:3))
+
+        Allocate(advtmp1(1:n_phi,my_r%min:my_r%max,my_theta%min:my_theta%max,1:3))
+        Allocate(advtmp2(1:n_phi,my_r%min:my_r%max,my_theta%min:my_theta%max,1:3))
+        Allocate(advtmp3(1:n_phi,my_r%min:my_r%max,my_theta%min:my_theta%max,1:3))
+        Allocate(advtmp4(1:n_phi,my_r%min:my_r%max,my_theta%min:my_theta%max,1:3))
+        Allocate(advtmp5(1:n_phi,my_r%min:my_r%max,my_theta%min:my_theta%max,1:3))
+
+        Allocate(comptmp1(1:n_phi,my_r%min:my_r%max,my_theta%min:my_theta%max,1:3))
+        Allocate(comptmp2(1:n_phi,my_r%min:my_r%max,my_theta%min:my_theta%max,1:3))
+
         ovstheta = 1.0d0/sintheta
         ovs2theta = 1.0d0/sin2theta
 
@@ -1204,7 +1237,27 @@ Contains
         DeAllocate(ind_work_p2)
         DeAllocate(cbuffer)
 
+        DeAllocate(buff1)
+        DeAllocate(buff2)
+        DeAllocate(buff3)
 
+        DeAllocate(inducttmp)
+        DeAllocate(sheartmp)
+        DeAllocate(advtmp)
+        DeAllocate(comptmp)
+        DeAllocate(bfieldtmp)
+
+        DeAllocate(sheartmp1)
+        DeAllocate(sheartmp2)
+
+        DeAllocate(advtmp1)
+        DeAllocate(advtmp2)
+        DeAllocate(advtmp3)
+        DeAllocate(advtmp4)
+        DeAllocate(advtmp5)
+
+        DeAllocate(comptmp1)
+        DeAllocate(comptmp2)
 
         ! Edit Above This Line
         !=============================================
