@@ -140,8 +140,7 @@ Module Diagnostics_Base
     Integer, Parameter :: icomp_work_ppm_r     = custom_offset + 10 + set_offset + set_offset2
     Integer, Parameter :: icomp_work_ppm_t     = custom_offset + 11 + set_offset + set_offset2
     Integer, Parameter :: icomp_work_ppm_p     = custom_offset + 12 + set_offset + set_offset2
-
-    !mmm
+!mmm
     Integer, Parameter :: induct_work_mmm_r     = custom_offset + 1 + set_offset + 2*set_offset2
     Integer, Parameter :: induct_work_mmm_t     = custom_offset + 2 + set_offset + 2*set_offset2
     Integer, Parameter :: induct_work_mmm_p     = custom_offset + 3 + set_offset + 2*set_offset2
@@ -195,6 +194,23 @@ Module Diagnostics_Base
     Integer, Parameter :: idiff_work_pp_r     = custom_offset + 13 + 2*set_offset + 2*set_offset2 + set_offset3
     Integer, Parameter :: idiff_work_pp_t     = custom_offset + 14 + 2*set_offset + 2*set_offset2 + set_offset3
     Integer, Parameter :: idiff_work_pp_p     = custom_offset + 15 + 2*set_offset + 2*set_offset2 + set_offset3
+
+    ! ALTERNATE induction
+    Integer, Parameter :: inductalt_work_r     = custom_offset + 100 + 1
+    Integer, Parameter :: inductalt_work_t     = custom_offset + 100 + 2
+    Integer, Parameter :: inductalt_work_p     = custom_offset + 100 + 3
+
+    Integer, Parameter :: ialtshear_work_r     = custom_offset + 100 + 4
+    Integer, Parameter :: ialtshear_work_t     = custom_offset + 100 + 5
+    Integer, Parameter :: ialtshear_work_p     = custom_offset + 100 + 6
+
+    Integer, Parameter :: ialtadvec_work_r     = custom_offset + 100 + 7
+    Integer, Parameter :: ialtadvec_work_t     = custom_offset + 100 + 8
+    Integer, Parameter :: ialtadvec_work_p     = custom_offset + 100 + 9
+
+    Integer, Parameter :: ialtcomp_work_r     = custom_offset + 100 + 10
+    Integer, Parameter :: ialtcomp_work_t     = custom_offset + 100 + 11
+    Integer, Parameter :: ialtcomp_work_p     = custom_offset + 100 + 12
 
     include "turbKE_codes.F"
     include "axial_field_codes.F"
