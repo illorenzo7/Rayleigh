@@ -1044,11 +1044,10 @@ Contains
         DO_PSI
             cbuffer(PSI,1) = buffer(PSI,btheta)*buffer(PSI,dvrdt)/radius(r) +&
                 &buffer(PSI,bphi)*buffer(PSI,dvrdp)/radius(r)/sintheta(t)
-            cbuffer(PSI,2) = buffer(PSI,br)*buffer(PSI,dvtdr) - buffer(PSI,br)*buffer(PSI,vtheta)/radius(r) +&
+            cbuffer(PSI,2) = buffer(PSI,br)*(buffer(PSI,dvtdr) - buffer(PSI,vtheta)/radius(r)) +&
                 &buffer(PSI,bphi)*buffer(PSI,dvtdp)/radius(r)/sintheta(t)
-            cbuffer(PSI,3) = buffer(PSI,br)*buffer(PSI,dvpdr) - buffer(PSI,br)*buffer(PSI,vphi)/radius(r) +&
-                &buffer(PSI,btheta)*buffer(PSI,dvpdt)/radius(r) -&
-                &buffer(PSI,vphi)*buffer(PSI,btheta)*cottheta(t)/radius(r)
+            cbuffer(PSI,3) = buffer(PSI,br)*(buffer(PSI,dvpdr) - buffer(PSI,vphi)/radius(r)) +&
+                &buffer(PSI,btheta)*(buffer(PSI,dvpdt) - buffer(PSI,vphi)*cottheta(t))/radius(r)
         END_DO    
 
         If (compute_quantity(ialtshear_work_r)) Then
@@ -1090,21 +1089,18 @@ Contains
             END_DO
         Endif
 
-        ! advection: -v dot grad B
-        Call ADotGradB(buffer,buffer,cbuffer,aindices = vindex, bindices=bindex)
-        ! Remove canceling curvature terms
+        ! advection: but advect B_r/r^2, sintheta * Btheta / r, Bphi/rsintheta
+        ! use cbuffer (already there)
         DO_PSI
-            cbuffer(PSI,1) = cbuffer(PSI,1) + (buffer(PSI,vtheta)*buffer(PSI,btheta) +&
-               &buffer(PSI,vphi)*buffer(PSI,bphi))/radius(r)
-            cbuffer(PSI,2) = cbuffer(PSI,2) + (buffer(PSI,vphi)*buffer(PSI,bphi))*cottheta(t)/radius(r)
-        END_DO
-
-        ! add shear curv terms to make this advect B_theta/r, B_phi/rsintheta
-        DO_PSI
-            cbuffer(PSI,2) = cbuffer(PSI,2) - (buffer(PSI,vr)*buffer(PSI,btheta))/radius(r)
-            cbuffer(PSI,3) = cbuffer(PSI,3) - (buffer(PSI,vr)*buffer(PSI,bphi))/radius(r) -&
-                & (buffer(PSI,vtheta)*buffer(PSI,bphi))*cottheta(t)/radius(r)
-
+            cbuffer(PSI,1) = buffer(PSI,vr)*buffer(PSI,dbrdr)+2.0*buffer(PSI,vr)*buffer(PSI,br)/radius(r) +&
+                &buffer(PSI,vtheta)*buffer(PSI,dbrdt)/radius(r) +&
+                &buffer(PSI,vphi)*buffer(PSI,dbrdp)/radius(r)/sintheta(t)
+            cbuffer(PSI,2) = buffer(PSI,vr)*(buffer(PSI,dbtdr)-buffer(PSI,btheta)/radius(r)) +&
+                &buffer(PSI,vtheta)*(buffer(PSI,dbtdt)+buffer(PSI,btheta)*cottheta(t))/radius(r) +&
+                &buffer(PSI,vphi)*buffer(PSI,dbtdp)/radius(r)/sintheta(t)
+            cbuffer(PSI,3) = buffer(PSI,vr)*(buffer(PSI,dbpdr)-buffer(PSI,bphi)/radius(r)) +&
+                &buffer(PSI,vtheta)*(buffer(PSI,dbpdt)-buffer(PSI,bphi)*cottheta(t))/radius(r) +&
+                &buffer(PSI,vphi)*buffer(PSI,dbpdp)/radius(r)/sintheta(t)
         END_DO
 
         If (compute_quantity(ialtadvec_work_r)) Then
@@ -1151,9 +1147,9 @@ Contains
             cbuffer(PSI,1) = -buffer(PSI,br)*(buffer(PSI,dvtdt)/radius(r)+buffer(PSI,vtheta)*cottheta(t)/radius(r)+&
                 & buffer(PSI,dvpdp)/radius(r)/sintheta(t))
             cbuffer(PSI,2) = -buffer(PSI,btheta)*(buffer(PSI,dvrdr)+2.0*buffer(PSI,vr)/radius(r)+&
-                & buffer(PSI,dvpdp)/radius(r)/sintheta(t) + buffer(PSI,vtheta)*cottheta(t)/radius(r))
+                & buffer(PSI,dvpdp)/radius(r)/sintheta(t) )
             cbuffer(PSI,3) = -buffer(PSI,bphi)*(buffer(PSI,dvrdr)+2.0*buffer(PSI,vr)/radius(r)+&
-                & buffer(PSI,dvtdt)/radius(r)+buffer(PSI,vtheta)*cottheta(t)/radius(r))
+                & (buffer(PSI,dvtdt)+buffer(PSI,vtheta)*cottheta(t))/radius(r))
         END_DO    
 
         If (compute_quantity(ialtcomp_work_r)) Then
