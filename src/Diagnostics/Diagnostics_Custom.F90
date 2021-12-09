@@ -1035,6 +1035,161 @@ Contains
             Call Add_Quantity(qty)
         Endif
 
+        !//////////////////////////////////////////////////
+        !   ALTERNATE INDUCTION
+        !   Part 1.    Terms resulting full v cross full B.
+        ! /////////////////////////////////////////////////
+
+        !ALTERNATE shear (use cbuffer for this --- it's already there)
+        DO_PSI
+            cbuffer(PSI,1) = buffer(PSI,btheta)*buffer(PSI,dvrdt)/radius(r) +&
+                &buffer(PSI,bphi)*buffer(PSI,dvrdp)/radius(r)/sintheta(t)
+            cbuffer(PSI,2) = buffer(PSI,br)*buffer(PSI,dvtdr) - buffer(PSI,br)*buffer(PSI,vtheta)/radius(r) +&
+                &buffer(PSI,bphi)*buffer(PSI,dvtdp)/radius(r)/sintheta(t)
+            cbuffer(PSI,3) = buffer(PSI,br)*buffer(PSI,dvpdr) - buffer(PSI,br)*buffer(PSI,vphi)/radius(r) +&
+                &buffer(PSI,btheta)*buffer(PSI,dvpdt)/radius(r) -&
+                &buffer(PSI,vphi)*buffer(PSI,btheta)*cottheta(t)/radius(r)
+        END_DO    
+
+        If (compute_quantity(ialtshear_work_r)) Then
+            DO_PSI
+                qty(PSI) = cbuffer(PSI,1)*buffer(PSI,br)
+            END_DO
+            Call Add_Quantity(qty)
+        Endif
+
+        If (compute_quantity(ialtshear_work_t)) Then
+            DO_PSI
+                qty(PSI) = cbuffer(PSI,2)*buffer(PSI,btheta)
+            END_DO
+            Call Add_Quantity(qty)
+        Endif
+
+        If (compute_quantity(ialtshear_work_p)) Then
+            DO_PSI
+                qty(PSI) = cbuffer(PSI,3)*buffer(PSI,bphi)
+            END_DO
+            Call Add_Quantity(qty)
+        Endif
+
+        If (compute_quantity(inductalt_work_r)) Then
+            DO_PSI
+                ind_work_r(PSI) = cbuffer(PSI,1)*buffer(PSI,br)
+            END_DO
+        Endif
+
+        If (compute_quantity(inductalt_work_t)) Then
+            DO_PSI
+                ind_work_t(PSI) = cbuffer(PSI,2)*buffer(PSI,btheta)
+            END_DO
+        Endif
+
+        If (compute_quantity(inductalt_work_p)) Then
+            DO_PSI
+                ind_work_p(PSI) = cbuffer(PSI,3)*buffer(PSI,bphi)
+            END_DO
+        Endif
+
+        ! advection: -v dot grad B
+        Call ADotGradB(buffer,buffer,cbuffer,aindices = vindex, bindices=bindex)
+        ! add shear curv terms to make this advect B_theta/r, B_phi/rsintheta
+        DO_PSI
+            cbuffer(PSI,1) = cbuffer(PSI,1) + (buffer(PSI,vtheta)*buffer(PSI,btheta) +&
+               &buffer(PSI,vphi)*buffer(PSI,bphi))/radius(r)
+            cbuffer(PSI,2) = cbuffer(PSI,2) - (buffer(PSI,vr)*buffer(PSI,btheta))/radius(r)
+            cbuffer(PSI,3) = cbuffer(PSI,3) - (buffer(PSI,vr)*buffer(PSI,bphi))/radius(r) -&
+                & (buffer(PSI,vtheta)*buffer(PSI,bphi))*cottheta(t)/radius(r)
+
+        END_DO
+
+        If (compute_quantity(ialtadvec_work_r)) Then
+            DO_PSI
+                qty(PSI) = -cbuffer(PSI,1)*buffer(PSI,br)
+            END_DO
+            Call Add_Quantity(qty)
+        Endif
+        If (compute_quantity(ialtadvec_work_t)) Then
+            DO_PSI
+                qty(PSI) = -cbuffer(PSI,2)*buffer(PSI,btheta)
+            END_DO
+            Call Add_Quantity(qty)
+        Endif
+        If (compute_quantity(ialtadvec_work_p)) Then
+            DO_PSI
+                qty(PSI) = -cbuffer(PSI,3)*buffer(PSI,bphi)
+            END_DO
+            Call Add_Quantity(qty)
+        Endif
+
+        If (compute_quantity(inductalt_work_r)) Then
+            DO_PSI
+                ind_work_r(PSI) = ind_work_r(PSI)-&
+                                cbuffer(PSI,1)*buffer(PSI,br)
+            END_DO
+        Endif
+        If (compute_quantity(inductalt_work_t)) Then
+            DO_PSI
+                ind_work_t(PSI) = ind_work_t(PSI)-&
+                                cbuffer(PSI,2)*buffer(PSI,btheta)
+            END_DO
+        Endif
+        If (compute_quantity(inductalt_work_p)) Then
+            DO_PSI
+                ind_work_p(PSI) = ind_work_p(PSI)-&
+                                cbuffer(PSI,3)*buffer(PSI,bphi)
+            END_DO
+        Endif
+
+        ! compression: -B (div v) (+ terms to make it the TRANSVERSE compression only)
+        ! (use cbuffer for this --- it's already there)
+        DO_PSI
+            cbuffer(PSI,1) = -buffer(PSI,br)*(buffer(PSI,dvtdt)/radius(r)+buffer(PSI,vtheta)*cottheta(t)/radius(r)+&
+                & buffer(PSI,dvpdp)/r/sintheta(t))
+            cbuffer(PSI,2) = -buffer(PSI,btheta)*(buffer(PSI,dvrdr)+2.0*buffer(PSI,vr)/radius(r)+&
+                & buffer(PSI,dvpdp)/r/sintheta(t))
+            cbuffer(PSI,3) = -buffer(PSI,bphi)*(buffer(PSI,dvrdr)+2.0*buffer(PSI,vr)/radius(r)+&
+                & buffer(PSI,dvtdt)/radius(r)+buffer(PSI,vtheta)*cottheta(t)/radius(r))
+        END_DO    
+
+        If (compute_quantity(ialtcomp_work_r)) Then
+            DO_PSI
+                qty(PSI) = cbuffer(PSI,1)*buffer(PSI,br)
+            END_DO
+            Call Add_Quantity(qty)
+        Endif
+        If (compute_quantity(ialtcomp_work_t)) Then
+            DO_PSI
+                qty(PSI) = cbuffer(PSI,2)*buffer(PSI,btheta)
+            END_DO
+            Call Add_Quantity(qty)
+        Endif
+        If (compute_quantity(ialtcomp_work_p)) Then
+            DO_PSI
+                qty(PSI) = cbuffer(PSI,3)*buffer(PSI,bphi)
+            END_DO
+            Call Add_Quantity(qty)
+        Endif
+
+        If (compute_quantity(inductalt_work_r)) Then
+            DO_PSI
+                qty(PSI) = ind_work_r(PSI) + cbuffer(PSI,1)*buffer(PSI,br)
+            END_DO
+            Call Add_Quantity(qty)
+        Endif
+        If (compute_quantity(inductalt_work_t)) Then
+            DO_PSI
+                qty(PSI) = ind_work_t(PSI) + cbuffer(PSI,2)*buffer(PSI,btheta)
+            END_DO
+            Call Add_Quantity(qty)
+        Endif
+        If (compute_quantity(inductalt_work_p)) Then
+            DO_PSI
+                qty(PSI) = ind_work_p(PSI) + cbuffer(PSI,3)*buffer(PSI,bphi)
+            END_DO
+            Call Add_Quantity(qty)
+        Endif
+
+
         DeAllocate(ind_work_r)
         DeAllocate(ind_work_t)
         DeAllocate(ind_work_p)
