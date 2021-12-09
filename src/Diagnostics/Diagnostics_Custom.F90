@@ -1092,10 +1092,15 @@ Contains
 
         ! advection: -v dot grad B
         Call ADotGradB(buffer,buffer,cbuffer,aindices = vindex, bindices=bindex)
-        ! add shear curv terms to make this advect B_theta/r, B_phi/rsintheta
+        ! Remove canceling curvature terms
         DO_PSI
             cbuffer(PSI,1) = cbuffer(PSI,1) + (buffer(PSI,vtheta)*buffer(PSI,btheta) +&
                &buffer(PSI,vphi)*buffer(PSI,bphi))/radius(r)
+            cbuffer(PSI,2) = cbuffer(PSI,2) + (buffer(PSI,vphi)*buffer(PSI,bphi))*cottheta(t)/radius(r)
+        END_DO
+
+        ! add shear curv terms to make this advect B_theta/r, B_phi/rsintheta
+        DO_PSI
             cbuffer(PSI,2) = cbuffer(PSI,2) - (buffer(PSI,vr)*buffer(PSI,btheta))/radius(r)
             cbuffer(PSI,3) = cbuffer(PSI,3) - (buffer(PSI,vr)*buffer(PSI,bphi))/radius(r) -&
                 & (buffer(PSI,vtheta)*buffer(PSI,bphi))*cottheta(t)/radius(r)
@@ -1144,9 +1149,9 @@ Contains
         ! (use cbuffer for this --- it's already there)
         DO_PSI
             cbuffer(PSI,1) = -buffer(PSI,br)*(buffer(PSI,dvtdt)/radius(r)+buffer(PSI,vtheta)*cottheta(t)/radius(r)+&
-                & buffer(PSI,dvpdp)/r/sintheta(t))
+                & buffer(PSI,dvpdp)/radius(r)/sintheta(t))
             cbuffer(PSI,2) = -buffer(PSI,btheta)*(buffer(PSI,dvrdr)+2.0*buffer(PSI,vr)/radius(r)+&
-                & buffer(PSI,dvpdp)/r/sintheta(t))
+                & buffer(PSI,dvpdp)/radius(r)/sintheta(t) + buffer(PSI,vtheta)*cottheta(t)/radius(r))
             cbuffer(PSI,3) = -buffer(PSI,bphi)*(buffer(PSI,dvrdr)+2.0*buffer(PSI,vr)/radius(r)+&
                 & buffer(PSI,dvtdt)/radius(r)+buffer(PSI,vtheta)*cottheta(t)/radius(r))
         END_DO    
