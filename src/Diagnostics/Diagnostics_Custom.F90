@@ -1092,15 +1092,20 @@ Contains
         ! advection: but advect B_r/r^2, sintheta * Btheta / r, Bphi/rsintheta
         ! use cbuffer (already there)
         DO_PSI
-            cbuffer(PSI,1) = buffer(PSI,vr)*buffer(PSI,dbrdr)+2.0*buffer(PSI,vr)*buffer(PSI,br)/radius(r) +&
+            cbuffer(PSI,1) = buffer(PSI,vr)*buffer(PSI,dbrdr) +&
                 &buffer(PSI,vtheta)*buffer(PSI,dbrdt)/radius(r) +&
-                &buffer(PSI,vphi)*buffer(PSI,dbrdp)/radius(r)/sintheta(t)
-            cbuffer(PSI,2) = buffer(PSI,vr)*(buffer(PSI,dbtdr)-buffer(PSI,btheta)/radius(r)) +&
-                &buffer(PSI,vtheta)*(buffer(PSI,dbtdt)+buffer(PSI,btheta)*cottheta(t))/radius(r) +&
-                &buffer(PSI,vphi)*buffer(PSI,dbtdp)/radius(r)/sintheta(t)
-            cbuffer(PSI,3) = buffer(PSI,vr)*(buffer(PSI,dbpdr)-buffer(PSI,bphi)/radius(r)) +&
-                &buffer(PSI,vtheta)*(buffer(PSI,dbpdt)-buffer(PSI,bphi)*cottheta(t))/radius(r) +&
-                &buffer(PSI,vphi)*buffer(PSI,dbpdp)/radius(r)/sintheta(t)
+                &buffer(PSI,vphi)*buffer(PSI,dbrdp)/radius(r)/sintheta(t) +&
+                &2.0*buffer(PSI,vr)*buffer(PSI,br)/radius(r)
+            cbuffer(PSI,2) = buffer(PSI,vr)*buffer(PSI,dbtdr) +&
+                &buffer(PSI,vtheta)*buffer(PSI,dbtdt)/radius(r) +&
+                &buffer(PSI,vphi)*buffer(PSI,dbtdp)/radius(r)/sintheta(t) -&
+                &buffer(PSI,vr)*buffer(PSI,btheta)/radius(r) +&
+                &buffer(PSI,vtheta)*buffer(PSI,btheta)*cottheta(t)/radius(r)
+            cbuffer(PSI,3) = buffer(PSI,vr)*buffer(PSI,dbpdr) +&
+                &buffer(PSI,vtheta)*buffer(PSI,dbpdt)/radius(r) +&
+                &buffer(PSI,vphi)*buffer(PSI,dbpdp)/radius(r)/sintheta(t) -&
+                &buffer(PSI,vr)*buffer(PSI,bphi)/radius(r) -&
+                &buffer(PSI,vtheta)*buffer(PSI,bphi)*cottheta(t)/radius(r)
         END_DO
 
         If (compute_quantity(ialtadvec_work_r)) Then
