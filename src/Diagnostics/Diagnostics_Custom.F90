@@ -1001,21 +1001,21 @@ Contains
                 ind_work_r2(PSI) = ind_work_r2(PSI)+&
                     fbuffer(PSI,vr)*ref%dlnrho(r)*fbuffer(PSI,br)*m0_values(PSI2,br)
             END_DO
-            Call Add_Quantity(ind_work_r)
+            Call Add_Quantity(ind_work_r2)
         Endif
         If (compute_quantity(induct_work_mpp_t)) Then
             DO_PSI
                 ind_work_t2(PSI) = ind_work_t2(PSI)+&
                     fbuffer(PSI,vr)*ref%dlnrho(r)*fbuffer(PSI,btheta)*m0_values(PSI2,btheta)
             END_DO
-            Call Add_Quantity(ind_work_t)
+            Call Add_Quantity(ind_work_t2)
         Endif
         If (compute_quantity(induct_work_mpp_p)) Then
             DO_PSI
                 ind_work_p2(PSI) = ind_work_p2(PSI)+&
                     fbuffer(PSI,vr)*ref%dlnrho(r)*fbuffer(PSI,bphi)*m0_values(PSI2,bphi)
             END_DO
-            Call Add_Quantity(ind_work_p)
+            Call Add_Quantity(ind_work_p2)
         Endif
    
         !ppp, compression
