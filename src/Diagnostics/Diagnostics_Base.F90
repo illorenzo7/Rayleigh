@@ -85,6 +85,11 @@ Module Diagnostics_Base
     Integer, Parameter :: set_offset = 15 
     Integer, Parameter :: set_offset2 = 12
     Integer, Parameter :: set_offset3 = 9
+    Integer, Parameter :: ialt_offset = custom_offset+100 !2300
+    Integer, Parameter :: ialt_offset2 = custom_offset+100 !2400
+    Integer, Parameter :: adv_offset = 2*3
+    Integer, Parameter :: comp_offset = adv_offset + 5*3
+    Integer, Parameter :: set_offset4 = comp_offset + 2*3 ! how many terms in a set for ialt2
 
     ! total
     Integer, Parameter :: induct_work_r     = custom_offset + 1
@@ -196,53 +201,55 @@ Module Diagnostics_Base
     Integer, Parameter :: idiff_work_pp_p     = custom_offset + 15 + 2*set_offset + 2*set_offset2 + set_offset3
 
     ! ALTERNATE induction
-    Integer, Parameter :: inductalt_work_r     = custom_offset + 100 + 1
-    Integer, Parameter :: inductalt_work_t     = custom_offset + 100 + 2
-    Integer, Parameter :: inductalt_work_p     = custom_offset + 100 + 3
+    Integer, Parameter :: inductalt_work_r     = ialt_offset + 1
+    Integer, Parameter :: inductalt_work_t     = ialt_offset + 2
+    Integer, Parameter :: inductalt_work_p     = ialt_offset + 3
 
-    Integer, Parameter :: ialtshear_work_r     = custom_offset + 100 + 4
-    Integer, Parameter :: ialtshear_work_t     = custom_offset + 100 + 5
-    Integer, Parameter :: ialtshear_work_p     = custom_offset + 100 + 6
+    Integer, Parameter :: ialtshear_work_r     = ialt_offset + 4
+    Integer, Parameter :: ialtshear_work_t     = ialt_offset + 5
+    Integer, Parameter :: ialtshear_work_p     = ialt_offset + 6
 
-    Integer, Parameter :: ialtadvec_work_r     = custom_offset + 100 + 7
-    Integer, Parameter :: ialtadvec_work_t     = custom_offset + 100 + 8
-    Integer, Parameter :: ialtadvec_work_p     = custom_offset + 100 + 9
+    Integer, Parameter :: ialtadvec_work_r     = ialt_offset + 7
+    Integer, Parameter :: ialtadvec_work_t     = ialt_offset + 8
+    Integer, Parameter :: ialtadvec_work_p     = ialt_offset + 9
 
-    Integer, Parameter :: ialtcomp_work_r     = custom_offset + 100 + 10
-    Integer, Parameter :: ialtcomp_work_t     = custom_offset + 100 + 11
-    Integer, Parameter :: ialtcomp_work_p     = custom_offset + 100 + 12
+    Integer, Parameter :: ialtcomp_work_r     = ialt_offset + 10
+    Integer, Parameter :: ialtcomp_work_t     = ialt_offset + 11
+    Integer, Parameter :: ialtcomp_work_p     = ialt_offset + 12
 
     ! Alternate induction, each term broken up more
-    Integer, Parameter :: ialtshear_work_r1     = custom_offset + 200 + 1
-    Integer, Parameter :: ialtshear_work_r2     = custom_offset + 200 + 2
-    Integer, Parameter :: ialtshear_work_t1     = custom_offset + 200 + 3
-    Integer, Parameter :: ialtshear_work_t2     = custom_offset + 200 + 4
-    Integer, Parameter :: ialtshear_work_p1     = custom_offset + 200 + 5
-    Integer, Parameter :: ialtshear_work_p2     = custom_offset + 200 + 6
+    Integer, Parameter :: ialtshear_work_r1     =  ialt_offset2 + 1
+    Integer, Parameter :: ialtshear_work_r2     =  ialt_offset2 + 2
+    Integer, Parameter :: ialtshear_work_t1     =  ialt_offset2 + 3
+    Integer, Parameter :: ialtshear_work_t2     =  ialt_offset2 + 4
+    Integer, Parameter :: ialtshear_work_p1     =  ialt_offset2 + 5
+    Integer, Parameter :: ialtshear_work_p2     =  ialt_offset2 + 6
 
-    Integer, Parameter :: ialtadvec_work_r1     = custom_offset + 200 + 7
-    Integer, Parameter :: ialtadvec_work_r2     = custom_offset + 200 + 8
-    Integer, Parameter :: ialtadvec_work_r3     = custom_offset + 200 + 9
-    Integer, Parameter :: ialtadvec_work_r4     = custom_offset + 200 + 10 ! 1 curv term
+    Integer, Parameter :: ialtadvec_work_r1     =  ialt_offset2 + 1 + adv_offset
+    Integer, Parameter :: ialtadvec_work_r2     =  ialt_offset2 + 2 + adv_offset
+    Integer, Parameter :: ialtadvec_work_r3     =  ialt_offset2 + 3 + adv_offset
+    Integer, Parameter :: ialtadvec_work_r4     =  ialt_offset2 + 4 + adv_offset
+    Integer, Parameter :: ialtadvec_work_r5     =  ialt_offset2 + 5 + adv_offset
 
-    Integer, Parameter :: ialtadvec_work_t1     = custom_offset + 200 + 11
-    Integer, Parameter :: ialtadvec_work_t2     = custom_offset + 200 + 12
-    Integer, Parameter :: ialtadvec_work_t3     = custom_offset + 200 + 13
-    Integer, Parameter :: ialtadvec_work_t4     = custom_offset + 200 + 14
-    Integer, Parameter :: ialtadvec_work_t5     = custom_offset + 200 + 15 ! 2 curv terms
+    Integer, Parameter :: ialtadvec_work_t1     =  ialt_offset2 + 6 + adv_offset
+    Integer, Parameter :: ialtadvec_work_t2     =  ialt_offset2 + 7 + adv_offset
+    Integer, Parameter :: ialtadvec_work_t3     =  ialt_offset2 + 8 + adv_offset
+    Integer, Parameter :: ialtadvec_work_t4     =  ialt_offset2 + 9 + adv_offset
+    Integer, Parameter :: ialtadvec_work_t5     =  ialt_offset2 + 10 + adv_offset
 
-    Integer, Parameter :: ialtadvec_work_p1     = custom_offset + 200 + 16
-    Integer, Parameter :: ialtadvec_work_p2     = custom_offset + 200 + 17
-    Integer, Parameter :: ialtadvec_work_p3     = custom_offset + 200 + 18
-    Integer, Parameter :: ialtadvec_work_p4     = custom_offset + 200 + 19
-    Integer, Parameter :: ialtadvec_work_p5     = custom_offset + 200 + 20 ! 2 curv terms
+    Integer, Parameter :: ialtadvec_work_p1     =  ialt_offset2 + 11 + adv_offset
+    Integer, Parameter :: ialtadvec_work_p2     =  ialt_offset2 + 12 + adv_offset
+    Integer, Parameter :: ialtadvec_work_p3     =  ialt_offset2 + 13 + adv_offset
+    Integer, Parameter :: ialtadvec_work_p4     =  ialt_offset2 + 14 + adv_offset
+    Integer, Parameter :: ialtadvec_work_p5     =  ialt_offset2 + 15 + adv_offset
 
-    Integer, Parameter :: ialtcomp_work_r1     = custom_offset + 200 + 21
-    Integer, Parameter :: ialtcomp_work_r2     = custom_offset + 200 + 22
-    Integer, Parameter :: ialtcomp_work_t1     = custom_offset + 200 + 23
-    Integer, Parameter :: ialtcomp_work_t2     = custom_offset + 200 + 24
-    Integer, Parameter :: ialtcomp_work_p1     = custom_offset + 200 + 25
-    Integer, Parameter :: ialtcomp_work_p2     = custom_offset + 200 + 26
+    Integer, Parameter :: ialtcomp_work_r1     = ialt_offset2 + 1 + comp_offset
+    Integer, Parameter :: ialtcomp_work_r2     = ialt_offset2 + 2 + comp_offset
+    Integer, Parameter :: ialtcomp_work_t1     = ialt_offset2 + 3 + comp_offset
+    Integer, Parameter :: ialtcomp_work_t2     = ialt_offset2 + 4 + comp_offset
+    Integer, Parameter :: ialtcomp_work_p1     = ialt_offset2 + 5 + comp_offset
+    Integer, Parameter :: ialtcomp_work_p2     = ialt_offset2 + 6 + comp_offset
+ 
 
     include "turbKE_codes.F"
     include "axial_field_codes.F"
