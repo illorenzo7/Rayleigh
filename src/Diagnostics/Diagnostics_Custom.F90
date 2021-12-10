@@ -103,7 +103,7 @@ Contains
         Implicit None
         Real*8, Intent(InOut) :: buffer(1:,my_r%min:,my_theta%min:,1:)
         Integer :: r,k, t
-        Integer :: j, jmax, offset, indextmp
+        Integer :: j, jmax, offset, offset2, indextmp
 
         !=============================================
         ! Edit Below This Line (you may define your own variables below)
@@ -1074,6 +1074,7 @@ Contains
 
         ! total production (triple product)
         offset = 0
+        offset2 = 0
         DO_PSI
             Do j=1,jmax
                 buff1(PSI,j) = buffer(PSI,j) ! v in del x (v x B)
@@ -1154,7 +1155,7 @@ Contains
 
         ! Now add quantities we need
 
-        ! total production
+        ! total production (shear, comp, advec)
         Do j=1,3
             ! shear terms
             If (compute_quantity(ialtshear_work_r+j-1+offset)) Then
@@ -1187,8 +1188,71 @@ Contains
                 END_DO
                 Call Add_Quantity(qty)
             Endif
+
         Enddo
 
+        ! production, broken up more
+        Do j=1,3
+            ! shear terms
+            If (compute_quantity(ialtshear_work_r1+j-1+offset2)) Then
+                DO_PSI
+                    qty(PSI) = sheartmp1(PSI,j)*bfieldtmp(PSI,j)
+                END_DO
+                Call Add_Quantity(qty)
+            Endif
+            If (compute_quantity(ialtshear_work_r2+j-1+offset2)) Then
+                DO_PSI
+                    qty(PSI) = sheartmp2(PSI,j)*bfieldtmp(PSI,j)
+                END_DO
+                Call Add_Quantity(qty)
+            Endif
+
+            ! advect. terms
+            If (compute_quantity(ialtadvec_work_r1+j-1+offset2)) Then
+                DO_PSI
+                    qty(PSI) = advtmp1(PSI,j)*bfieldtmp(PSI,j)
+                END_DO
+                Call Add_Quantity(qty)
+            Endif
+            If (compute_quantity(ialtadvec_work_r2+j-1+offset2)) Then
+                DO_PSI
+                    qty(PSI) = advtmp2(PSI,j)*bfieldtmp(PSI,j)
+                END_DO
+                Call Add_Quantity(qty)
+            Endif
+            If (compute_quantity(ialtadvec_work_r3+j-1+offset2)) Then
+                DO_PSI
+                    qty(PSI) = advtmp3(PSI,j)*bfieldtmp(PSI,j)
+                END_DO
+                Call Add_Quantity(qty)
+            Endif
+            If (compute_quantity(ialtadvec_work_r4+j-1+offset2)) Then
+                DO_PSI
+                    qty(PSI) = advtmp4(PSI,j)*bfieldtmp(PSI,j)
+                END_DO
+                Call Add_Quantity(qty)
+            Endif
+            If (compute_quantity(ialtadvec_work_r5+j-1+offset2)) Then
+                DO_PSI
+                    qty(PSI) = advtmp5(PSI,j)*bfieldtmp(PSI,j)
+                END_DO
+                Call Add_Quantity(qty)
+            Endif
+            
+            ! Comp. terms
+            If (compute_quantity(ialtcomp_work_r1+j-1+offset2)) Then
+                DO_PSI
+                    qty(PSI) = comptmp1(PSI,j)*bfieldtmp(PSI,j)
+                END_DO
+                Call Add_Quantity(qty)
+            Endif
+            If (compute_quantity(ialtcomp_work_r2+j-1+offset2)) Then
+                DO_PSI
+                    qty(PSI) = comptmp2(PSI,j)*bfieldtmp(PSI,j)
+                END_DO
+                Call Add_Quantity(qty)
+            Endif
+        Enddo
 
         DeAllocate(ind_work_r)
         DeAllocate(ind_work_t)

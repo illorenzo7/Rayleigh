@@ -86,7 +86,7 @@ Module Diagnostics_Base
     Integer, Parameter :: set_offset2 = 12
     Integer, Parameter :: set_offset3 = 9
     Integer, Parameter :: ialt_offset = custom_offset+100 !2300
-    Integer, Parameter :: ialt_offset2 = custom_offset+100 !2400
+    Integer, Parameter :: ialt_offset2 = ialt_offset+100 !2400
     Integer, Parameter :: adv_offset = 2*3
     Integer, Parameter :: comp_offset = adv_offset + 5*3
     Integer, Parameter :: set_offset4 = comp_offset + 2*3 ! how many terms in a set for ialt2
