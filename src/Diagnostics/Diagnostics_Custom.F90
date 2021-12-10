@@ -103,7 +103,7 @@ Contains
         Implicit None
         Real*8, Intent(InOut) :: buffer(1:,my_r%min:,my_theta%min:,1:)
         Integer :: r,k, t
-        Integer :: j, jmax
+        Integer :: j, jmax, offset, indextmp
 
         !=============================================
         ! Edit Below This Line (you may define your own variables below)
@@ -111,7 +111,7 @@ Contains
         Real*8, Allocatable :: ind_work_r(:,:,:), ind_work_t(:,:,:), ind_work_p(:,:,:)
         Real*8, Allocatable :: ind_work_r2(:,:,:), ind_work_t2(:,:,:), ind_work_p2(:,:,:)
         Real*8, Allocatable :: cbuffer(:,:,:,:)
-        Real*8, Allocatable :: buff1(:,:,:,:),buff2(:,:,:,:),buff3(:,:,:,:)
+        Real*8, Allocatable :: buff1(:,:,:,:),buff2(:,:,:,:)
         Real*8, Allocatable :: inducttmp(:,:,:,:), sheartmp(:,:,:,:), advtmp(:,:,:,:), comptmp(:,:,:,:), bfieldtmp(:,:,:,:)
         Real*8, Allocatable :: sheartmp1(:,:,:,:), sheartmp2(:,:,:,:)
         Real*8, Allocatable :: advtmp1(:,:,:,:), advtmp2(:,:,:,:), advtmp3(:,:,:,:), advtmp4(:,:,:,:), advtmp5(:,:,:,:)
@@ -133,7 +133,6 @@ Contains
 
         Allocate(buff1(1:n_phi,my_r%min:my_r%max,my_theta%min:my_theta%max,1:jmax))
         Allocate(buff2(1:n_phi,my_r%min:my_r%max,my_theta%min:my_theta%max,1:jmax))
-        Allocate(buff3(1:n_phi,my_r%min:my_r%max,my_theta%min:my_theta%max,1:jmax))
 
         Allocate(inducttmp(1:n_phi,my_r%min:my_r%max,my_theta%min:my_theta%max,1:3))
         Allocate(sheartmp(1:n_phi,my_r%min:my_r%max,my_theta%min:my_theta%max,1:3))
@@ -1074,175 +1073,121 @@ Contains
         ! /////////////////////////////////////////////////
 
         ! total production (triple product)
+        offset = 0
         DO_PSI
-            Do j=1, jmax
-                buff1(PSI,j) = buffer(PSI,j)
-                buff2(PSI,j) = buffer(PSI,j)
-                buff3(PSI,j) = buffer(PSI,j)
+            Do j=1,jmax
+                buff1(PSI,j) = buffer(PSI,j) ! v in del x (v x B)
+                buff2(PSI,j) = buffer(PSI,j) ! B in del x (v x B)
             Enddo
-        END_DO
-
-        ! Get B field
-        DO_PSI
-            bfieldtmp(PSI,1) = buff3(PSI,br)
-            bfieldtmp(PSI,2) = buff3(PSI,btheta)
-            bfieldtmp(PSI,3) = buff3(PSI,bphi)
+            Do j=1,3
+                If (j .eq. 1) Then
+                    indextmp = br
+                Elseif (j .eq. 2) Then
+                    indextmp = btheta
+                Elseif (j .eq. 3) Then
+                    indextmp = bphi
+                Endif
+                bfieldtmp(PSI,j) = buffer(PSI,indextmp) ! bfieldtmp -- the one that gets dotted into induction
+            Enddo
         END_DO
 
         ! Get Shear
         DO_PSI
-            cbuffer(PSI,1) = buffer(PSI,btheta)*buffer(PSI,dvrdt)/radius(r) +&
-                &buffer(PSI,bphi)*buffer(PSI,dvrdp)/radius(r)/sintheta(t)
-            cbuffer(PSI,2) = buffer(PSI,br)*(buffer(PSI,dvtdr) - buffer(PSI,vtheta)/radius(r)) +&
-                &buffer(PSI,bphi)*buffer(PSI,dvtdp)/radius(r)/sintheta(t)
-            cbuffer(PSI,3) = buffer(PSI,br)*(buffer(PSI,dvpdr) - buffer(PSI,vphi)/radius(r)) +&
-                &buffer(PSI,btheta)*(buffer(PSI,dvpdt) - buffer(PSI,vphi)*cottheta(t))/radius(r)
+            sheartmp1(PSI,1) = buff2(PSI,btheta)*buff1(PSI,dvrdt)/radius(r)
+            sheartmp2(PSI,1) = buff2(PSI,bphi)*buff1(PSI,dvrdp)/radius(r)/sintheta(t)
+            sheartmp1(PSI,2) = buff2(PSI,br)*(buff1(PSI,dvtdr) - buff1(PSI,vtheta)/radius(r))
+            sheartmp2(PSI,2) = buff2(PSI,bphi)*buff1(PSI,dvtdp)/radius(r)/sintheta(t)
+            sheartmp1(PSI,3) = buff2(PSI,br)*(buff1(PSI,dvpdr) - buff1(PSI,vphi)/radius(r))
+            sheartmp2(PSI,3) = buff2(PSI,btheta)*(buff1(PSI,dvpdt) - buff1(PSI,vphi)*cottheta(t))/radius(r)
+            Do j = 1,3
+                sheartmp(PSI,j) = sheartmp1(PSI,j) + sheartmp2(PSI,j)
+            Enddo
         END_DO    
 
-        If (compute_quantity(ialtshear_work_r)) Then
-            DO_PSI
-                qty(PSI) = cbuffer(PSI,1)*buffer(PSI,br)
-            END_DO
-            Call Add_Quantity(qty)
-        Endif
-
-        If (compute_quantity(ialtshear_work_t)) Then
-            DO_PSI
-                qty(PSI) = cbuffer(PSI,2)*buffer(PSI,btheta)
-            END_DO
-            Call Add_Quantity(qty)
-        Endif
-
-        If (compute_quantity(ialtshear_work_p)) Then
-            DO_PSI
-                qty(PSI) = cbuffer(PSI,3)*buffer(PSI,bphi)
-            END_DO
-            Call Add_Quantity(qty)
-        Endif
-
-        If (compute_quantity(inductalt_work_r)) Then
-            DO_PSI
-                ind_work_r(PSI) = cbuffer(PSI,1)*buffer(PSI,br)
-            END_DO
-        Endif
-
-        If (compute_quantity(inductalt_work_t)) Then
-            DO_PSI
-                ind_work_t(PSI) = cbuffer(PSI,2)*buffer(PSI,btheta)
-            END_DO
-        Endif
-
-        If (compute_quantity(inductalt_work_p)) Then
-            DO_PSI
-                ind_work_p(PSI) = cbuffer(PSI,3)*buffer(PSI,bphi)
-            END_DO
-        Endif
-
-        ! advection: but advect B_r/r^2, sintheta * Btheta / r, Bphi/rsintheta
-        ! use cbuffer (already there)
+        ! Get Advection
         DO_PSI
-            cbuffer(PSI,1) = buffer(PSI,vr)*buffer(PSI,dbrdr) +&
-                &buffer(PSI,vtheta)*buffer(PSI,dbrdt)/radius(r) +&
-                &buffer(PSI,vphi)*buffer(PSI,dbrdp)/radius(r)/sintheta(t) +&
-                &2.0*buffer(PSI,vr)*buffer(PSI,br)/radius(r)
-            cbuffer(PSI,2) = buffer(PSI,vr)*buffer(PSI,dbtdr) +&
-                &buffer(PSI,vtheta)*buffer(PSI,dbtdt)/radius(r) +&
-                &buffer(PSI,vphi)*buffer(PSI,dbtdp)/radius(r)/sintheta(t) -&
-                &buffer(PSI,vr)*buffer(PSI,btheta)/radius(r) +&
-                &buffer(PSI,vtheta)*buffer(PSI,btheta)*cottheta(t)/radius(r)
-            cbuffer(PSI,3) = buffer(PSI,vr)*buffer(PSI,dbpdr) +&
-                &buffer(PSI,vtheta)*buffer(PSI,dbpdt)/radius(r) +&
-                &buffer(PSI,vphi)*buffer(PSI,dbpdp)/radius(r)/sintheta(t) -&
-                &buffer(PSI,vr)*buffer(PSI,bphi)/radius(r) -&
-                &buffer(PSI,vtheta)*buffer(PSI,bphi)*cottheta(t)/radius(r)
+            advtmp1(PSI,1) = -buff1(PSI,vr)*buff2(PSI,dbrdr)
+            advtmp2(PSI,1) = -buff1(PSI,vtheta)*buff2(PSI,dbrdt)/radius(r)
+            advtmp3(PSI,1) = -buff1(PSI,vphi)*buff2(PSI,dbrdp)/radius(r)/sintheta(t)
+            advtmp4(PSI,1) = -2.0d0*buff1(PSI,vr)*buff2(PSI,br)/radius(r)
+            advtmp5(PSI,1) = 0.0d0
+
+            advtmp1(PSI,2) = -buff1(PSI,vr)*buff2(PSI,dbtdr)
+            advtmp2(PSI,2) = -buff1(PSI,vtheta)*buff2(PSI,dbtdt)/radius(r)
+            advtmp3(PSI,2) = -buff1(PSI,vphi)*buff2(PSI,dbtdp)/radius(r)/sintheta(t)
+            advtmp4(PSI,2) = buff1(PSI,vr)*buff2(PSI,btheta)/radius(r)
+            advtmp5(PSI,2) = -buff1(PSI,vtheta)*buff2(PSI,btheta)*cottheta(t)/radius(r)
+
+            advtmp1(PSI,3) = -buff1(PSI,vr)*buff2(PSI,dbpdr)
+            advtmp2(PSI,3) = -buff1(PSI,vtheta)*buff2(PSI,dbpdt)/radius(r)
+            advtmp3(PSI,3) = -buff1(PSI,vphi)*buff2(PSI,dbpdp)/radius(r)/sintheta(t)
+            advtmp4(PSI,3) = buff1(PSI,vr)*buff2(PSI,bphi)/radius(r)
+            advtmp5(PSI,3) = buff1(PSI,vtheta)*buff2(PSI,bphi)*cottheta(t)/radius(r)
+
+            Do j = 1,3
+                advtmp(PSI,j) = advtmp1(PSI,j) + advtmp2(PSI,j) + advtmp3(PSI,j) +&
+                    &advtmp4(PSI,j) + advtmp5(PSI,j)
+            Enddo
         END_DO
 
-        If (compute_quantity(ialtadvec_work_r)) Then
-            DO_PSI
-                qty(PSI) = -cbuffer(PSI,1)*buffer(PSI,br)
-            END_DO
-            Call Add_Quantity(qty)
-        Endif
-        If (compute_quantity(ialtadvec_work_t)) Then
-            DO_PSI
-                qty(PSI) = -cbuffer(PSI,2)*buffer(PSI,btheta)
-            END_DO
-            Call Add_Quantity(qty)
-        Endif
-        If (compute_quantity(ialtadvec_work_p)) Then
-            DO_PSI
-                qty(PSI) = -cbuffer(PSI,3)*buffer(PSI,bphi)
-            END_DO
-            Call Add_Quantity(qty)
-        Endif
-
-        If (compute_quantity(inductalt_work_r)) Then
-            DO_PSI
-                ind_work_r(PSI) = ind_work_r(PSI)-&
-                                cbuffer(PSI,1)*buffer(PSI,br)
-            END_DO
-        Endif
-        If (compute_quantity(inductalt_work_t)) Then
-            DO_PSI
-                ind_work_t(PSI) = ind_work_t(PSI)-&
-                                cbuffer(PSI,2)*buffer(PSI,btheta)
-            END_DO
-        Endif
-        If (compute_quantity(inductalt_work_p)) Then
-            DO_PSI
-                ind_work_p(PSI) = ind_work_p(PSI)-&
-                                cbuffer(PSI,3)*buffer(PSI,bphi)
-            END_DO
-        Endif
-
-        ! compression: -B (div v) (+ terms to make it the TRANSVERSE compression only)
-        ! (use cbuffer for this --- it's already there)
+        ! get compression
+        ! ALTERNATE compression: -B (div v) (but TRANSVERSE compression only)
         DO_PSI
-            cbuffer(PSI,1) = -buffer(PSI,br)*(buffer(PSI,dvtdt)/radius(r)+buffer(PSI,vtheta)*cottheta(t)/radius(r)+&
-                & buffer(PSI,dvpdp)/radius(r)/sintheta(t))
-            cbuffer(PSI,2) = -buffer(PSI,btheta)*(buffer(PSI,dvrdr)+2.0*buffer(PSI,vr)/radius(r)+&
-                & buffer(PSI,dvpdp)/radius(r)/sintheta(t) )
-            cbuffer(PSI,3) = -buffer(PSI,bphi)*(buffer(PSI,dvrdr)+2.0*buffer(PSI,vr)/radius(r)+&
-                & (buffer(PSI,dvtdt)+buffer(PSI,vtheta)*cottheta(t))/radius(r))
+            comptmp1(PSI,1) = -buff2(PSI,br)*(buff1(PSI,dvtdt)+buff1(PSI,vtheta)*cottheta(t))/radius(r)
+            comptmp2(PSI,1) = -buff2(PSI,br)*buff1(PSI,dvpdp)/radius(r)/sintheta(t)
+            comptmp1(PSI,2) = -buff2(PSI,btheta)*(buff1(PSI,dvrdr)+2.0d0*buff1(PSI,vr)/radius(r))
+            comptmp2(PSI,2) = -buff2(PSI,btheta)*buff1(PSI,dvpdp)/radius(r)/sintheta(t)
+            comptmp1(PSI,3) = -buff2(PSI,bphi)*(buff1(PSI,dvrdr)+2.0d0*buff1(PSI,vr)/radius(r))
+            comptmp2(PSI,3) = -buff2(PSI,bphi)*(buff1(PSI,dvtdt)+buff1(PSI,vtheta)*cottheta(t))/radius(r)
+            Do j = 1,3
+                comptmp(PSI,j) = comptmp1(PSI,j) + comptmp2(PSI,j)
+            Enddo
         END_DO    
 
-        If (compute_quantity(ialtcomp_work_r)) Then
-            DO_PSI
-                qty(PSI) = cbuffer(PSI,1)*buffer(PSI,br)
-            END_DO
-            Call Add_Quantity(qty)
-        Endif
-        If (compute_quantity(ialtcomp_work_t)) Then
-            DO_PSI
-                qty(PSI) = cbuffer(PSI,2)*buffer(PSI,btheta)
-            END_DO
-            Call Add_Quantity(qty)
-        Endif
-        If (compute_quantity(ialtcomp_work_p)) Then
-            DO_PSI
-                qty(PSI) = cbuffer(PSI,3)*buffer(PSI,bphi)
-            END_DO
-            Call Add_Quantity(qty)
-        Endif
+        ! get total induction
+        ! ALTERNATE total induction
+        DO_PSI
+            Do j=1,3
+                inducttmp(PSI,j) = sheartmp(PSI,j) +  advtmp(PSI,j) + comptmp(PSI,j)
+            Enddo
+        END_DO
 
-        If (compute_quantity(inductalt_work_r)) Then
-            DO_PSI
-                qty(PSI) = ind_work_r(PSI) + cbuffer(PSI,1)*buffer(PSI,br)
-            END_DO
-            Call Add_Quantity(qty)
-        Endif
-        If (compute_quantity(inductalt_work_t)) Then
-            DO_PSI
-                qty(PSI) = ind_work_t(PSI) + cbuffer(PSI,2)*buffer(PSI,btheta)
-            END_DO
-            Call Add_Quantity(qty)
-        Endif
-        If (compute_quantity(inductalt_work_p)) Then
-            DO_PSI
-                qty(PSI) = ind_work_p(PSI) + cbuffer(PSI,3)*buffer(PSI,bphi)
-            END_DO
-            Call Add_Quantity(qty)
-        Endif
+        ! Now add quantities we need
+
+        ! total production
+        Do j=1,3
+            ! shear terms
+            If (compute_quantity(ialtshear_work_r+j-1+offset)) Then
+                DO_PSI
+                    qty(PSI) = sheartmp(PSI,j)*bfieldtmp(PSI,j)
+                END_DO
+                Call Add_Quantity(qty)
+            Endif
+
+            ! advect. terms
+            If (compute_quantity(ialtadvec_work_r+j-1+offset)) Then
+                DO_PSI
+                    qty(PSI) = advtmp(PSI,j)*bfieldtmp(PSI,j)
+                END_DO
+                Call Add_Quantity(qty)
+            Endif
+            
+            ! Comp. terms
+            If (compute_quantity(ialtcomp_work_r+j-1+offset)) Then
+                DO_PSI
+                    qty(PSI) = comptmp(PSI,j)*bfieldtmp(PSI,j)
+                END_DO
+                Call Add_Quantity(qty)
+            Endif
+            
+            ! tot ind. terms
+            If (compute_quantity(inductalt_work_r+j-1+offset)) Then
+                DO_PSI
+                    qty(PSI) = inducttmp(PSI,j)*bfieldtmp(PSI,j)
+                END_DO
+                Call Add_Quantity(qty)
+            Endif
+        Enddo
 
 
         DeAllocate(ind_work_r)
@@ -1255,7 +1200,6 @@ Contains
 
         DeAllocate(buff1)
         DeAllocate(buff2)
-        DeAllocate(buff3)
 
         DeAllocate(inducttmp)
         DeAllocate(sheartmp)
