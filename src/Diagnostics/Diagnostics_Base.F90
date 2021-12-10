@@ -219,35 +219,38 @@ Module Diagnostics_Base
 
     ! Alternate induction, each term broken up more
     Integer, Parameter :: ialtshear_work_r1     =  ialt_offset2 + 1
-    Integer, Parameter :: ialtshear_work_r2     =  ialt_offset2 + 2
-    Integer, Parameter :: ialtshear_work_t1     =  ialt_offset2 + 3
-    Integer, Parameter :: ialtshear_work_t2     =  ialt_offset2 + 4
-    Integer, Parameter :: ialtshear_work_p1     =  ialt_offset2 + 5
+    Integer, Parameter :: ialtshear_work_t1     =  ialt_offset2 + 2
+    Integer, Parameter :: ialtshear_work_p1     =  ialt_offset2 + 3
+    Integer, Parameter :: ialtshear_work_r2     =  ialt_offset2 + 4
+    Integer, Parameter :: ialtshear_work_t2     =  ialt_offset2 + 5
     Integer, Parameter :: ialtshear_work_p2     =  ialt_offset2 + 6
 
+
     Integer, Parameter :: ialtadvec_work_r1     =  ialt_offset2 + 1 + adv_offset
-    Integer, Parameter :: ialtadvec_work_r2     =  ialt_offset2 + 2 + adv_offset
-    Integer, Parameter :: ialtadvec_work_r3     =  ialt_offset2 + 3 + adv_offset
-    Integer, Parameter :: ialtadvec_work_r4     =  ialt_offset2 + 4 + adv_offset
-    Integer, Parameter :: ialtadvec_work_r5     =  ialt_offset2 + 5 + adv_offset
+    Integer, Parameter :: ialtadvec_work_t1     =  ialt_offset2 + 2 + adv_offset
+    Integer, Parameter :: ialtadvec_work_p1     =  ialt_offset2 + 3 + adv_offset
+    
+    Integer, Parameter :: ialtadvec_work_r2     =  ialt_offset2 + 4 + adv_offset
+    Integer, Parameter :: ialtadvec_work_t2     =  ialt_offset2 + 5 + adv_offset
+    Integer, Parameter :: ialtadvec_work_p2     =  ialt_offset2 + 6 + adv_offset
 
-    Integer, Parameter :: ialtadvec_work_t1     =  ialt_offset2 + 6 + adv_offset
-    Integer, Parameter :: ialtadvec_work_t2     =  ialt_offset2 + 7 + adv_offset
+    Integer, Parameter :: ialtadvec_work_r3     =  ialt_offset2 + 7 + adv_offset
     Integer, Parameter :: ialtadvec_work_t3     =  ialt_offset2 + 8 + adv_offset
-    Integer, Parameter :: ialtadvec_work_t4     =  ialt_offset2 + 9 + adv_offset
-    Integer, Parameter :: ialtadvec_work_t5     =  ialt_offset2 + 10 + adv_offset
+    Integer, Parameter :: ialtadvec_work_p3     =  ialt_offset2 + 9 + adv_offset
 
-    Integer, Parameter :: ialtadvec_work_p1     =  ialt_offset2 + 11 + adv_offset
-    Integer, Parameter :: ialtadvec_work_p2     =  ialt_offset2 + 12 + adv_offset
-    Integer, Parameter :: ialtadvec_work_p3     =  ialt_offset2 + 13 + adv_offset
-    Integer, Parameter :: ialtadvec_work_p4     =  ialt_offset2 + 14 + adv_offset
+    Integer, Parameter :: ialtadvec_work_r4     =  ialt_offset2 + 10 + adv_offset
+    Integer, Parameter :: ialtadvec_work_t4     =  ialt_offset2 + 11 + adv_offset
+    Integer, Parameter :: ialtadvec_work_p4     =  ialt_offset2 + 12 + adv_offset
+
+    Integer, Parameter :: ialtadvec_work_r5     =  ialt_offset2 + 13 + adv_offset
+    Integer, Parameter :: ialtadvec_work_t5     =  ialt_offset2 + 14 + adv_offset
     Integer, Parameter :: ialtadvec_work_p5     =  ialt_offset2 + 15 + adv_offset
 
     Integer, Parameter :: ialtcomp_work_r1     = ialt_offset2 + 1 + comp_offset
-    Integer, Parameter :: ialtcomp_work_r2     = ialt_offset2 + 2 + comp_offset
-    Integer, Parameter :: ialtcomp_work_t1     = ialt_offset2 + 3 + comp_offset
-    Integer, Parameter :: ialtcomp_work_t2     = ialt_offset2 + 4 + comp_offset
-    Integer, Parameter :: ialtcomp_work_p1     = ialt_offset2 + 5 + comp_offset
+    Integer, Parameter :: ialtcomp_work_t1     = ialt_offset2 + 2 + comp_offset
+    Integer, Parameter :: ialtcomp_work_p1     = ialt_offset2 + 3 + comp_offset
+    Integer, Parameter :: ialtcomp_work_r2     = ialt_offset2 + 4 + comp_offset
+    Integer, Parameter :: ialtcomp_work_t2     = ialt_offset2 + 5 + comp_offset
     Integer, Parameter :: ialtcomp_work_p2     = ialt_offset2 + 6 + comp_offset
  
 
