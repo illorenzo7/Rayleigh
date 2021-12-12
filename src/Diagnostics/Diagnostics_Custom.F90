@@ -1155,7 +1155,7 @@ Contains
 
         ! Now add quantities we need
 
-        ! total production (shear, comp, advec)
+        ! total energy production (shear, comp, advec)
         Do j=1,3
             ! shear terms
             If (compute_quantity(ialtshear_work_r+j-1+offset)) Then
@@ -1249,6 +1249,105 @@ Contains
             If (compute_quantity(ialtcomp_work_r2+j-1+offset2)) Then
                 DO_PSI
                     qty(PSI) = comptmp2(PSI,j)*bfieldtmp(PSI,j)
+                END_DO
+                Call Add_Quantity(qty)
+            Endif
+        Enddo
+
+        ! total induction (shear, comp, advec)
+        Do j=1,3
+            ! shear terms
+            If (compute_quantity(ialtshear_r+j-1+offset)) Then
+                DO_PSI
+                    qty(PSI) = sheartmp(PSI,j)*bfieldtmp(PSI,j)
+                END_DO
+                Call Add_Quantity(qty)
+            Endif
+
+            ! advect. terms
+            If (compute_quantity(ialtadvec_r+j-1+offset)) Then
+                DO_PSI
+                    qty(PSI) = advtmp(PSI,j)*bfieldtmp(PSI,j)
+                END_DO
+                Call Add_Quantity(qty)
+            Endif
+            
+            ! Comp. terms
+            If (compute_quantity(ialtcomp_r+j-1+offset)) Then
+                DO_PSI
+                    qty(PSI) = comptmp(PSI,j)*bfieldtmp(PSI,j)
+                END_DO
+                Call Add_Quantity(qty)
+            Endif
+            
+            ! tot ind. terms
+            If (compute_quantity(inductalt_r+j-1+offset)) Then
+                DO_PSI
+                    qty(PSI) = inducttmp(PSI,j)*bfieldtmp(PSI,j)
+                END_DO
+                Call Add_Quantity(qty)
+            Endif
+
+        Enddo
+
+        ! production, broken up more
+        Do j=1,3
+            ! shear terms
+            If (compute_quantity(ialtshear_r1+j-1+offset2)) Then
+                DO_PSI
+                    qty(PSI) = sheartmp1(PSI,j)
+                END_DO
+                Call Add_Quantity(qty)
+            Endif
+            If (compute_quantity(ialtshear_r2+j-1+offset2)) Then
+                DO_PSI
+                    qty(PSI) = sheartmp2(PSI,j)
+                END_DO
+                Call Add_Quantity(qty)
+            Endif
+
+            ! advect. terms
+            If (compute_quantity(ialtadvec_r1+j-1+offset2)) Then
+                DO_PSI
+                    qty(PSI) = advtmp1(PSI,j)
+                END_DO
+                Call Add_Quantity(qty)
+            Endif
+            If (compute_quantity(ialtadvec_r2+j-1+offset2)) Then
+                DO_PSI
+                    qty(PSI) = advtmp2(PSI,j)
+                END_DO
+                Call Add_Quantity(qty)
+            Endif
+            If (compute_quantity(ialtadvec_r3+j-1+offset2)) Then
+                DO_PSI
+                    qty(PSI) = advtmp3(PSI,j)
+                END_DO
+                Call Add_Quantity(qty)
+            Endif
+            If (compute_quantity(ialtadvec_r4+j-1+offset2)) Then
+                DO_PSI
+                    qty(PSI) = advtmp4(PSI,j)
+                END_DO
+                Call Add_Quantity(qty)
+            Endif
+            If (compute_quantity(ialtadvec_r5+j-1+offset2)) Then
+                DO_PSI
+                    qty(PSI) = advtmp5(PSI,j)
+                END_DO
+                Call Add_Quantity(qty)
+            Endif
+            
+            ! Comp. terms
+            If (compute_quantity(ialtcomp_r1+j-1+offset2)) Then
+                DO_PSI
+                    qty(PSI) = comptmp1(PSI,j)
+                END_DO
+                Call Add_Quantity(qty)
+            Endif
+            If (compute_quantity(ialtcomp_r2+j-1+offset2)) Then
+                DO_PSI
+                    qty(PSI) = comptmp2(PSI,j)
                 END_DO
                 Call Add_Quantity(qty)
             Endif
