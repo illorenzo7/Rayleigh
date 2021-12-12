@@ -91,6 +91,10 @@ Module Diagnostics_Base
     Integer, Parameter :: comp_offset = adv_offset + 5*3
     Integer, Parameter :: set_offset4 = comp_offset + 2*3 ! how many terms in a set for ialt2
 
+    ! actual induction (not multiplied by B)
+    Integer, Parameter :: ialt_offset3 = 3000
+    Integer, Parameter :: ialt_offset4 = ialt_offset3+100 ! 3100
+
     ! total
     Integer, Parameter :: induct_work_r     = custom_offset + 1
     Integer, Parameter :: induct_work_t     = custom_offset + 2
@@ -200,7 +204,7 @@ Module Diagnostics_Base
     Integer, Parameter :: idiff_work_pp_t     = custom_offset + 14 + 2*set_offset + 2*set_offset2 + set_offset3
     Integer, Parameter :: idiff_work_pp_p     = custom_offset + 15 + 2*set_offset + 2*set_offset2 + set_offset3
 
-    ! ALTERNATE induction
+    ! ALTERNATE induction, WORK
     Integer, Parameter :: inductalt_work_r     = ialt_offset + 1
     Integer, Parameter :: inductalt_work_t     = ialt_offset + 2
     Integer, Parameter :: inductalt_work_p     = ialt_offset + 3
@@ -217,7 +221,7 @@ Module Diagnostics_Base
     Integer, Parameter :: ialtcomp_work_t     = ialt_offset + 11
     Integer, Parameter :: ialtcomp_work_p     = ialt_offset + 12
 
-    ! Alternate induction, each term broken up more
+    ! Alternate induction, each term broken up more, WORK
     Integer, Parameter :: ialtshear_work_r1     =  ialt_offset2 + 1
     Integer, Parameter :: ialtshear_work_t1     =  ialt_offset2 + 2
     Integer, Parameter :: ialtshear_work_p1     =  ialt_offset2 + 3
@@ -252,7 +256,60 @@ Module Diagnostics_Base
     Integer, Parameter :: ialtcomp_work_r2     = ialt_offset2 + 4 + comp_offset
     Integer, Parameter :: ialtcomp_work_t2     = ialt_offset2 + 5 + comp_offset
     Integer, Parameter :: ialtcomp_work_p2     = ialt_offset2 + 6 + comp_offset
- 
+
+    ! ALTERNATE induction
+    Integer, Parameter :: inductalt_r     = ialt_offset3 + 1
+    Integer, Parameter :: inductalt_t     = ialt_offset3 + 2
+    Integer, Parameter :: inductalt_p     = ialt_offset3 + 3
+
+    Integer, Parameter :: ialtshear_r     = ialt_offset3 + 4
+    Integer, Parameter :: ialtshear_t     = ialt_offset3 + 5
+    Integer, Parameter :: ialtshear_p     = ialt_offset3 + 6
+
+    Integer, Parameter :: ialtadvec_r     = ialt_offset3 + 7
+    Integer, Parameter :: ialtadvec_t     = ialt_offset3 + 8
+    Integer, Parameter :: ialtadvec_p     = ialt_offset3 + 9
+
+    Integer, Parameter :: ialtcomp_r     = ialt_offset3 + 10
+    Integer, Parameter :: ialtcomp_t     = ialt_offset3 + 11
+    Integer, Parameter :: ialtcomp_p     = ialt_offset3 + 12
+
+    ! Alternate induction, each term broken up more
+    Integer, Parameter :: ialtshear_r1     =  ialt_offset4 + 1
+    Integer, Parameter :: ialtshear_t1     =  ialt_offset4 + 2
+    Integer, Parameter :: ialtshear_p1     =  ialt_offset4 + 3
+    Integer, Parameter :: ialtshear_r2     =  ialt_offset4 + 4
+    Integer, Parameter :: ialtshear_t2     =  ialt_offset4 + 5
+    Integer, Parameter :: ialtshear_p2     =  ialt_offset4 + 6
+
+
+    Integer, Parameter :: ialtadvec_r1     =  ialt_offset4 + 1 + adv_offset
+    Integer, Parameter :: ialtadvec_t1     =  ialt_offset4 + 2 + adv_offset
+    Integer, Parameter :: ialtadvec_p1     =  ialt_offset4 + 3 + adv_offset
+    
+    Integer, Parameter :: ialtadvec_r2     =  ialt_offset4 + 4 + adv_offset
+    Integer, Parameter :: ialtadvec_t2     =  ialt_offset4 + 5 + adv_offset
+    Integer, Parameter :: ialtadvec_p2     =  ialt_offset4 + 6 + adv_offset
+
+    Integer, Parameter :: ialtadvec_r3     =  ialt_offset4 + 7 + adv_offset
+    Integer, Parameter :: ialtadvec_t3     =  ialt_offset4 + 8 + adv_offset
+    Integer, Parameter :: ialtadvec_p3     =  ialt_offset4 + 9 + adv_offset
+
+    Integer, Parameter :: ialtadvec_r4     =  ialt_offset4 + 10 + adv_offset
+    Integer, Parameter :: ialtadvec_t4     =  ialt_offset4 + 11 + adv_offset
+    Integer, Parameter :: ialtadvec_p4     =  ialt_offset4 + 12 + adv_offset
+
+    Integer, Parameter :: ialtadvec_r5     =  ialt_offset4 + 13 + adv_offset
+    Integer, Parameter :: ialtadvec_t5     =  ialt_offset4 + 14 + adv_offset
+    Integer, Parameter :: ialtadvec_p5     =  ialt_offset4 + 15 + adv_offset
+
+    Integer, Parameter :: ialtcomp_r1     = ialt_offset4 + 1 + comp_offset
+    Integer, Parameter :: ialtcomp_t1     = ialt_offset4 + 2 + comp_offset
+    Integer, Parameter :: ialtcomp_p1     = ialt_offset4 + 3 + comp_offset
+    Integer, Parameter :: ialtcomp_r2     = ialt_offset4 + 4 + comp_offset
+    Integer, Parameter :: ialtcomp_t2     = ialt_offset4 + 5 + comp_offset
+    Integer, Parameter :: ialtcomp_p2     = ialt_offset4 + 6 + comp_offset
+
 
     include "turbKE_codes.F"
     include "axial_field_codes.F"
