@@ -88,7 +88,7 @@ Module Diagnostics_Base
     Integer, Parameter :: ialt_offset = custom_offset+100 !2300
     Integer, Parameter :: ialt_offset2 = ialt_offset+100 !2400
     Integer, Parameter :: adv_offset = 2*3
-    Integer, Parameter :: comp_offset = adv_offset + 5*3
+    Integer, Parameter :: comp_offset = adv_offset + 3*3
     Integer, Parameter :: set_offset4 = comp_offset + 2*3 ! how many terms in a set for ialt2
 
     ! actual induction (not multiplied by B)
@@ -225,6 +225,7 @@ Module Diagnostics_Base
     Integer, Parameter :: ialtshear_work_r1     =  ialt_offset2 + 1
     Integer, Parameter :: ialtshear_work_t1     =  ialt_offset2 + 2
     Integer, Parameter :: ialtshear_work_p1     =  ialt_offset2 + 3
+
     Integer, Parameter :: ialtshear_work_r2     =  ialt_offset2 + 4
     Integer, Parameter :: ialtshear_work_t2     =  ialt_offset2 + 5
     Integer, Parameter :: ialtshear_work_p2     =  ialt_offset2 + 6
@@ -242,17 +243,11 @@ Module Diagnostics_Base
     Integer, Parameter :: ialtadvec_work_t3     =  ialt_offset2 + 8 + adv_offset
     Integer, Parameter :: ialtadvec_work_p3     =  ialt_offset2 + 9 + adv_offset
 
-    Integer, Parameter :: ialtadvec_work_r4     =  ialt_offset2 + 10 + adv_offset
-    Integer, Parameter :: ialtadvec_work_t4     =  ialt_offset2 + 11 + adv_offset
-    Integer, Parameter :: ialtadvec_work_p4     =  ialt_offset2 + 12 + adv_offset
-
-    Integer, Parameter :: ialtadvec_work_r5     =  ialt_offset2 + 13 + adv_offset
-    Integer, Parameter :: ialtadvec_work_t5     =  ialt_offset2 + 14 + adv_offset
-    Integer, Parameter :: ialtadvec_work_p5     =  ialt_offset2 + 15 + adv_offset
 
     Integer, Parameter :: ialtcomp_work_r1     = ialt_offset2 + 1 + comp_offset
     Integer, Parameter :: ialtcomp_work_t1     = ialt_offset2 + 2 + comp_offset
     Integer, Parameter :: ialtcomp_work_p1     = ialt_offset2 + 3 + comp_offset
+
     Integer, Parameter :: ialtcomp_work_r2     = ialt_offset2 + 4 + comp_offset
     Integer, Parameter :: ialtcomp_work_t2     = ialt_offset2 + 5 + comp_offset
     Integer, Parameter :: ialtcomp_work_p2     = ialt_offset2 + 6 + comp_offset
@@ -278,6 +273,7 @@ Module Diagnostics_Base
     Integer, Parameter :: ialtshear_r1     =  ialt_offset4 + 1
     Integer, Parameter :: ialtshear_t1     =  ialt_offset4 + 2
     Integer, Parameter :: ialtshear_p1     =  ialt_offset4 + 3
+
     Integer, Parameter :: ialtshear_r2     =  ialt_offset4 + 4
     Integer, Parameter :: ialtshear_t2     =  ialt_offset4 + 5
     Integer, Parameter :: ialtshear_p2     =  ialt_offset4 + 6
@@ -295,17 +291,11 @@ Module Diagnostics_Base
     Integer, Parameter :: ialtadvec_t3     =  ialt_offset4 + 8 + adv_offset
     Integer, Parameter :: ialtadvec_p3     =  ialt_offset4 + 9 + adv_offset
 
-    Integer, Parameter :: ialtadvec_r4     =  ialt_offset4 + 10 + adv_offset
-    Integer, Parameter :: ialtadvec_t4     =  ialt_offset4 + 11 + adv_offset
-    Integer, Parameter :: ialtadvec_p4     =  ialt_offset4 + 12 + adv_offset
-
-    Integer, Parameter :: ialtadvec_r5     =  ialt_offset4 + 13 + adv_offset
-    Integer, Parameter :: ialtadvec_t5     =  ialt_offset4 + 14 + adv_offset
-    Integer, Parameter :: ialtadvec_p5     =  ialt_offset4 + 15 + adv_offset
 
     Integer, Parameter :: ialtcomp_r1     = ialt_offset4 + 1 + comp_offset
     Integer, Parameter :: ialtcomp_t1     = ialt_offset4 + 2 + comp_offset
     Integer, Parameter :: ialtcomp_p1     = ialt_offset4 + 3 + comp_offset
+
     Integer, Parameter :: ialtcomp_r2     = ialt_offset4 + 4 + comp_offset
     Integer, Parameter :: ialtcomp_t2     = ialt_offset4 + 5 + comp_offset
     Integer, Parameter :: ialtcomp_p2     = ialt_offset4 + 6 + comp_offset
