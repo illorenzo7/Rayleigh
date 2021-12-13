@@ -1259,7 +1259,7 @@ Contains
             ! shear terms
             If (compute_quantity(ialtshear_r+j-1+offset)) Then
                 DO_PSI
-                    qty(PSI) = sheartmp(PSI,j)*bfieldtmp(PSI,j)
+                    qty(PSI) = sheartmp(PSI,j)
                 END_DO
                 Call Add_Quantity(qty)
             Endif
@@ -1267,7 +1267,7 @@ Contains
             ! advect. terms
             If (compute_quantity(ialtadvec_r+j-1+offset)) Then
                 DO_PSI
-                    qty(PSI) = advtmp(PSI,j)*bfieldtmp(PSI,j)
+                    qty(PSI) = advtmp(PSI,j)
                 END_DO
                 Call Add_Quantity(qty)
             Endif
@@ -1275,7 +1275,7 @@ Contains
             ! Comp. terms
             If (compute_quantity(ialtcomp_r+j-1+offset)) Then
                 DO_PSI
-                    qty(PSI) = comptmp(PSI,j)*bfieldtmp(PSI,j)
+                    qty(PSI) = comptmp(PSI,j)
                 END_DO
                 Call Add_Quantity(qty)
             Endif
@@ -1283,7 +1283,7 @@ Contains
             ! tot ind. terms
             If (compute_quantity(inductalt_r+j-1+offset)) Then
                 DO_PSI
-                    qty(PSI) = inducttmp(PSI,j)*bfieldtmp(PSI,j)
+                    qty(PSI) = inducttmp(PSI,j)
                 END_DO
                 Call Add_Quantity(qty)
             Endif
