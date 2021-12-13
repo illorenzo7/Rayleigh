@@ -114,9 +114,9 @@ Contains
         Real*8, Allocatable :: buff1(:,:,:,:),buff2(:,:,:,:)
         Real*8, Allocatable :: inducttmp(:,:,:,:), sheartmp(:,:,:,:), advtmp(:,:,:,:), comptmp(:,:,:,:), bfieldtmp(:,:,:,:)
         Real*8, Allocatable :: sheartmp1(:,:,:,:), sheartmp2(:,:,:,:)
-        Real*8, Allocatable :: advtmp1(:,:,:,:), advtmp2(:,:,:,:), advtmp3(:,:,:,:), advtmp4(:,:,:,:), advtmp5(:,:,:,:)
+        Real*8, Allocatable :: advtmp1(:,:,:,:), advtmp2(:,:,:,:), advtmp3(:,:,:,:)
         Real*8, Allocatable :: comptmp1(:,:,:,:), comptmp2(:,:,:,:)
-
+        Real*8, Allocatable :: divv_r(:,:,:), divv_theta(:,:,:),  divv_phi(:,:,:)
 
         Real*8 :: del2b
         Real*8, Allocatable :: ovstheta(:), ovs2theta(:)
@@ -146,11 +146,13 @@ Contains
         Allocate(advtmp1(1:n_phi,my_r%min:my_r%max,my_theta%min:my_theta%max,1:3))
         Allocate(advtmp2(1:n_phi,my_r%min:my_r%max,my_theta%min:my_theta%max,1:3))
         Allocate(advtmp3(1:n_phi,my_r%min:my_r%max,my_theta%min:my_theta%max,1:3))
-        Allocate(advtmp4(1:n_phi,my_r%min:my_r%max,my_theta%min:my_theta%max,1:3))
-        Allocate(advtmp5(1:n_phi,my_r%min:my_r%max,my_theta%min:my_theta%max,1:3))
 
         Allocate(comptmp1(1:n_phi,my_r%min:my_r%max,my_theta%min:my_theta%max,1:3))
         Allocate(comptmp2(1:n_phi,my_r%min:my_r%max,my_theta%min:my_theta%max,1:3))
+
+        Allocate(divv_r(1:n_phi,my_r%min:my_r%max,my_theta%min:my_theta%max))
+        Allocate(divv_theta(1:n_phi,my_r%min:my_r%max,my_theta%min:my_theta%max))
+        Allocate(divv_phi(1:n_phi,my_r%min:my_r%max,my_theta%min:my_theta%max))
 
         ovstheta = 1.0d0/sintheta
         ovs2theta = 1.0d0/sin2theta
@@ -1110,36 +1112,39 @@ Contains
             advtmp1(PSI,1) = -buff1(PSI,vr)*buff2(PSI,dbrdr)
             advtmp2(PSI,1) = -buff1(PSI,vtheta)*buff2(PSI,dbrdt)/radius(r)
             advtmp3(PSI,1) = -buff1(PSI,vphi)*buff2(PSI,dbrdp)/radius(r)/sintheta(t)
-            advtmp4(PSI,1) = -2.0d0*buff1(PSI,vr)*buff2(PSI,br)/radius(r)
-            advtmp5(PSI,1) = 0.0d0
 
             advtmp1(PSI,2) = -buff1(PSI,vr)*buff2(PSI,dbtdr)
             advtmp2(PSI,2) = -buff1(PSI,vtheta)*buff2(PSI,dbtdt)/radius(r)
             advtmp3(PSI,2) = -buff1(PSI,vphi)*buff2(PSI,dbtdp)/radius(r)/sintheta(t)
-            advtmp4(PSI,2) = buff1(PSI,vr)*buff2(PSI,btheta)/radius(r)
-            advtmp5(PSI,2) = -buff1(PSI,vtheta)*buff2(PSI,btheta)*cottheta(t)/radius(r)
 
             advtmp1(PSI,3) = -buff1(PSI,vr)*buff2(PSI,dbpdr)
             advtmp2(PSI,3) = -buff1(PSI,vtheta)*buff2(PSI,dbpdt)/radius(r)
             advtmp3(PSI,3) = -buff1(PSI,vphi)*buff2(PSI,dbpdp)/radius(r)/sintheta(t)
-            advtmp4(PSI,3) = buff1(PSI,vr)*buff2(PSI,bphi)/radius(r)
-            advtmp5(PSI,3) = buff1(PSI,vtheta)*buff2(PSI,bphi)*cottheta(t)/radius(r)
 
             Do j = 1,3
-                advtmp(PSI,j) = advtmp1(PSI,j) + advtmp2(PSI,j) + advtmp3(PSI,j) +&
-                    &advtmp4(PSI,j) + advtmp5(PSI,j)
+                advtmp(PSI,j) = advtmp1(PSI,j) + advtmp2(PSI,j) + advtmp3(PSI,j)
             Enddo
         END_DO
 
         ! get compression
         ! ALTERNATE compression: -B (div v) (but TRANSVERSE compression only)
+        ! 3 parts: transverse to r, theta, phi (do this separately, I think it
+        ! sums to the right thing
         DO_PSI
-            comptmp1(PSI,1) = -buff2(PSI,br)*(buff1(PSI,dvtdt)+buff1(PSI,vtheta)*cottheta(t))/radius(r)
-            comptmp2(PSI,1) = -buff2(PSI,br)*buff1(PSI,dvpdp)/radius(r)/sintheta(t)
-            comptmp1(PSI,2) = -buff2(PSI,btheta)*(buff1(PSI,dvrdr)+2.0d0*buff1(PSI,vr)/radius(r))
-            comptmp2(PSI,2) = -buff2(PSI,btheta)*buff1(PSI,dvpdp)/radius(r)/sintheta(t)
-            comptmp1(PSI,3) = -buff2(PSI,bphi)*(buff1(PSI,dvrdr)+2.0d0*buff1(PSI,vr)/radius(r))
-            comptmp2(PSI,3) = -buff2(PSI,bphi)*(buff1(PSI,dvtdt)+buff1(PSI,vtheta)*cottheta(t))/radius(r)
+            divv_r(PSI) = -buff1(PSI, dvrdr)
+            divv_theta(PSI) = -(buff1(PSI,dvtdt)+buff1(PSI,vr))/radius(r)
+            divv_phi(PSI) = -(buff1(PSI,dvpdp)/sintheta(t) +&
+               &buff1(PSI,vr) + cottheta(t)*buff1(PSI,vtheta))/radius(r)
+
+            comptmp1(PSI,1) = buff2(PSI,br)*divv_theta(PSI)
+            comptmp2(PSI,1) = buff2(PSI,br)*divv_phi(PSI)
+
+            comptmp1(PSI,2) = buff2(PSI,btheta)*divv_r(PSI)
+            comptmp2(PSI,2) = buff2(PSI,btheta)*divv_phi(PSI)
+            
+            comptmp1(PSI,3) = buff2(PSI,bphi)*divv_r(PSI)
+            comptmp2(PSI,3) = buff2(PSI,bphi)*divv_theta(PSI)
+
             Do j = 1,3
                 comptmp(PSI,j) = comptmp1(PSI,j) + comptmp2(PSI,j)
             Enddo
@@ -1223,18 +1228,6 @@ Contains
             If (compute_quantity(ialtadvec_work_r3+j-1+offset2)) Then
                 DO_PSI
                     qty(PSI) = advtmp3(PSI,j)*bfieldtmp(PSI,j)
-                END_DO
-                Call Add_Quantity(qty)
-            Endif
-            If (compute_quantity(ialtadvec_work_r4+j-1+offset2)) Then
-                DO_PSI
-                    qty(PSI) = advtmp4(PSI,j)*bfieldtmp(PSI,j)
-                END_DO
-                Call Add_Quantity(qty)
-            Endif
-            If (compute_quantity(ialtadvec_work_r5+j-1+offset2)) Then
-                DO_PSI
-                    qty(PSI) = advtmp5(PSI,j)*bfieldtmp(PSI,j)
                 END_DO
                 Call Add_Quantity(qty)
             Endif
@@ -1325,18 +1318,6 @@ Contains
                 END_DO
                 Call Add_Quantity(qty)
             Endif
-            If (compute_quantity(ialtadvec_r4+j-1+offset2)) Then
-                DO_PSI
-                    qty(PSI) = advtmp4(PSI,j)
-                END_DO
-                Call Add_Quantity(qty)
-            Endif
-            If (compute_quantity(ialtadvec_r5+j-1+offset2)) Then
-                DO_PSI
-                    qty(PSI) = advtmp5(PSI,j)
-                END_DO
-                Call Add_Quantity(qty)
-            Endif
             
             ! Comp. terms
             If (compute_quantity(ialtcomp_r1+j-1+offset2)) Then
@@ -1376,11 +1357,13 @@ Contains
         DeAllocate(advtmp1)
         DeAllocate(advtmp2)
         DeAllocate(advtmp3)
-        DeAllocate(advtmp4)
-        DeAllocate(advtmp5)
 
         DeAllocate(comptmp1)
         DeAllocate(comptmp2)
+
+        DeAllocate(divv_r)
+        DeAllocate(divv_theta)
+        DeAllocate(divv_phi)
 
         ! Edit Above This Line
         !=============================================
