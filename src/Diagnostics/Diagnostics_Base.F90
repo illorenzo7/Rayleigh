@@ -94,6 +94,7 @@ Module Diagnostics_Base
     ! actual induction (not multiplied by B)
     Integer, Parameter :: ialt_offset3 = 3000
     Integer, Parameter :: ialt_offset4 = ialt_offset3+100 ! 3100
+    Integer, Parameter :: ialt_offset5 = ialt_offset4+200 ! 3300
 
     ! total
     Integer, Parameter :: induct_work_r     = custom_offset + 1
@@ -299,6 +300,24 @@ Module Diagnostics_Base
     Integer, Parameter :: ialtcomp_r2     = ialt_offset4 + 4 + comp_offset
     Integer, Parameter :: ialtcomp_t2     = ialt_offset4 + 5 + comp_offset
     Integer, Parameter :: ialtcomp_p2     = ialt_offset4 + 6 + comp_offset
+
+    ! bit more breakup, start at 3300
+    ! comp
+    ! vgrad
+    Integer, Parameter :: ialtcomp_t3     = ialt_offset5 + 1
+    Integer, Parameter :: ialtcomp_t4     = ialt_offset5 + 2
+    ! induct
+    Integer, Parameter :: ialtcomp_t5     = ialt_offset5 + 3
+    Integer, Parameter :: ialtcomp_t6     = ialt_offset5 + 4
+    ! shear
+    ! vgrad
+    Integer, Parameter :: ialtshear_t3   = ialt_offset5 + 5
+
+    ! mag torque things
+    Integer, Parameter :: alttorque1   = ialt_offset5 + 6
+    Integer, Parameter :: alttorque2   = ialt_offset5 + 7
+    Integer, Parameter :: alttorque3   = ialt_offset5 + 8
+    Integer, Parameter :: alttorque4   = ialt_offset5 + 9
 
 
     include "turbKE_codes.F"

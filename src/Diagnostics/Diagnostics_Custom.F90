@@ -1334,6 +1334,73 @@ Contains
             Endif
         Enddo
 
+        ! terms bit more broken up
+        ! comp, vgrad
+        If (compute_quantity(ialtcomp_t3)) Then
+            DO_PSI
+                qty(PSI) = -buff1(PSI, dvpdp)/radius(r)/sintheta(t)
+            END_DO
+            Call Add_Quantity(qty)
+        Endif
+        If (compute_quantity(ialtcomp_t4)) Then
+            DO_PSI
+                qty(PSI) = -buff1(PSI, vtheta)*cottheta(t)/radius(r)
+            END_DO
+            Call Add_Quantity(qty)
+        Endif
+        ! comp, induct
+        If (compute_quantity(ialtcomp_t5)) Then
+            DO_PSI
+                qty(PSI) = -buff2(PSI,btheta)*buff1(PSI, dvpdp)/radius(r)/sintheta(t)
+            END_DO
+            Call Add_Quantity(qty)
+        Endif
+        If (compute_quantity(ialtcomp_t6)) Then
+            DO_PSI
+                qty(PSI) = -buff2(PSI,btheta)*buff1(PSI, vtheta)*cottheta(t)/radius(r)
+            END_DO
+            Call Add_Quantity(qty)
+        Endif
+        ! shear, vgrad
+        If (compute_quantity(ialtshear_t3)) Then
+            DO_PSI
+                qty(PSI) = buff1(PSI, dvtdr) - buff1(PSI, vtheta)/radius(r)
+            END_DO
+            Call Add_Quantity(qty)
+        Endif
+
+
+        ! more TORQUE stuff
+        ! torque, vgrad
+        If (compute_quantity(alttorque1)) Then
+            DO_PSI
+                qty(PSI) = radius(r)*sintheta(t)/four_pi*(buffer(PSI, dbpdr) +&
+                    &buffer(PSI, bphi)/radius(r))
+            END_DO
+            Call Add_Quantity(qty)
+        Endif
+        If (compute_quantity(alttorque2)) Then
+            DO_PSI
+                qty(PSI) = buffer(PSI,br)*radius(r)*sintheta(t)/four_pi*(buffer(PSI, dbpdr) +&
+                    &buffer(PSI, bphi)/radius(r))
+            END_DO
+            Call Add_Quantity(qty)
+        Endif
+        If (compute_quantity(alttorque3)) Then
+            DO_PSI
+                qty(PSI) = (sintheta(t)*buffer(PSI, dbpdt) +&
+                    &costheta(t)*buffer(PSI, bphi))/four_pi
+            END_DO
+            Call Add_Quantity(qty)
+        Endif
+        If (compute_quantity(alttorque4)) Then
+            DO_PSI
+                qty(PSI) = buffer(PSI,btheta)/four_pi*(sintheta(t)*buffer(PSI, dbpdt) +&
+                    &costheta(t)*buffer(PSI, bphi))
+            END_DO
+            Call Add_Quantity(qty)
+        Endif
+
         DeAllocate(ind_work_r)
         DeAllocate(ind_work_t)
         DeAllocate(ind_work_p)
