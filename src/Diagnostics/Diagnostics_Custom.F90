@@ -1401,6 +1401,147 @@ Contains
             Call Add_Quantity(qty)
         Endif
 
+        ! VERTICAL and HORIZONTAL diffusions of magnetic field
+
+        If (compute_quantity(idiff_r1)) Then
+
+            DO_PSI
+                ! Del^2 {B_r}
+                del2b = DDBUFF(PSI,dbrdrdr)+Two_Over_R(r)*buffer(PSI,dbrdr)
+                qty(PSI) = eta(r)*del2b
+            END_DO
+
+            Call Add_Quantity(qty)
+
+        Endif
+
+        If (compute_quantity(idiff_r2)) Then
+
+            DO_PSI
+                ! Del^2 {B_r}
+                del2b = OneOverRSquared(r)*(DDBUFF(PSI,dbrdtdt)+cottheta(t)*buffer(PSI,dbrdt))
+                del2b = del2b+OneOverRSquared(r)*DDBUFF(PSI,dbrdpdp)*ovs2theta(t)
+                qty(PSI) = eta(r)*del2b
+            END_DO
+
+            Call Add_Quantity(qty)
+
+        Endif
+
+        If (compute_quantity(idiff_r3)) Then
+
+            DO_PSI
+                !Add geometric terms to make this { Del^2{B} }_r
+                del2b = -2.0d0*OneOverRsquared(r)*( &
+                        buffer(PSI,br) + &
+                        buffer(PSI,dbtdt)+buffer(PSI,btheta)*cottheta(t) + &
+                        ovstheta(t)*buffer(PSI,dbpdp) ) 
+                qty(PSI) = eta(r)*del2b
+            END_DO
+
+            Call Add_Quantity(qty)
+
+        Endif
+
+        !Theta-direction; Full
+        If (compute_quantity(idiff_t1)) Then
+
+            DO_PSI
+
+                ! Del^2 {B_theta}
+                del2b = DDBUFF(PSI,dbtdrdr)+Two_Over_R(r)*buffer(PSI,dbtdr)
+                qty(PSI) = eta(r)*del2b
+
+            END_DO
+
+            Call Add_Quantity(qty)
+
+        Endif
+
+        If (compute_quantity(idiff_t2)) Then
+
+            DO_PSI
+
+                ! Del^2 {B_theta}
+                del2b = OneOverRSquared(r)*(DDBUFF(PSI,dbtdtdt)+cottheta(t)*buffer(PSI,dbtdt))
+                del2b = del2b+OneOverRSquared(r)*DDBUFF(PSI,dbtdpdp)*ovs2theta(t)
+
+                ! Add the contribution from a gradient in eta
+                qty(PSI) = eta(r)*del2b
+
+            END_DO
+
+            Call Add_Quantity(qty)
+
+        Endif
+
+        If (compute_quantity(idiff_t3)) Then
+
+            DO_PSI
+
+                !Add geometric terms to make this { Del^2{B} }_theta
+                del2b = OneOverRSquared(r)*( 2.0d0*buffer(PSI,dbrdt) - &
+                        ovs2theta(t)*(   buffer(PSI,btheta) + &
+                        2.0d0*costheta(t)*buffer(PSI,dbpdp) ) )
+
+                ! Add the contribution from a gradient in eta
+                qty(PSI) = eta(r)*(del2b+buffer(PSI,curlbphi)*dlneta(r))
+
+            END_DO
+
+            Call Add_Quantity(qty)
+
+        Endif
+
+        !Phi-direction
+        If (compute_quantity(idiff_p1)) Then
+
+            DO_PSI
+                ! build Del^2{B_phi}
+                del2b = DDBUFF(PSI,dbpdrdr)+Two_Over_R(r)*buffer(PSI,dbpdr)
+
+                qty(PSI) = eta(r)*del2b
+
+            END_DO
+
+            Call Add_Quantity(qty)
+
+        Endif
+
+        If (compute_quantity(idiff_p2)) Then
+
+            DO_PSI
+                ! build Del^2{B_phi}
+                del2b = OneOverRSquared(r)*(DDBUFF(PSI,dbpdtdt)+cottheta(t)*buffer(PSI,dbpdt))
+                del2b = del2b+OneOverRSquared(r)*DDBUFF(PSI,dbpdpdp)*ovs2theta(t)
+
+                qty(PSI) = eta(r)*del2b
+
+            END_DO
+
+            Call Add_Quantity(qty)
+
+        Endif
+
+        If (compute_quantity(idiff_p3)) Then
+
+            DO_PSI
+
+
+                !Add geometric terms to make this { Del^2{u} }_phi
+                del2b = OneOverRSquared(r)*( 2.0d0*buffer(PSI,dbrdp)*ovstheta(t) - &
+                        ovs2theta(t)*(   buffer(PSI,bphi) - &
+                        2.0d0*costheta(t)*buffer(PSI,dbtdp) ) )
+
+                qty(PSI) = eta(r)*(del2b-buffer(PSI,curlbtheta)*dlneta(r))
+
+            END_DO
+
+            Call Add_Quantity(qty)
+
+        Endif
+
+
         DeAllocate(ind_work_r)
         DeAllocate(ind_work_t)
         DeAllocate(ind_work_p)

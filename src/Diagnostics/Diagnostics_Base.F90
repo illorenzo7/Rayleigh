@@ -301,6 +301,18 @@ Module Diagnostics_Base
     Integer, Parameter :: ialtcomp_t2     = ialt_offset4 + 5 + comp_offset
     Integer, Parameter :: ialtcomp_p2     = ialt_offset4 + 6 + comp_offset
 
+    Integer, Parameter :: idiff_r1     = ialt_offset4 + 1 + comp_offset + 6
+    Integer, Parameter :: idiff_t1     = ialt_offset4 + 2 + comp_offset + 6
+    Integer, Parameter :: idiff_p1     = ialt_offset4 + 3 + comp_offset + 6
+
+    Integer, Parameter :: idiff_r2     = ialt_offset4 + 4 + comp_offset + 6
+    Integer, Parameter :: idiff_t2     = ialt_offset4 + 5 + comp_offset + 6
+    Integer, Parameter :: idiff_p2     = ialt_offset4 + 6 + comp_offset + 6
+
+    Integer, Parameter :: idiff_r3     = ialt_offset4 + 7 + comp_offset + 6
+    Integer, Parameter :: idiff_t3     = ialt_offset4 + 8 + comp_offset + 6
+    Integer, Parameter :: idiff_p3     = ialt_offset4 + 9 + comp_offset + 6
+
     ! bit more breakup, start at 3300
     ! comp
     ! vgrad
