@@ -1102,6 +1102,8 @@ class AZ_Avgs:
     self.time[0:niter-1]                          : The simulation time corresponding to each time step
     self.version                                  : The version code for this particular output (internal use)
     self.lut                                      : Lookup table for the different diagnostics output
+
+    self.write(ofile)                             : Method to write "self" to the binary file "ofile"
     """
 
     def __init__(self,filename='none',path='AZ_Avgs/'):
@@ -1142,6 +1144,21 @@ class AZ_Avgs:
             self.iters[i] = swapread(fd,dtype='int32',count=1,swap=bs)
 
         self.lut = get_lut(self.qv)
+        fd.close()
+
+    def write(self, outfile):
+        fd = open(outfile,'wb') #w = write, b = binary
+        preamble = np.array([314, self.version, self.niter, self.nr, self.ntheta, self.nq], dtype='int32')
+        preamble.tofile(fd)
+        self.qv.tofile(fd)
+        self.radius.tofile(fd)
+        self.costheta.tofile(fd)
+
+        for i in range(self.niter):
+            np.transpose(self.vals[...,i]).tofile(fd)
+            self.time[i].tofile(fd)
+            self.iters[i].tofile(fd)
+
         fd.close()
 
 class Point_Probes:
