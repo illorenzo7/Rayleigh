@@ -1032,7 +1032,7 @@ class Shell_Avgs:
         nq = swapread(fd,dtype='int32',count=1,swap=bs)
 
         if (version >= 6):
-            npcol = swapread(fd,dtype='int32',count=1,swap=bs)
+            self.npcol = npcol = swapread(fd,dtype='int32',count=1,swap=bs)
 
         self.version = version
         self.niter = nrec
@@ -1084,6 +1084,35 @@ class Shell_Avgs:
                 self.vals[:,1,:,:] = 0.0            
 
         self.lut = get_lut(self.qv)
+        fd.close()
+
+    def write(self, outfile):
+        fd = open(outfile,'wb') #w = write, b = binary
+        preamble = [314, self.version, self.niter, self.nr, self.nq]
+        if self.version >= 6:
+            preamble.append(self.npcol)
+        preamble = np.array(preamble, dtype='int32')
+        preamble.tofile(fd)
+        self.qv.tofile(fd)
+        self.radius.tofile(fd)
+
+        for i in range(self.niter):
+            if self.version < 6:
+                np.transpose(self.vals[...,i]).tofile(fd)
+            else:    
+                rind = 0
+                nr_base = self.nr//self.npcol
+                nr_mod = self.nr % self.npcol
+                for j in range(self.npcol):
+                    nrout = nr_base
+                    if j < nr_mod:
+                        nrout += 1
+                    np.transpose(self.vals[rind:rind+nrout,:,:,i]).tofile(fd)
+                    rind += nrout
+
+            self.time[i].tofile(fd)
+            self.iters[i].tofile(fd)
+
         fd.close()
 
 class AZ_Avgs:
