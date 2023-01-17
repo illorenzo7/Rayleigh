@@ -1825,6 +1825,33 @@ class Shell_Spectra:
 
                     self.lpower[:,j,q,k,0] = self.lpower[:,j,q,k,2]+self.lpower[:,j,q,k,1] # total power
 
+    def write(self, outfile):
+        fd = open(outfile,'wb') #w = write, b = binary
+        preamble = np.array([314, self.version, self.niter, self.lmax, self.nr, self.nq], dtype='int32')
+        preamble.tofile(fd)
+        self.qv.tofile(fd)
+        self.radius.tofile(fd)
+        # store in Fortran (1-based) indexing
+        (self.rad_inds+1).tofile(fd)
+
+        for i in range(self.niter):
+            tmp1 = np.zeros((self.nell, self.nm, self.nr, self.nq), dtype='float64')
+            tmp2 = np.zeros((self.nell, self.nm, self.nr, self.nq), dtype='float64')
+            tmp1[...] = self.vals[...,i].real
+            tmp2[...] = self.vals[...,i].imag
+            if self.version != 4: # the m > 0 power should be too high
+                # by factor of 2
+                tmp1[:,1:,...] *= np.sqrt(2.0)
+                tmp2[:,1:,...] *= np.sqrt(2.0)
+
+            np.transpose(tmp1).tofile(fd)
+            np.transpose(tmp2).tofile(fd)
+
+            self.time[i].tofile(fd)
+            self.iters[i].tofile(fd)
+
+        fd.close()
+
 class Power_Spectrum():
     """Rayleigh Power Spectrum Structure
     ----------------------------------
