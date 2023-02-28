@@ -87,12 +87,12 @@ Module PDE_Coefficients
     Real*8 :: Magnetic_Prandtl_Number = 1.0d0
     Real*8 :: gravity_power           = 0.0d0
     Real*8 :: Dissipation_Number      = 0.0d0
-    Real*8 :: Modified_Rayleigh_Number = 0.0d0
+    Real*8 :: Modified_Rayleigh_Number = -1.0d0
 
     ! Nondimensional variables for the active/passive scalar fields
     Real*8 :: chi_a_rayleigh_number(1:n_scalar_max)          = 0.0d0
     Real*8 :: chi_a_prandtl_number(1:n_scalar_max)           = 1.0d0
-    Real*8 :: chi_a_modified_rayleigh_number(1:n_scalar_max) = 0.0d0
+    Real*8 :: chi_a_modified_rayleigh_number(1:n_scalar_max) = -1.0d0
     Real*8 :: chi_p_prandtl_number(1:n_scalar_max)           = 1.0d0
 
     ! Dimensional anelastic variables (reference_type = 2)
@@ -122,6 +122,18 @@ Module PDE_Coefficients
     Logical              :: custom_reference_read = .false.
     Character*120        :: custom_reference_file ='nothing'    
 
+    ! General nondimensional anelastic polytrope variables (reference_type = 5)
+    Logical :: ND_Volume_Average = .true.
+    Logical :: ND_Inner_Radius = .false. 
+    Logical :: ND_Outer_Radius = .false.
+    Logical :: ND_Visc_Time = .true.
+    Logical :: ND_Rot_Time = .false.
+    Logical :: Use_Flux_Ra = .true.
+
+    Real*8  :: Gamma_Specific_Heat = 5.0d0/3.0d0 ! Probably 5/3 or 7/5
+    Real*8  :: Buoyancy_Number_Visc = 0.0d0
+    Real*8  :: Buoyancy_Number_Rot = -1.0d0
+
     ! Internal heating variables
     Integer :: heating_type = 0 ! 0 means no reference heating.  > 0 selects optional reference heating
     Real*8  :: Luminosity = 0.0d0 ! Specifies the integral of the heating function
@@ -143,7 +155,12 @@ Module PDE_Coefficients
             & Heating_Integral, override_constants, override_constant, ra_constants, with_custom_constants, &
             & with_custom_functions, with_custom_reference, &
             & chi_a_rayleigh_number, chi_a_prandtl_number, &
-            & chi_a_modified_rayleigh_number, chi_p_prandtl_number
+            & chi_a_modified_rayleigh_number, chi_p_prandtl_number, &
+            & ND_Volume_Average, ND_Inner_Radius, ND_Outer_Radius, ND_Visc_Time, ND_Rot_Time, Use_Flux_Ra
+
+    Real*8  :: Gamma_Specific_Heat = 5.0d0/3.0d0 ! Probably 5/3 or 7/5
+    Real*8  :: Buoyancy_Number_Visc = 0.0d0
+    Real*8  :: Buoyancy_Number_Rot = 0.0d0
 
     !///////////////////////////////////////////////////////////////////////////////////////
     ! II.  Variables Related to the Transport Coefficients
@@ -213,6 +230,10 @@ Contains
 
         If (reference_type .eq. 4) Then
             Call Get_Custom_Reference()
+        Endif
+
+        If (reference_type .eq. 5) Then
+            Call Polytropic_ReferenceND_General()
         Endif
 
         If (my_rank .eq. 0) Then
@@ -491,12 +512,161 @@ Contains
 
     End Subroutine Polytropic_ReferenceND
 
+    Subroutine Polytropic_ReferenceND_General()
+        Implicit None
+        Integer :: i
+        Real*8 :: dtmp, otmp
+        Real*8, Allocatable :: Radius_ND(:), dtmparr(:), gravity(:)
+        Character*12 :: dstring
+        Character*8 :: dofmt = '(ES12.5)'
+
+        ! Deal with some preliminary logic before outputting reference state
+        If (aspect_ratio .lt. 0) Then
+            aspect_ratio = rmin/rmax
+        Endif
+
+        If (shell_depth .lt. 0) Then
+            shell_depth = rmax - rmin
+        Endif
+
+        If (rotation) Then
+            If (Modified_Rayleigh_Number .lt. 0) Then !User set Ra, not Ra*
+                Modified_Rayleigh_Number = Rayleigh_Number*Ekman_Number**2/Prandtl_Number
+            Else ! User specified Ra*; that takes precedence over Ra
+                Rayleigh_Number = Modified_Rayleigh_Number*Prandtl_Number/Ekman_Number**2
+            Endif
+
+            If (Buoyancy_Number_Rot .lt. 0) Then !User set B_visc, not B_rot
+                Buoyancy_Number_Rot = Buoyancy_Number_Visc*Ekman_Number**2
+            Else ! User B_rot; that takes precedence over B_visc
+                Buoyancy_Number_Visc = Buoyancy_Number_Rot/Ekman_Number**2
+            Endif
+        Endif
+
+        
+        If (my_rank .eq. 0) Then
+            Call stdout%print(" ---- Reference type           : "//trim(" Polytrope (Generalized Non-dimensional)"))
+            Write(dstring,dofmt)Gamma_Specific_Heat
+            Call stdout%print(" ---- Specific-heat ratio      : "//trim(dstring))
+            Write(dstring,dofmt)poly_n
+            Call stdout%print(" ---- Polytropic Index         : "//trim(dstring))
+            Write(dstring,dofmt)poly_nrho
+            Call stdout%print(" ---- No. Density Scaleheights : "//trim(dstring))
+            Write(dstring,dofmt)Aspect_Ratio
+            Call stdout%print(" ---- Aspect Ratio             : "//trim(dstring))
+
+            Write(dstring,dofmt)Rayleigh_Number
+            Call stdout%print(" ---- Rayleigh Number : "//trim(dstring))
+            If (.not. Use_Flux_Rayleigh_Number) Then
+                Write(dstring,dofmt)Heating_Integral
+                Call stdout%print(" ---- Heating Integral : "//trim(dstring))
+            Endif
+            Write(dstring,dofmt)Prandtl_Number
+            Call stdout%print(" ---- Prandtl Number           : "//trim(dstring))
+            Write(dstring,dofmt)Buoyancy_Number_Visc
+            Call stdout%print(" ---- Visc. Buoyancy Number    : "//trim(dstring))
+            If (rotation) Then
+                Write(dstring,dofmt)Ekman_Number
+                Call stdout%print(" ---- Ekman Number             : "//trim(dstring))
+                Write(dstring,dofmt)Modified_Rayleigh_Number
+                Call stdout%print(" ---- Modified Rayleigh Number : "//trim(dstring))
+                Write(dstring,dofmt)Buoyancy_Number_Rot
+                Call stdout%print(" ---- Rot. Buoyancy Number     : "//trim(dstring))
+            Endif
+            If (magnetism) Then
+                Write(dstring,dofmt)Magnetic_Prandtl_Number
+                Call stdout%print(" ---- Magnetic Prandtl Number  : "//trim(dstring))
+            Endif
+        Endif
+
+        Allocate(dtmparr(1:N_R), gravity(1:N_R))
+        dtmparr(:) = 0.0d0
+
+        Dissipation_Number = aspect_ratio*(exp(poly_Nrho/poly_n)-1.0D0)
+        dtmp = 1.0D0/(1.0D0-aspect_ratio)
+        ref%temperature(:) = dtmp*Dissipation_Number*(dtmp*One_Over_R(:)-1.0D0)+1.0D0
+        ref%density(:) = ref%temperature(:)**poly_n
+        gravity = (rmax**2)*OneOverRSquared(:)
+        ref%Buoyancy_Coeff = gravity*Modified_Rayleigh_Number*ref%density
+        do i = 1, n_active_scalars
+          ref%chi_buoyancy_coeff(i,:) = -gravity*chi_a_modified_rayleigh_number(i)*ref%density
+        enddo
+
+        !Compute the background temperature gradient : dTdr = -Dg,  d2Tdr2 = 2*D*g/r (for g ~1/r^2)
+        dtmparr = -Dissipation_Number*gravity
+        !Now, the logarithmic derivative of temperature
+        ref%dlnt = dtmparr/ref%temperature
+
+        !And then logarithmic derivative of rho : dlnrho = n dlnT
+        ref%dlnrho = poly_n*ref%dlnt
+
+        !Now, the second logarithmic derivative of rho :  d2lnrho = (n/T)*d2Tdr2 - n*(dlnT^2)
+        ref%d2lnrho = -poly_n*(ref%dlnT**2)
+
+        dtmparr = (poly_n/ref%temperature)*(2.0d0*Dissipation_Number*gravity/radius) ! (n/T)*d2Tdr2
+        ref%d2lnrho = ref%d2lnrho+dtmparr
+
+        ref%dsdr(:) = 0.0d0
+        Call Initialize_Reference_Heating()
+
+        ref%Coriolis_Coeff = 2.0d0
+        ref%dpdr_w_term(:) = ref%density
+        ref%pressure_dwdr_term(:) = -1.0d0*ref%density
+
+        nu_top   = Ekman_Number
+        kappa_top     = Ekman_Number/Prandtl_Number
+        do i = 1, n_active_scalars
+            kappa_chi_a_top(i)   = Ekman_Number/chi_a_prandtl_number(i)
+        enddo
+        do i = 1, n_passive_scalars
+            kappa_chi_p_top(i)   = Ekman_Number/chi_p_prandtl_number(i)
+        enddo
+        ref%viscous_amp(1:N_R) = 2.0d0/ref%temperature(1:N_R)* &
+                                 & Dissipation_Number/Modified_Rayleigh_Number
+
+        If (magnetism) Then
+            ref%Lorentz_Coeff    = Ekman_Number/(Magnetic_Prandtl_Number)
+            eta_top     = Ekman_Number/Magnetic_Prandtl_Number
+
+            otmp = (Dissipation_Number*Ekman_Number**2)/(Modified_Rayleigh_Number*Magnetic_Prandtl_Number**2)
+            ref%ohmic_amp(1:N_R) = otmp/ref%density(1:N_R)/ref%temperature(1:N_R)
+        Else
+            ref%Lorentz_Coeff    = 0.0d0
+            eta_Top     = 0.0d0
+            ref%ohmic_amp(1:N_R) = 0.0d0
+        Endif
+
+        ! Set the equation coefficients (apart from the ones having to do with diffusivities and heating)
+        ! for proper output to the equation_coefficients file
+        ra_functions(:,1) = ref%density
+        ra_functions(:,2) = gravity*ref%density
+        ra_functions(:,4) = ref%temperature
+        ra_functions(:,8) = ref%dlnrho
+        ra_functions(:,9) = ref%d2lnrho        
+        ra_functions(:,10) = ref%dlnT
+        ra_functions(:,14) = ref%dsdr     
+                        
+        ra_constants(1) = ref%Coriolis_Coeff
+        ra_constants(2) = Modified_Rayleigh_Number
+        ra_constants(3) = 1.0d0
+        ra_constants(4) = ref%Lorentz_Coeff
+        ra_constants(8) = Ekman_Number*Dissipation_Number/Modified_Rayleigh_Number
+        If (magnetism) Then
+            ra_constants(9) = Ekman_Number**2*Dissipation_Number/(Magnetic_Prandtl_Number**2*Modified_Rayleigh_Number)
+        Endif ! if not magnetism, ra_constants(9) was initialized to zero
+
+        Do i = 1, n_active_scalars
+            ra_constants(12+(i-1)*2) = -chi_a_modified_rayleigh_number(i)
+        Enddo
+        DeAllocate(dtmparr, gravity)
+    End Subroutine Polytropic_ReferenceND_General
+
     Subroutine Polytropic_Reference()
         Implicit None
         Integer :: i
         Real*8 :: zeta_0,  c0, c1, d
         Real*8 :: rho_c, P_c, T_c,denom
-        Real*8 :: thermo_gamma, volume_specific_heat
+        Real*8 :: volume_specific_heat
         Real*8 :: beta
         Real*8 :: Gravitational_Constant = 6.67d-8 ! cgs units
         Real*8, Allocatable :: zeta(:), gravity(:)
@@ -565,8 +735,7 @@ Contains
         Gravity = Gravitational_Constant * poly_mass / Radius**2
 
         ! The following is needed to calculate the entropy gradient
-        thermo_gamma = 5.0d0/3.0d0
-        volume_specific_heat = pressure_specific_heat / thermo_gamma
+        volume_specific_heat = pressure_specific_heat / Gamma_Specific_Heat
 
         Ref%Density = rho_c * zeta**poly_n
 
@@ -576,7 +745,7 @@ Contains
         Ref%Temperature = T_c * zeta
         Ref%dlnT = -(c1*d/Radius**2)/zeta
 
-        Ref%dsdr = volume_specific_heat * (Ref%dlnT - (thermo_gamma - 1.0d0) * Ref%dlnrho)
+        Ref%dsdr = volume_specific_heat * (Ref%dlnT - (Gamma_Specific_Heat - 1.0d0) * Ref%dlnrho)
 
         Ref%Buoyancy_Coeff = gravity/Pressure_Specific_Heat*ref%density
 
@@ -1164,6 +1333,18 @@ Contains
         Heating_Integral = 0.0d0  ! Same as luminosity (for non-star watchers)
         Heating_EPS = 1.0d-12  ! Small number to test whether luminosity was specified
         adjust_reference_heating = .false. ! Flag used to decide if luminosity determined via boundary conditions
+
+        ! General nondimensional anelastic polytrope variables (reference_type = 5)
+        ND_Volume_Average = .true.
+        ND_Inner_Radius = .false. 
+        ND_Outer_Radius = .false.
+        ND_Visc_Time = .true.
+        ND_Rot_Time = .false.
+        Use_Flux_Ra = .true.
+
+        Gamma_Specific_Heat = 5.0d0/3.0d0 ! Probably 5/3 or 7/5
+        Buoyancy_Number_Visc = 0.0d0
+        Buoyancy_Number_Rot = 0.0d0
 
         ! Minimum time step based on rotation rate
         ! (determined by the reference state)
