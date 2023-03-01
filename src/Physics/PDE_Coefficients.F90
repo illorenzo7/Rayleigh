@@ -723,6 +723,9 @@ Contains
         Call Initialize_Reference_Heating()
 
         If (Assume_Flux_Ra .and. (heating_type .gt. 0) ) Then
+            ! don't renormalize heating later in Transport_Dependencies()
+            adjust_reference_heating = .False. 
+
             ! put rho*T "back in" to calculate heat flux
             ref%heating(:) = ref%density(:)*ref%temperature(:)*ref%heating(:)
 
@@ -741,6 +744,8 @@ Contains
             ! normalize the heating and take rho*T back out
             ref%heating(:) = ref%heating(:) * (shell_depth/norm)
             ref%heating(:) = ref%heating(:) / (ref%density(:)*ref%temperature(:))
+
+            
         Endif
 
         ! Set the equation coefficients (apart from the ones having to do with diffusivities and heating)
