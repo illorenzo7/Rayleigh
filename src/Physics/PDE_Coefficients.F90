@@ -559,10 +559,10 @@ Contains
             Call stdout%print(" ---- Aspect Ratio             : "//trim(dstring))
 
             Write(dstring,dofmt)Rayleigh_Number
-            Call stdout%print(" ---- Rayleigh Number : "//trim(dstring))
+            Call stdout%print(" ---- Rayleigh Number          : "//trim(dstring))
             If (.not. Assume_Flux_Ra) Then
                 Write(dstring,dofmt)Heating_Integral
-                Call stdout%print(" ---- Heating Integral : "//trim(dstring))
+                Call stdout%print(" ---- Heating Integral         : "//trim(dstring))
             Endif
             Write(dstring,dofmt)Prandtl_Number
             Call stdout%print(" ---- Prandtl Number           : "//trim(dstring))
