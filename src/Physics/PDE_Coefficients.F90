@@ -126,9 +126,9 @@ Module PDE_Coefficients
     Logical :: ND_Volume_Average = .true.
     Logical :: ND_Inner_Radius = .false. 
     Logical :: ND_Outer_Radius = .false.
-    Logical :: ND_Visc_Time = .true.
-    Logical :: ND_Rot_Time = .false.
-    Logical :: Use_Flux_Ra = .true.
+    Logical :: ND_Time_Visc = .true.
+    Logical :: ND_Time_Rot = .false.
+    Logical :: Assume_Flux_Ra = .true.
 
     Real*8  :: Gamma_Specific_Heat = 5.0d0/3.0d0 ! Probably 5/3 or 7/5
     Real*8  :: Buoyancy_Number_Visc = 0.0d0
@@ -156,11 +156,8 @@ Module PDE_Coefficients
             & with_custom_functions, with_custom_reference, &
             & chi_a_rayleigh_number, chi_a_prandtl_number, &
             & chi_a_modified_rayleigh_number, chi_p_prandtl_number, &
-            & ND_Volume_Average, ND_Inner_Radius, ND_Outer_Radius, ND_Visc_Time, ND_Rot_Time, Use_Flux_Ra
-
-    Real*8  :: Gamma_Specific_Heat = 5.0d0/3.0d0 ! Probably 5/3 or 7/5
-    Real*8  :: Buoyancy_Number_Visc = 0.0d0
-    Real*8  :: Buoyancy_Number_Rot = 0.0d0
+            & ND_Volume_Average, ND_Inner_Radius, ND_Outer_Radius, ND_Time_Visc, ND_Time_Rot, &
+            & Assume_Flux_Ra, Gamma_Specific_Heat, Buoyancy_Number_Visc, Buoyancy_Number_Rot
 
     !///////////////////////////////////////////////////////////////////////////////////////
     ! II.  Variables Related to the Transport Coefficients
@@ -515,8 +512,9 @@ Contains
     Subroutine Polytropic_ReferenceND_General()
         Implicit None
         Integer :: i
-        Real*8 :: dtmp, otmp
-        Real*8, Allocatable :: Radius_ND(:), dtmparr(:), gravity(:)
+        Real*8 :: c0, c1, poly_n_ad, numer, denom1, denom2, norm
+        Real*8, Allocatable :: radius_ND(:), gravity(:), flux_nonrad(:), partial_heating(:), &
+            & zeta(:), dzeta(:), d2zeta(:), dlnzeta(:), d2lnzeta(:)
         Character*12 :: dstring
         Character*8 :: dofmt = '(ES12.5)'
 
@@ -552,12 +550,12 @@ Contains
             Call stdout%print(" ---- Polytropic Index         : "//trim(dstring))
             Write(dstring,dofmt)poly_nrho
             Call stdout%print(" ---- No. Density Scaleheights : "//trim(dstring))
-            Write(dstring,dofmt)Aspect_Ratio
+            Write(dstring,dofmt)aspect_ratio
             Call stdout%print(" ---- Aspect Ratio             : "//trim(dstring))
 
             Write(dstring,dofmt)Rayleigh_Number
             Call stdout%print(" ---- Rayleigh Number : "//trim(dstring))
-            If (.not. Use_Flux_Rayleigh_Number) Then
+            If (.not. Assume_Flux_Ra) Then
                 Write(dstring,dofmt)Heating_Integral
                 Call stdout%print(" ---- Heating Integral : "//trim(dstring))
             Endif
@@ -580,66 +578,169 @@ Contains
         Endif
 
         ! Allocate radial arrays
-        Allocate(dtmparr(1:N_R), gravity(1:N_R), Radius_ND(1:N_R))
+        Allocate(radius_ND(1:N_R), gravity(1:N_R), zeta(1:N_R), dzeta(1:N_R), d2zeta(1:N_R), &
+            & dlnzeta(1:N_R), d2lnzeta(1:N_R), flux_nonrad(1:N_R), partial_heating(1:N_R) )
         ! Non-dimensionalize length-scale by shell depth
-        Radius_ND(:) = Radius(:)/Shell_Depth
+        radius_ND(:) = radius(:)/shell_depth
 
         ! First calculate polytrope assuming ND_Inner_Radius
+        c0 = -(aspect_ratio - exp(-poly_Nrho/poly_n)) / (1.0d0 - aspect_ratio)
+        c1 = aspect_ratio*(1.0d0 - exp(-poly_Nrho/poly_n)) / (1.0d0 - aspect_ratio)**2
+        zeta(:) = c0 + c1/radius_ND(:)
+        dzeta(:) = -c1/radius_ND(:)**2
+        d2zeta(:) = 2.0*c1/radius_ND(:)**3
+        dlnzeta(:) = dzeta/zeta
+        d2lnzeta = -dlnzeta**2 + d2zeta/zeta
+
+        ref%density(:) = zeta(:)**poly_n
+        ref%temperature(:) = zeta(:)
+
+        ref%dlnrho(:) = poly_n*dlnzeta(:)
+        ref%dlnT(:) = dlnzeta(:)
+        ref%d2lnrho(:) = poly_n*d2lnzeta(:)
+
+        gravity(:) = (rmin**2)*OneOverRSquared(:)
+
+        poly_n_ad = 1.0d0/(Gamma_Specific_Heat - 1.0d0)
+        ref%dsdr(:) = (poly_n - poly_n_ad)/(poly_n_ad + 1.0d0) * ref%dlnT ! (H/c_p * dS/dr)
+        ref%dsdr(:) = (Prandtl_Number/Rayleigh_Number)*Buoyancy_Number_Visc * ref%dsdr(:)
+
+        Dissipation_Number = (poly_n + 1.0d0)/(poly_n_ad + 1.0d0) * (1.0d0/aspect_ratio) * &
+            & (1.0d0 - exp(-poly_Nrho/poly_n) )
+     
+        ! Work out logic of where to non-dimensionalize
+        If (ND_Inner_Radius) Then ! ND_Inner_Radius takes precedence over ND_Volume_Average if specified
+            ND_Outer_Radius = .false.
+            ND_Volume_Average = .false.
+        Endif
+
+        If (ND_Outer_Radius) Then ! ND_Outer_Radius takes precedence over other two if specified
+            ND_Inner_Radius = .false.
+            ND_Volume_Average = .false.
+        Endif
+
+        ! Now possibly adjust rho, T, and g to account for where non-dimensionalization occurs
+        If (ND_Outer_Radius) Then
+            ref%density(:) = ref%density(:)/ref%density(1)
+            ref%temperature(:) = ref%temperature(:)/ref%temperature(1)
+            gravity(:) = gravity(:)/gravity(1)
+            Dissipation_Number = Dissipation_Number * (gravity(1)/gravity(N_R)) * &
+                & (ref%temperature(N_R)/ref%temperature(1))
+        Endif
+
+        If (ND_Volume_Average) Then
+            Call Integrate_in_radius(ref%density,norm)
+            norm = four_pi*norm/shell_volume
+            ref%density(:) = ref%density(:)/norm
+
+            Call Integrate_in_radius(ref%temperature,norm)
+            norm = four_pi*norm/shell_volume
+            ref%temperature(:) = ref%temperature(:)/norm
+
+            Call Integrate_in_radius(gravity,norm)
+            norm = four_pi*norm/shell_volume
+            gravity(:) = gravity(:)/norm
+
+            Dissipation_Number = (poly_n + 1.0d0)/(poly_n_ad + 1.0d0)
+            numer = 3.0d0*aspect_ratio*(1.0d0 - aspect_ratio)**2 * (1 - exp(-poly_Nrho/poly_n))
+            denom1 = (3.0d0*aspect_ratio/2.0d0) * (1.0 - aspect_ratio**2) * (1.0d0 - exp(-poly_Nrho/poly_n))
+            denom2 = -(1.0d0 - aspect_ratio**3)*(aspect_ratio - exp(-poly_Nrho/poly_n))
+            Dissipation_Number = Dissipation_Number * numer / (denom1 + denom2)
+        Endif 
         
-        dtmparr(:) = 0.0d0
+        ! These are the same no matter how we non-dimensionalize time
+        ref%dpdr_w_term(:) = ref%density(:)
+        ref%pressure_dwdr_term(:) = -ref%density(:)
 
-        Dissipation_Number = aspect_ratio*(exp(poly_Nrho/poly_n)-1.0D0)
-        dtmp = 1.0D0/(1.0D0-aspect_ratio)
-        ref%temperature(:) = dtmp*Dissipation_Number*(dtmp*One_Over_R(:)-1.0D0)+1.0D0
-        ref%density(:) = ref%temperature(:)**poly_n
-        gravity = (rmax**2)*OneOverRSquared(:)
-        ref%Buoyancy_Coeff = gravity*Modified_Rayleigh_Number*ref%density
-        do i = 1, n_active_scalars
-          ref%chi_buoyancy_coeff(i,:) = -gravity*chi_a_modified_rayleigh_number(i)*ref%density
-        enddo
+        ! Now non-dimensionalize the time either by the viscous diffusion time or rotation rate
+        If (ND_Time_Rot) ND_Time_Visc = .false. ! ND_Time_Rot takes precedence if specified
 
-        !Compute the background temperature gradient : dTdr = -Dg,  d2Tdr2 = 2*D*g/r (for g ~1/r^2)
-        dtmparr = -Dissipation_Number*gravity
-        !Now, the logarithmic derivative of temperature
-        ref%dlnt = dtmparr/ref%temperature
+        If (ND_Time_Visc) Then
+            ref%Coriolis_Coeff = 2.0d0/Ekman_Number
 
-        !And then logarithmic derivative of rho : dlnrho = n dlnT
-        ref%dlnrho = poly_n*ref%dlnt
+            ref%Buoyancy_Coeff(:) = (Rayleigh_Number/Prandtl_Number)*ref%density(:)*gravity(:)
+            Do i = 1, n_active_scalars
+                ref%Chi_Buoyancy_Coeff(i,:) = -(Chi_A_Rayleigh_Number(i)/Chi_A_Prandtl_Number(i))*&
+                    & ref%density(:)*gravity(:)
+            Enddo
 
-        !Now, the second logarithmic derivative of rho :  d2lnrho = (n/T)*d2Tdr2 - n*(dlnT^2)
-        ref%d2lnrho = -poly_n*(ref%dlnT**2)
+            nu_top = 1.0d0
+            kappa_top = 1.0d0/Prandtl_Number
+            Do i = 1, n_active_scalars
+                kappa_chi_a_top(i) = 1.0d0/Chi_A_Prandtl_Number(i)
+            Enddo
+            Do i = 1, n_passive_scalars
+                kappa_chi_p_top(i) = 1.0d0/Chi_A_Prandtl_Number(i)
+            Enddo
+            ref%viscous_amp(:) = (2.0d0*Prandtl_Number*Dissipation_Number/Rayleigh_Number) *&
+                & ref%temperature(:)
 
-        dtmparr = (poly_n/ref%temperature)*(2.0d0*Dissipation_Number*gravity/radius) ! (n/T)*d2Tdr2
-        ref%d2lnrho = ref%d2lnrho+dtmparr
+            If (magnetism) Then
+                ref%Lorentz_Coeff = 1.0d0
+                eta_top = 1.0d0/Magnetic_Prandtl_Number
+                ref%ohmic_amp(:) = (Prandtl_Number*Dissipation_Number/Rayleigh_Number) / &
+                    & (ref%density(:)*ref%temperature(:))
+            Else
+                ref%Lorentz_Coeff    = 0.0d0
+                eta_Top     = 0.0d0
+                ref%ohmic_amp(1:N_R) = 0.0d0
+            Endif
 
-        ref%dsdr(:) = 0.0d0
+        Elseif (ND_Time_Rot) Then
+
+            ref%Coriolis_Coeff = 2.0d0
+
+            ref%Buoyancy_Coeff(:) = Modified_Rayleigh_Number*ref%density(:)*gravity(:)
+            Do i = 1, n_active_scalars
+                ref%Chi_Buoyancy_Coeff(i,:) = -Chi_A_Modified_Rayleigh_Number(i)*ref%density(:)*gravity(:)
+            Enddo
+
+            nu_top = Ekman_Number
+            kappa_top = Ekman_Number/Prandtl_Number
+            Do i = 1, n_active_scalars
+                kappa_chi_a_top(i) = Ekman_Number/Chi_A_Prandtl_Number(i)
+            Enddo
+            Do i = 1, n_passive_scalars
+                kappa_chi_p_top(i) = Ekman_Number/Chi_A_Prandtl_Number(i)
+            Enddo
+            ref%viscous_amp(:) = (2.0d0*Dissipation_Number/Modified_Rayleigh_Number) * ref%temperature(:)
+
+            If (magnetism) Then
+                ref%Lorentz_Coeff = 1.0d0
+                eta_top = Ekman_Number/Magnetic_Prandtl_Number
+
+                ref%ohmic_amp(:) = (Dissipation_Number/Modified_Rayleigh_Number) / &
+                    & (ref%density(:)*ref%temperature(:))
+            Else
+                ref%Lorentz_Coeff    = 0.0d0
+                eta_Top     = 0.0d0
+                ref%ohmic_amp(1:N_R) = 0.0d0
+            Endif
+
+        Endif
+
+        ! Initialize heating here, then renormalize it (if Assume_Flux_Ra)
         Call Initialize_Reference_Heating()
 
-        ref%Coriolis_Coeff = 2.0d0
-        ref%dpdr_w_term(:) = ref%density
-        ref%pressure_dwdr_term(:) = -1.0d0*ref%density
+        If (Assume_Flux_Ra .and. (heating_type .gt. 0) ) Then
+            ! put rho*T "back in" to calculate heat flux
+            ref%heating(:) = ref%density(:)*ref%temperature(:)*ref%heating(:)
 
-        nu_top   = Ekman_Number
-        kappa_top     = Ekman_Number/Prandtl_Number
-        do i = 1, n_active_scalars
-            kappa_chi_a_top(i)   = Ekman_Number/chi_a_prandtl_number(i)
-        enddo
-        do i = 1, n_passive_scalars
-            kappa_chi_p_top(i)   = Ekman_Number/chi_p_prandtl_number(i)
-        enddo
-        ref%viscous_amp(1:N_R) = 2.0d0/ref%temperature(1:N_R)* &
-                                 & Dissipation_Number/Modified_Rayleigh_Number
+            ! compute the "non-radiative" energy flux
+            Do i = 1, N_R
+                partial_heating(1:i) = Zero
+                partial_heating(i:N_R) = ref%heating(i:N_R)
+                Call Integrate_in_Radius(partial_heating, flux_nonrad(i))
+                flux_nonrad(i) = flux_nonrad(i)/radius(i)**2
+            Enddo
 
-        If (magnetism) Then
-            ref%Lorentz_Coeff    = Ekman_Number/(Magnetic_Prandtl_Number)
-            eta_top     = Ekman_Number/Magnetic_Prandtl_Number
-
-            otmp = (Dissipation_Number*Ekman_Number**2)/(Modified_Rayleigh_Number*Magnetic_Prandtl_Number**2)
-            ref%ohmic_amp(1:N_R) = otmp/ref%density(1:N_R)/ref%temperature(1:N_R)
-        Else
-            ref%Lorentz_Coeff    = 0.0d0
-            eta_Top     = 0.0d0
-            ref%ohmic_amp(1:N_R) = 0.0d0
+            ! compute the volume average of the non-radiative flux
+            Call Integrate_in_radius(flux_nonrad, norm)
+            norm = four_pi*norm/shell_volume
+            
+            ! normalize the heating and take rho*T back out
+            ref%heating(:) = ref%heating(:) * (shell_depth/norm)
+            ref%heating(:) = ref%heating(:) / (ref%density(:)*ref%temperature(:))
         Endif
 
         ! Set the equation coefficients (apart from the ones having to do with diffusivities and heating)
@@ -653,18 +754,36 @@ Contains
         ra_functions(:,14) = ref%dsdr     
                         
         ra_constants(1) = ref%Coriolis_Coeff
-        ra_constants(2) = Modified_Rayleigh_Number
+        If (ND_Time_Visc) Then
+            ra_constants(2) = Rayleigh_Number/Prandtl_Number
+        Elseif (ND_Time_Rot) Then
+            ra_constants(2) = Modified_Rayleigh_Number
+        Endif
         ra_constants(3) = 1.0d0
         ra_constants(4) = ref%Lorentz_Coeff
-        ra_constants(8) = Ekman_Number*Dissipation_Number/Modified_Rayleigh_Number
+        If (ND_Time_Visc) Then
+            ra_constants(8) = Prandtl_Number*Dissipation_Number/Rayleigh_Number
+        Elseif (ND_Time_Rot) Then
+            ra_constants(8) = Dissipation_Number/Modified_Rayleigh_Number
+        Endif
+        ra_constants(8) = Dissipation_Number/Modified_Rayleigh_Number
         If (magnetism) Then
-            ra_constants(9) = Ekman_Number**2*Dissipation_Number/(Magnetic_Prandtl_Number**2*Modified_Rayleigh_Number)
+            If (ND_Time_Visc) Then
+                ra_constants(9) = Prandtl_Number*Dissipation_Number/Rayleigh_Number
+            Elseif (ND_Time_Rot) Then
+                ra_constants(9) = Dissipation_Number/Modified_Rayleigh_Number
+            Endif
         Endif ! if not magnetism, ra_constants(9) was initialized to zero
 
         Do i = 1, n_active_scalars
-            ra_constants(12+(i-1)*2) = -chi_a_modified_rayleigh_number(i)
+            If (ND_Time_Visc) Then
+                ra_constants(12+(i-1)*2) = -Chi_A_Rayleigh_Number(i)/Chi_A_Prandtl_Number(i)
+            Elseif (ND_Time_Rot) Then
+                ra_constants(12+(i-1)*2) = -Chi_A_Modified_Rayleigh_Number(i)
+            Endif
         Enddo
-        DeAllocate(dtmparr, gravity)
+
+        DeAllocate(radius_ND, gravity, zeta, dzeta, d2zeta, dlnzeta, d2lnzeta, flux_nonrad, partial_heating)
     End Subroutine Polytropic_ReferenceND_General
 
     Subroutine Polytropic_Reference()
@@ -1344,9 +1463,9 @@ Contains
         ND_Volume_Average = .true.
         ND_Inner_Radius = .false. 
         ND_Outer_Radius = .false.
-        ND_Visc_Time = .true.
-        ND_Rot_Time = .false.
-        Use_Flux_Ra = .true.
+        ND_Time_Visc = .true.
+        ND_Time_Rot = .false.
+        Assume_Flux_Ra = .true.
 
         Gamma_Specific_Heat = 5.0d0/3.0d0 ! Probably 5/3 or 7/5
         Buoyancy_Number_Visc = 0.0d0
