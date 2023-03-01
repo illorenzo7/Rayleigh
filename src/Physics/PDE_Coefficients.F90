@@ -579,7 +579,13 @@ Contains
             Endif
         Endif
 
-        Allocate(dtmparr(1:N_R), gravity(1:N_R))
+        ! Allocate radial arrays
+        Allocate(dtmparr(1:N_R), gravity(1:N_R), Radius_ND(1:N_R))
+        ! Non-dimensionalize length-scale by shell depth
+        Radius_ND(:) = Radius(:)/Shell_Depth
+
+        ! First calculate polytrope assuming ND_Inner_Radius
+        
         dtmparr(:) = 0.0d0
 
         Dissipation_Number = aspect_ratio*(exp(poly_Nrho/poly_n)-1.0D0)
