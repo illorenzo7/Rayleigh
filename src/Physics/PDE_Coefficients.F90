@@ -133,6 +133,7 @@ Module PDE_Coefficients
     Real*8  :: Gamma_Specific_Heat = 5.0d0/3.0d0 ! Probably 5/3 or 7/5
     Real*8  :: Buoyancy_Number_Visc = 0.0d0
     Real*8  :: Buoyancy_Number_Rot = -1.0d0
+    Real*8  :: Length_Scale = -1.0d0
 
     ! Internal heating variables
     Integer :: heating_type = 0 ! 0 means no reference heating.  > 0 selects optional reference heating
@@ -157,7 +158,7 @@ Module PDE_Coefficients
             & chi_a_rayleigh_number, chi_a_prandtl_number, &
             & chi_a_modified_rayleigh_number, chi_p_prandtl_number, &
             & ND_Volume_Average, ND_Inner_Radius, ND_Outer_Radius, ND_Time_Visc, ND_Time_Rot, &
-            & Assume_Flux_Ra, Gamma_Specific_Heat, Buoyancy_Number_Visc, Buoyancy_Number_Rot
+            & Assume_Flux_Ra, Gamma_Specific_Heat, Buoyancy_Number_Visc, Buoyancy_Number_Rot, Length_Scale
 
     !///////////////////////////////////////////////////////////////////////////////////////
     ! II.  Variables Related to the Transport Coefficients
@@ -513,7 +514,7 @@ Contains
         Implicit None
         Integer :: i
         Real*8 :: c0, c1, poly_n_ad, numer, denom1, denom2, norm
-        Real*8, Allocatable :: radius_ND(:), gravity(:), flux_nonrad(:), partial_heating(:), &
+        Real*8, Allocatable :: gravity(:), flux_nonrad(:), partial_heating(:), &
             & zeta(:), dzeta(:), d2zeta(:), dlnzeta(:), d2lnzeta(:)
         Character*12 :: dstring
         Character*8 :: dofmt = '(ES12.5)'
@@ -525,6 +526,10 @@ Contains
 
         If (shell_depth .lt. 0) Then
             shell_depth = rmax - rmin
+        Endif
+
+        If (Length_Scale .lt. 0) Then
+            Length_Scale = shell_depth
         Endif
 
         If (rotation) Then
@@ -578,18 +583,17 @@ Contains
         Endif
 
         ! Allocate radial arrays
-        Allocate(radius_ND(1:N_R), gravity(1:N_R), zeta(1:N_R), dzeta(1:N_R), d2zeta(1:N_R), &
+        Allocate(gravity(1:N_R), zeta(1:N_R), dzeta(1:N_R), d2zeta(1:N_R), &
             & dlnzeta(1:N_R), d2lnzeta(1:N_R), flux_nonrad(1:N_R), partial_heating(1:N_R) )
         ! Non-dimensionalize length-scale by shell depth
-        radius_ND(:) = radius(:)/shell_depth
 
         ! First calculate polytrope assuming ND_Inner_Radius
         c0 = -(aspect_ratio - exp(-poly_Nrho/poly_n)) / (1.0d0 - aspect_ratio)
         c1 = aspect_ratio*(1.0d0 - exp(-poly_Nrho/poly_n)) / (1.0d0 - aspect_ratio)**2
-        zeta(:) = c0 + c1/radius_ND(:)
-        dzeta(:) = -c1/radius_ND(:)**2
-        d2zeta(:) = 2.0*c1/radius_ND(:)**3
-        dlnzeta(:) = dzeta/zeta
+        zeta = c0 + c1*shell_depth/radius
+        dzeta = -c1*shell_depth/radius**2
+        d2zeta = 2.0*c1*shell_depth/radius**3
+        dlnzeta = dzeta/zeta
         d2lnzeta = -dlnzeta**2 + d2zeta/zeta
 
         ref%density(:) = zeta(:)**poly_n
@@ -602,8 +606,8 @@ Contains
         gravity(:) = (rmin**2)*OneOverRSquared(:)
 
         poly_n_ad = 1.0d0/(Gamma_Specific_Heat - 1.0d0)
-        ref%dsdr(:) = (poly_n - poly_n_ad)/(poly_n_ad + 1.0d0) * ref%dlnT ! (H/c_p * dS/dr)
-        ref%dsdr(:) = (Prandtl_Number/Rayleigh_Number)*Buoyancy_Number_Visc * ref%dsdr(:)
+        ref%dsdr = (poly_n - poly_n_ad)/(poly_n_ad + 1.0d0) * Length_Scale * ref%dlnT ! (H/c_p * dS/dr)
+        ref%dsdr = (Prandtl_Number/Rayleigh_Number)*Buoyancy_Number_Visc * ref%dsdr
 
         Dissipation_Number = (poly_n + 1.0d0)/(poly_n_ad + 1.0d0) * (1.0d0/aspect_ratio) * &
             & (1.0d0 - exp(-poly_Nrho/poly_n) )
@@ -647,6 +651,10 @@ Contains
             denom2 = -(1.0d0 - aspect_ratio**3)*(aspect_ratio - exp(-poly_Nrho/poly_n))
             Dissipation_Number = Dissipation_Number * numer / (denom1 + denom2)
         Endif 
+
+        ! This was all assuming the H in Dissipation_Number was the shell_depth. 
+        ! Make it the "Length_Scale" instead
+        Dissipation_Number = Dissipation_Number * Length_Scale / shell_depth
         
         ! These are the same no matter how we non-dimensionalize time
         ref%dpdr_w_term(:) = ref%density(:)
@@ -741,10 +749,19 @@ Contains
             Call Integrate_in_radius(flux_nonrad, norm)
             norm = four_pi*norm/shell_volume
             
-            ! normalize the heating and take rho*T back out
-            ref%heating(:) = ref%heating(:) * (shell_depth/norm)
-            ref%heating(:) = ref%heating(:) / (ref%density(:)*ref%temperature(:))
-
+            ! normalize the heating and reset c_10 and f_6
+            ref%heating = (Length_Scale/norm) * ref%heating
+            ra_functions(:,6) = ref%heating(:)
+            If (ND_Time_Visc) Then
+                ref%heating = (1.0d0/Prandtl_Number) * ref%heating
+                ra_constants(10) = 1.0d0/Prandtl_Number
+            Elseif (ND_Time_Rot) Then
+                 ref%heating = (Ekman_Number/Prandtl_Number) * ref%heating
+                 ra_constants(10) = Ekman_Number/Prandtl_Number
+            Endif           
+            
+            ! take rho*T back out of ref%heating
+            ref%heating = ref%heating / (ref%density*ref%temperature)
             
         Endif
 
@@ -788,7 +805,7 @@ Contains
             Endif
         Enddo
 
-        DeAllocate(radius_ND, gravity, zeta, dzeta, d2zeta, dlnzeta, d2lnzeta, flux_nonrad, partial_heating)
+        DeAllocate(gravity, zeta, dzeta, d2zeta, dlnzeta, d2lnzeta, flux_nonrad, partial_heating)
     End Subroutine Polytropic_ReferenceND_General
 
     Subroutine Polytropic_Reference()
@@ -1475,6 +1492,7 @@ Contains
         Gamma_Specific_Heat = 5.0d0/3.0d0 ! Probably 5/3 or 7/5
         Buoyancy_Number_Visc = 0.0d0
         Buoyancy_Number_Rot = 0.0d0
+        Length_Scale = -1.0d0
 
         ! Minimum time step based on rotation rate
         ! (determined by the reference state)
