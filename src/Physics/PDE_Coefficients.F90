@@ -130,7 +130,7 @@ Module PDE_Coefficients
     Logical :: ND_Time_Rot = .false.
     Logical :: Assume_Flux_Ra = .true.
 
-    Real*8  :: Gamma_Specific_Heat = 5.0d0/3.0d0 ! Probably 5/3 or 7/5
+    Real*8  :: Specific_Heat_Ratio = 5.0d0/3.0d0 ! Probably 5/3 or 7/5
     Real*8  :: Buoyancy_Number_Visc = 0.0d0
     Real*8  :: Buoyancy_Number_Rot = -1.0d0
     Real*8  :: Length_Scale = -1.0d0
@@ -158,7 +158,7 @@ Module PDE_Coefficients
             & chi_a_rayleigh_number, chi_a_prandtl_number, &
             & chi_a_modified_rayleigh_number, chi_p_prandtl_number, &
             & ND_Volume_Average, ND_Inner_Radius, ND_Outer_Radius, ND_Time_Visc, ND_Time_Rot, &
-            & Assume_Flux_Ra, Gamma_Specific_Heat, Buoyancy_Number_Visc, Buoyancy_Number_Rot, Length_Scale
+            & Assume_Flux_Ra, Specific_Heat_Ratio, Buoyancy_Number_Visc, Buoyancy_Number_Rot, Length_Scale
 
     !///////////////////////////////////////////////////////////////////////////////////////
     ! II.  Variables Related to the Transport Coefficients
@@ -513,12 +513,13 @@ Contains
     Subroutine Polytropic_ReferenceND_General()
         Implicit None
         Integer :: i
-        Real*8 :: c0, c1, poly_n_ad, numer, denom1, denom2, norm
-        Real*8, Allocatable :: gravity(:), flux_nonrad(:), partial_heating(:), &
+        Real*8 :: c0, c1, poly_n_ad, numer, denom1, denom2, norm, tol
+        Real*8, Allocatable :: gravity(:), flux_nonrad(:), partial_heating(:), nsquared(:), &
             & zeta(:), dzeta(:), d2zeta(:), dlnzeta(:), d2lnzeta(:)
         Character*12 :: dstring
         Character*8 :: dofmt = '(ES12.5)'
         Logical :: ND_Length_Shell_Depth = .false. ! Defaults to .true. under following logic
+        Logical :: Adiabatic_Polytrope ! To be determined (to within the tolerance tol)
 
         ! Deal with some preliminary logic before outputting reference state
         If (aspect_ratio .lt. 0) Then
@@ -551,7 +552,30 @@ Contains
             Endif
         Endif
 
-        
+        ! Determine if polytrope is adiabatic        
+        tol = 1.0d-8 ! There are ~16 digits for double precision numbers
+                     ! this tolerance ensures non-adiabatic polytropes up to
+                     ! |n - n_ad|/n_ad ~ 1e-8 are respected
+        poly_n_ad = 1.0d0/(Specific_Heat_Ratio - 1.0d0)
+        If (abs(poly_n_ad - poly_n) .lt. tol) Then
+            Adiabatic_Polytrope = .true.
+        Else
+            Adiabatic_Polytrope = .false.
+        Endif
+
+        ! watch for logical fallacy
+        If (Adiabatic_Polytrope .and. (Buoyancy_Number_Visc .gt. tol) ) Then
+            Call stdout%print("WARNING: You specified an adiabatic polytrope but a nonzero Buoyancy Number")
+            Call stdout%print("Rayleigh is setting the Buoyancy Number to zero.")
+            Buoyancy_Number_Visc = 0.0d0
+        Endif
+
+        If ((.not. Adiabatic_Polytrope) .and. (Buoyancy_Number_Visc .lt. tol) ) Then
+            Call stdout%print("WARNING: You specified a non-adiabatic polytrope but a Buoyancy Number of zero")
+            Call stdout%print("These choices may be physically inconsistent.")
+            Buoyancy_Number_Visc = 0.0d0
+        Endif
+
         If (my_rank .eq. 0) Then
             Call stdout%print(" ---- Reference type           : "//trim(" Polytrope (Generalized Non-dimensional)"))
             Write(dstring,dofmt)Length_Scale
@@ -567,10 +591,17 @@ Contains
                 Call stdout%print(" ---- Typical Time-Scale       : "//trim(" 1/(Rotation Rate)"))
             Endif
 
-            Write(dstring,dofmt)Gamma_Specific_Heat
+            Write(dstring,dofmt)Specific_Heat_Ratio
             Call stdout%print(" ---- Specific-Heat Ratio      : "//trim(dstring))
+            Write(dstring,dofmt)poly_n_ad
+            Call stdout%print(" ----(Adiabatic Pol. Index     : "//trim(dstring)//")")
             Write(dstring,dofmt)poly_n
             Call stdout%print(" ---- Polytropic Index         : "//trim(dstring))
+            If (Adiabatic_Polytrope) Then
+                Call stdout%print(" ---- (adiabatic polytrope)")
+            Else
+                Call stdout%print(" ---- (non-adiabatic polytrope)")
+            Endif
             Write(dstring,dofmt)poly_nrho
             Call stdout%print(" ---- No. Density Scaleheights : "//trim(dstring))
             Write(dstring,dofmt)aspect_ratio
@@ -601,7 +632,7 @@ Contains
         Endif
 
         ! Allocate radial arrays
-        Allocate(gravity(1:N_R), zeta(1:N_R), dzeta(1:N_R), d2zeta(1:N_R), &
+        Allocate(gravity(1:N_R), nsquared(1:N_R), zeta(1:N_R), dzeta(1:N_R), d2zeta(1:N_R), &
             & dlnzeta(1:N_R), d2lnzeta(1:N_R), flux_nonrad(1:N_R), partial_heating(1:N_R) )
 
         ! First calculate polytrope assuming ND_Inner_Radius
@@ -622,9 +653,9 @@ Contains
 
         gravity = (rmin**2)*OneOverRSquared
 
-        poly_n_ad = 1.0d0/(Gamma_Specific_Heat - 1.0d0)
-        ref%dsdr = (poly_n - poly_n_ad)/(poly_n_ad + 1.0d0) * Length_Scale * ref%dlnT ! (H/c_p * dS/dr)
-        ref%dsdr = (Prandtl_Number/Rayleigh_Number)*Buoyancy_Number_Visc * ref%dsdr
+        denom1 = (1.0d0 - exp(-poly_Nrho/poly_n))/(1.d0 - Aspect_Ratio)
+        denom2 = -(Aspect_Ratio - exp(-poly_Nrho/poly_n))/(Aspect_Ratio*Shell_Depth)
+        nsquared = (rmin/radius)**3 / (denom1 + denom2*radius)
 
         Dissipation_Number = (poly_n + 1.0d0)/(poly_n_ad + 1.0d0) * (1.0d0/aspect_ratio) * &
             & (1.0d0 - exp(-poly_Nrho/poly_n) )
@@ -642,25 +673,27 @@ Contains
 
         ! Now possibly adjust rho, T, and g to account for where non-dimensionalization occurs
         If (ND_Outer_Radius) Then
-            ref%density(:) = ref%density(:)/ref%density(1)
-            ref%temperature(:) = ref%temperature(:)/ref%temperature(1)
-            gravity(:) = gravity(:)/gravity(1)
-            Dissipation_Number = Dissipation_Number * (gravity(1)/gravity(N_R)) * &
-                & (ref%temperature(N_R)/ref%temperature(1))
-        Endif
-
-        If (ND_Volume_Average) Then
+            Dissipation_Number = Dissipation_Number * gravity(1) / ref%temperature(1)
+            ref%density = ref%density/ref%density(1)
+            ref%temperature = ref%temperature/ref%temperature(1)
+            gravity = gravity/gravity(1)
+            nsquared = nsquared/nsquared(1)
+        ElseIf (ND_Volume_Average) Then ! This is the default
             Call Integrate_in_radius(ref%density,norm)
             norm = four_pi*norm/shell_volume
-            ref%density(:) = ref%density(:)/norm
+            ref%density = ref%density/norm
 
             Call Integrate_in_radius(ref%temperature,norm)
             norm = four_pi*norm/shell_volume
-            ref%temperature(:) = ref%temperature(:)/norm
+            ref%temperature = ref%temperature/norm
 
             Call Integrate_in_radius(gravity,norm)
             norm = four_pi*norm/shell_volume
-            gravity(:) = gravity(:)/norm
+            gravity = gravity/norm
+
+            Call Integrate_in_radius(nsquared,norm)
+            norm = four_pi*norm/shell_volume
+            nsquared = nsquared/norm
 
             Dissipation_Number = (poly_n + 1.0d0)/(poly_n_ad + 1.0d0)
             numer = 3.0d0*aspect_ratio*(1.0d0 - aspect_ratio)**2 * (1 - exp(-poly_Nrho/poly_n))
@@ -672,8 +705,9 @@ Contains
         ! This was all assuming the H in Dissipation_Number was the shell_depth. 
         ! Make it the "Length_Scale" instead
         Dissipation_Number = Dissipation_Number * Length_Scale / shell_depth
-        
+
         ! These are the same no matter how we non-dimensionalize time
+        ref%dsdr = (Prandtl_Number*Buoyancy_Number_Visc/Rayleigh_Number) * nsquared/gravity
         ref%dpdr_w_term(:) = ref%density(:)
         ref%pressure_dwdr_term(:) = -ref%density(:)
 
@@ -899,7 +933,7 @@ Contains
         Gravity = Gravitational_Constant * poly_mass / Radius**2
 
         ! The following is needed to calculate the entropy gradient
-        volume_specific_heat = pressure_specific_heat / Gamma_Specific_Heat
+        volume_specific_heat = pressure_specific_heat / Specific_Heat_Ratio
 
         Ref%Density = rho_c * zeta**poly_n
 
@@ -909,7 +943,7 @@ Contains
         Ref%Temperature = T_c * zeta
         Ref%dlnT = -(c1*d/Radius**2)/zeta
 
-        Ref%dsdr = volume_specific_heat * (Ref%dlnT - (Gamma_Specific_Heat - 1.0d0) * Ref%dlnrho)
+        Ref%dsdr = volume_specific_heat * (Ref%dlnT - (Specific_Heat_Ratio - 1.0d0) * Ref%dlnrho)
 
         Ref%Buoyancy_Coeff = gravity/Pressure_Specific_Heat*ref%density
 
@@ -1506,7 +1540,7 @@ Contains
         ND_Time_Rot = .false.
         Assume_Flux_Ra = .true.
 
-        Gamma_Specific_Heat = 5.0d0/3.0d0 ! Probably 5/3 or 7/5
+        Specific_Heat_Ratio = 5.0d0/3.0d0 ! Probably 5/3 or 7/5
         Buoyancy_Number_Visc = 0.0d0
         Buoyancy_Number_Rot = 0.0d0
         Length_Scale = -1.0d0
