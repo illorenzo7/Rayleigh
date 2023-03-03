@@ -518,6 +518,7 @@ Contains
             & zeta(:), dzeta(:), d2zeta(:), dlnzeta(:), d2lnzeta(:)
         Character*12 :: dstring
         Character*8 :: dofmt = '(ES12.5)'
+        Logical :: ND_Length_Shell_Depth = .false. ! Defaults to .true. under following logic
 
         ! Deal with some preliminary logic before outputting reference state
         If (aspect_ratio .lt. 0) Then
@@ -528,8 +529,12 @@ Contains
             shell_depth = rmax - rmin
         Endif
 
-        If (Length_Scale .lt. 0) Then
+        ! User can specify their own custom Length_Scale,
+        ! different than the shell depth
+        ! But by default, use the shell depth
+        If (Length_Scale .lt. 0) Then ! This is default
             Length_Scale = shell_depth
+            ND_Length_Shell_Depth = .true.
         Endif
 
         If (rotation) Then
@@ -549,8 +554,21 @@ Contains
         
         If (my_rank .eq. 0) Then
             Call stdout%print(" ---- Reference type           : "//trim(" Polytrope (Generalized Non-dimensional)"))
+            Write(dstring,dofmt)Length_Scale
+            Call stdout%print(" ---- Typical Length-Scale     : "//trim(dstring))
+            If (ND_Length_Shell_Depth) Then
+                Call stdout%print(" ---- (Length-Scale = Shell Depth)")
+            Else
+                Call stdout%print(" ---- (Length-Scale != Shell Depth)")
+            Endif
+            If (ND_Time_Visc) Then
+                Call stdout%print(" ---- Typical Time-Scale       : "//trim(" Viscous Diffusion Time"))
+            Elseif (ND_Time_Rot) Then
+                Call stdout%print(" ---- Typical Time-Scale       : "//trim(" 1/(Rotation Rate)"))
+            Endif
+
             Write(dstring,dofmt)Gamma_Specific_Heat
-            Call stdout%print(" ---- Specific-heat ratio      : "//trim(dstring))
+            Call stdout%print(" ---- Specific-Heat Ratio      : "//trim(dstring))
             Write(dstring,dofmt)poly_n
             Call stdout%print(" ---- Polytropic Index         : "//trim(dstring))
             Write(dstring,dofmt)poly_nrho
@@ -585,7 +603,6 @@ Contains
         ! Allocate radial arrays
         Allocate(gravity(1:N_R), zeta(1:N_R), dzeta(1:N_R), d2zeta(1:N_R), &
             & dlnzeta(1:N_R), d2lnzeta(1:N_R), flux_nonrad(1:N_R), partial_heating(1:N_R) )
-        ! Non-dimensionalize length-scale by shell depth
 
         ! First calculate polytrope assuming ND_Inner_Radius
         c0 = -(aspect_ratio - exp(-poly_Nrho/poly_n)) / (1.0d0 - aspect_ratio)
@@ -596,14 +613,14 @@ Contains
         dlnzeta = dzeta/zeta
         d2lnzeta = -dlnzeta**2 + d2zeta/zeta
 
-        ref%density(:) = zeta(:)**poly_n
-        ref%temperature(:) = zeta(:)
+        ref%density = zeta**poly_n
+        ref%temperature = zeta
 
-        ref%dlnrho(:) = poly_n*dlnzeta(:)
-        ref%dlnT(:) = dlnzeta(:)
-        ref%d2lnrho(:) = poly_n*d2lnzeta(:)
+        ref%dlnrho = poly_n*dlnzeta
+        ref%dlnT = dlnzeta
+        ref%d2lnrho = poly_n*d2lnzeta
 
-        gravity(:) = (rmin**2)*OneOverRSquared(:)
+        gravity = (rmin**2)*OneOverRSquared
 
         poly_n_ad = 1.0d0/(Gamma_Specific_Heat - 1.0d0)
         ref%dsdr = (poly_n - poly_n_ad)/(poly_n_ad + 1.0d0) * Length_Scale * ref%dlnT ! (H/c_p * dS/dr)
