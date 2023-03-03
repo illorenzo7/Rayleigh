@@ -723,6 +723,8 @@ Contains
                     & ref%density(:)*gravity(:)
             Enddo
 
+            ! The following will only be valid If (ND_Outer_Radius)
+            ! We will renormalize (in Initialize_Diffusivity()) for other choices
             nu_top = 1.0d0
             kappa_top = 1.0d0/Prandtl_Number
             Do i = 1, n_active_scalars
@@ -1775,6 +1777,7 @@ Contains
         Integer, Intent(In) :: ci, fi, dlnfi, xtype
         Real*8, Intent(In) :: xpower
         Character(len=2) :: ind
+        Real*8 :: norm
 
         If (reference_type .eq. 4) Then
             If (xtop .le. 0) Then
@@ -1812,6 +1815,22 @@ Contains
                 EndIf
 
         End Select
+
+        ! We potentially need to renormalize for the Polytropic_ReferenceND_General() non-dimensionalization
+        If (reference_type .eq. 5) Then
+            If (ND_Inner_Radius) Then
+                ! We want "xtop" to be the value at the inner radius instead
+                norm = x(N_R)
+                x = xtop * (x/norm)
+                xtop = x(1)
+            Elseif (ND_Volume_Average) Then
+                ! We want "xtop" to be the value averaged over the whole shell instead
+                Call Integrate_in_radius(x,norm)
+                norm = four_pi*norm/shell_volume
+                x = xtop * (x/norm)
+                xtop = x(1)
+            Endif
+        Endif
 
     End Subroutine Initialize_Diffusivity
 
@@ -1961,30 +1980,68 @@ Contains
 
         Implicit None
         Integer :: i
+        Real*8 :: nu_norm, kappa_norm, eta_norm, integral
+        Real*8 :: kappa_chi_a_norm(1:n_scalar_max)
+        Real*8 :: kappa_chi_p_norm(1:n_scalar_max)
 
-        ra_constants(5) = nu_top
-        ra_functions(:,3) = nu(:)/nu_top
+        nu_norm = nu_top
+        kappa_norm = kappa_top
+        If (magnetism) eta_norm = eta_top
+
+        kappa_chi_a_norm = kappa_chi_a_top
+        kappa_chi_p_norm = kappa_chi_p_top
+
+        ! Divide up c's and f's slightly differently under Polytropic_ReferenceND_General() non-dimensionalization
+        If (reference_type .eq. 5) Then
+            If (ND_Inner_Radius) Then
+                nu_norm = nu(N_R)
+                kappa_norm = kappa(N_R)
+                If (magnetism) eta_norm = eta(N_R)
+                kappa_chi_a_norm(1:n_active_scalars) = kappa_chi_a(:,N_R)
+                kappa_chi_p_norm(1:n_passive_scalars) = kappa_chi_p(:,N_R)
+            Elseif (ND_Volume_Average) Then
+                Call Integrate_in_radius(nu,integral)
+                nu_norm = four_pi*integral/shell_volume
+                Call Integrate_in_radius(kappa,integral)
+                kappa_norm = four_pi*integral/shell_volume
+                If (magnetism) Then
+                    Call Integrate_in_radius(eta,integral)
+                    eta_norm = four_pi*integral/shell_volume
+                Endif
+                Do i = 1, n_active_scalars
+                    Call Integrate_in_radius(kappa_chi_a(i,:),integral)
+                    kappa_chi_a_norm(i) = four_pi*integral/shell_volume
+                Enddo
+                Do i = 1, n_passive_scalars
+                    Call Integrate_in_radius(kappa_chi_p(i,:),integral)
+                    kappa_chi_p_norm(i) = four_pi*integral/shell_volume
+                Enddo
+            Endif
+        Endif
+
+        ra_constants(5) = nu_norm
+        ra_functions(:,3) = nu(:)/nu_norm
         ra_functions(:,11) = dlnu(:)
 
-        ra_constants(6) = kappa_top
-        ra_functions(:,5) = kappa(:)/kappa_top
+        ra_constants(6) = kappa_norm
+        ra_functions(:,5) = kappa(:)/kappa_norm
         ra_functions(:,12) = dlnkappa(:)
-
+        
         If (magnetism) Then 
-            ra_constants(7) = eta_top
-            ra_functions(:,7) = eta(:)/eta_top
+            ra_constants(7) = eta_norm
+            ra_functions(:,7) = eta(:)/eta_norm
             ra_functions(:,13) = dlneta(:)
         Endif ! if no magnetism, all of the above are already zero
 
         Do i = 1, n_active_scalars
-            ra_constants(11+(i-1)*2) = kappa_chi_a_top(i)
-            ra_functions(:,15+(i-1)*2) = kappa_chi_a(i,:)/kappa_chi_a_top(i)
+            ra_constants(11+(i-1)*2) = kappa_chi_a_norm(i)
+            ra_functions(:,15+(i-1)*2) = kappa_chi_a(i,:)/kappa_chi_a_norm(i)
             ra_functions(:,16+(i-1)*2) = dlnkappa_chi_a(i,:)
         Enddo
 
         Do i = 1, n_passive_scalars
-            ra_constants(11+(n_active_scalars+i-1)*2) = kappa_chi_p_top(i)
-            ra_functions(:,15+(n_active_scalars+i-1)*2) = kappa_chi_p(i,:)/kappa_chi_p_top(i)
+            ra_constants(11+(n_active_scalars+i-1)*2) = kappa_chi_p_norm(i)
+            ra_functions(:,15+(n_active_scalars+i-1)*2) = kappa_chi_p(i,:)/kappa_chi_p_norm(i)
             ra_functions(:,16+(n_active_scalars+i-1)*2) = dlnkappa_chi_p(i,:)
         Enddo
 
