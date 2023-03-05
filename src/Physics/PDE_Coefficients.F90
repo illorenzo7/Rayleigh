@@ -538,6 +538,11 @@ Contains
             ND_Length_Shell_Depth = .true.
         Endif
 
+        ! Determine desired time-scale
+        If (ND_Time_Rot) ND_Time_Visc = .false.
+
+        ! Determine how user wants to specify Ra and B_visc.
+        ! (The modified versions or not).
         If (rotation) Then
             If (Modified_Rayleigh_Number .lt. 0) Then !User set Ra, not Ra*
                 Modified_Rayleigh_Number = Rayleigh_Number*Ekman_Number**2/Prandtl_Number
@@ -563,27 +568,44 @@ Contains
             Adiabatic_Polytrope = .false.
         Endif
 
-        ! watch for logical fallacy
+        ! Start printing information about the reference state
+        If (my_rank .eq. 0) Then
+            Call stdout%print(" ---- Reference type           : "//trim(" Polytrope (Generalized Non-dimensional)"))
+        Endif
+
+        ! Watch for logical fallacy regarding buoyancy number
+        ! / advect_reference_state
+        If ((.not. Adiabatic_Polytrope) .and. (.not. advect_reference_state) ) Then
+            If (my_rank .eq. 0) Then
+                Call stdout%print("WARNING: You specified a non-adiabatic polytrope but did not set advect_reference_state = .true.")
+                Call stdout%print("These choices may be physically inconsistent.")
+            Endif
+        Endif
+ 
         If (Adiabatic_Polytrope .and. (Buoyancy_Number_Visc .gt. tol) ) Then
-            Call stdout%print("WARNING: You specified an adiabatic polytrope but a nonzero Buoyancy Number")
-            Call stdout%print("Rayleigh is setting the Buoyancy Number to zero.")
+            If (my_rank .eq. 0) Then
+                Call stdout%print("WARNING: You specified an adiabatic polytrope but a nonzero Buoyancy Number")
+                Call stdout%print("Rayleigh is setting the Buoyancy Number to zero.")
+            Endif
             Buoyancy_Number_Visc = 0.0d0
         Endif
 
         If ((.not. Adiabatic_Polytrope) .and. (Buoyancy_Number_Visc .lt. tol) ) Then
-            Call stdout%print("WARNING: You specified a non-adiabatic polytrope but a Buoyancy Number of zero")
-            Call stdout%print("These choices may be physically inconsistent.")
+            If (my_rank .eq. 0) Then
+                Call stdout%print("WARNING: You specified a non-adiabatic polytrope but a Buoyancy Number of zero")
+                Call stdout%print("These choices may be physically inconsistent.")
+            Endif
             Buoyancy_Number_Visc = 0.0d0
         Endif
 
+        ! Print rest of information about the reference state
         If (my_rank .eq. 0) Then
-            Call stdout%print(" ---- Reference type           : "//trim(" Polytrope (Generalized Non-dimensional)"))
             Write(dstring,dofmt)Length_Scale
             Call stdout%print(" ---- Typical Length-Scale     : "//trim(dstring))
             If (ND_Length_Shell_Depth) Then
-                Call stdout%print(" ---- (Length-Scale = Shell Depth)")
+                Call stdout%print("          (Length-Scale = Shell Depth)")
             Else
-                Call stdout%print(" ---- (Length-Scale != Shell Depth)")
+                Call stdout%print("          (Length-Scale != Shell Depth)")
             Endif
             If (ND_Time_Visc) Then
                 Call stdout%print(" ---- Typical Time-Scale       : "//trim(" Viscous Diffusion Time"))
@@ -594,13 +616,13 @@ Contains
             Write(dstring,dofmt)Specific_Heat_Ratio
             Call stdout%print(" ---- Specific-Heat Ratio      : "//trim(dstring))
             Write(dstring,dofmt)poly_n_ad
-            Call stdout%print(" ----(Adiabatic Pol. Index     : "//trim(dstring)//")")
+            Call stdout%print("          (Ad. Polytropic Index: "//trim(dstring)//")")
             Write(dstring,dofmt)poly_n
             Call stdout%print(" ---- Polytropic Index         : "//trim(dstring))
             If (Adiabatic_Polytrope) Then
-                Call stdout%print(" ---- (adiabatic polytrope)")
+                Call stdout%print("          (adiabatic polytrope)")
             Else
-                Call stdout%print(" ---- (non-adiabatic polytrope)")
+                Call stdout%print("          (non-adiabatic polytrope)")
             Endif
             Write(dstring,dofmt)poly_nrho
             Call stdout%print(" ---- No. Density Scaleheights : "//trim(dstring))
@@ -609,21 +631,29 @@ Contains
 
             Write(dstring,dofmt)Rayleigh_Number
             Call stdout%print(" ---- Rayleigh Number          : "//trim(dstring))
+            If (rotation) Then
+                Write(dstring,dofmt)Modified_Rayleigh_Number
+                Call stdout%print("          (Mod. Rayleigh Number: "//trim(dstring)//")")
+            Endif
+
             If (.not. Assume_Flux_Ra) Then
                 Write(dstring,dofmt)Heating_Integral
                 Call stdout%print(" ---- Heating Integral         : "//trim(dstring))
             Endif
             Write(dstring,dofmt)Prandtl_Number
             Call stdout%print(" ---- Prandtl Number           : "//trim(dstring))
-            Write(dstring,dofmt)Buoyancy_Number_Visc
-            Call stdout%print(" ---- Visc. Buoyancy Number    : "//trim(dstring))
+            If (advect_reference_state) Then
+                Write(dstring,dofmt)Buoyancy_Number_Visc
+                Call stdout%print(" ---- Visc. Buoyancy Number    : "//trim(dstring))
+                If (rotation) Then
+                    Write(dstring,dofmt)Buoyancy_Number_Rot
+                    Call stdout%print("          (Rot. Buoyancy Number: "//trim(dstring)//")")
+                Endif
+
+            Endif
             If (rotation) Then
                 Write(dstring,dofmt)Ekman_Number
                 Call stdout%print(" ---- Ekman Number             : "//trim(dstring))
-                Write(dstring,dofmt)Modified_Rayleigh_Number
-                Call stdout%print(" ---- Modified Rayleigh Number : "//trim(dstring))
-                Write(dstring,dofmt)Buoyancy_Number_Rot
-                Call stdout%print(" ---- Rot. Buoyancy Number     : "//trim(dstring))
             Endif
             If (magnetism) Then
                 Write(dstring,dofmt)Magnetic_Prandtl_Number
