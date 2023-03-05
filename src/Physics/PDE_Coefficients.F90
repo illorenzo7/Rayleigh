@@ -832,16 +832,19 @@ Contains
             Call Integrate_in_radius(flux_nonrad, norm)
             norm = four_pi*norm/shell_volume
             
-            ! normalize the heating and reset c_10 and f_6
+            ! normalize the heating
             ref%heating = (Length_Scale/norm) * ref%heating
-            ra_functions(:,6) = ref%heating(:)
             If (ND_Time_Visc) Then
                 ref%heating = (1.0d0/Prandtl_Number) * ref%heating
-                ra_constants(10) = 1.0d0/Prandtl_Number
             Elseif (ND_Time_Rot) Then
                  ref%heating = (Ekman_Number/Prandtl_Number) * ref%heating
-                 ra_constants(10) = Ekman_Number/Prandtl_Number
             Endif           
+
+            ! reset c_10 and f_6 (so f_6 integrates to one)
+            Call Integrate_in_radius(ref%heating, norm)
+            norm = four_pi*norm/shell_volume
+            ra_functions(:,6) = ref%heating(:)/norm
+            ra_constants(10) = norm
             
             ! take rho*T back out of ref%heating
             ref%heating = ref%heating / (ref%density*ref%temperature)
