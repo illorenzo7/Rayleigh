@@ -840,9 +840,9 @@ Contains
                  ref%heating = (Ekman_Number/Prandtl_Number) * ref%heating
             Endif           
 
-            ! reset c_10 and f_6 (so f_6 integrates to one)
+            ! reset c_10 and f_6 (so f_6 integrates over full volume to one)
             Call Integrate_in_radius(ref%heating, norm)
-            norm = four_pi*norm/shell_volume
+            norm = four_pi*norm
             ra_functions(:,6) = ref%heating(:)/norm
             ra_constants(10) = norm
             
