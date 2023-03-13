@@ -763,8 +763,8 @@ Contains
             Do i = 1, n_passive_scalars
                 kappa_chi_p_top(i) = 1.0d0/Chi_A_Prandtl_Number(i)
             Enddo
-            ref%viscous_amp(:) = (2.0d0*Prandtl_Number*Dissipation_Number/Rayleigh_Number) *&
-                & ref%temperature(:)
+            ref%viscous_amp = (2.0d0/ref%temperature) * Prandtl_Number*Dissipation_Number/Rayleigh_Number
+
 
             If (magnetism) Then
                 ref%Lorentz_Coeff = 1.0d0
@@ -794,7 +794,7 @@ Contains
             Do i = 1, n_passive_scalars
                 kappa_chi_p_top(i) = Ekman_Number/Chi_A_Prandtl_Number(i)
             Enddo
-            ref%viscous_amp(:) = (2.0d0*Dissipation_Number/Modified_Rayleigh_Number) * ref%temperature(:)
+            ref%viscous_amp = (2.0d0/ref%temperature) * Dissipation_Number/Modified_Rayleigh_Number
 
             If (magnetism) Then
                 ref%Lorentz_Coeff = 1.0d0
