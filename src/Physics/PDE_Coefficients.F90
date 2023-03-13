@@ -851,37 +851,13 @@ Contains
             
         Endif
 
-        ! Set the equation coefficients (apart from the ones having to do with diffusivities and heating)
-        ! for proper output to the equation_coefficients file
-        ra_functions(:,1) = ref%density
+        ! Set the buoyancy constants / functions
         ra_functions(:,2) = gravity*ref%density
-        ra_functions(:,4) = ref%temperature
-        ra_functions(:,8) = ref%dlnrho
-        ra_functions(:,9) = ref%d2lnrho        
-        ra_functions(:,10) = ref%dlnT
-        ra_functions(:,14) = ref%dsdr     
-                        
-        ra_constants(1) = ref%Coriolis_Coeff
         If (ND_Time_Visc) Then
             ra_constants(2) = Rayleigh_Number/Prandtl_Number
         Elseif (ND_Time_Rot) Then
             ra_constants(2) = Modified_Rayleigh_Number
         Endif
-        ra_constants(3) = 1.0d0
-        ra_constants(4) = ref%Lorentz_Coeff
-        If (ND_Time_Visc) Then
-            ra_constants(8) = Prandtl_Number*Dissipation_Number/Rayleigh_Number
-        Elseif (ND_Time_Rot) Then
-            ra_constants(8) = Dissipation_Number/Modified_Rayleigh_Number
-        Endif
-        ra_constants(8) = Dissipation_Number/Modified_Rayleigh_Number
-        If (magnetism) Then
-            If (ND_Time_Visc) Then
-                ra_constants(9) = Prandtl_Number*Dissipation_Number/Rayleigh_Number
-            Elseif (ND_Time_Rot) Then
-                ra_constants(9) = Dissipation_Number/Modified_Rayleigh_Number
-            Endif
-        Endif ! if not magnetism, ra_constants(9) was initialized to zero
 
         Do i = 1, n_active_scalars
             If (ND_Time_Visc) Then
