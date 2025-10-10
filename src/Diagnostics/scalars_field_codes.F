@@ -111,7 +111,7 @@
     ! ! because they do not contribute to the dynamics.
     ! ! The ell=0 chi buoyancy force is determined by the mean chi profile.
     ! ! The ell=0 pressure force is DEFINED such that it exactly balances the ell=0 buoyancy
-    Integer, Parameter :: chi_buoyancy_force_ell0 = chi_mom_eq_off+4    ! :tex: $c_2\mathrm{f}_2\chi_{00}$
+    Integer, Parameter :: chi_buoyancy_force_ell0 = chi_mom_eq_off+4    ! :tex: $d_{7_i}\mathrm{g}_{7_i}\chi_{00}$
 
 
     ! FIXME: placeholder - NOTE definitions are not correct/finalized
