@@ -58,8 +58,12 @@ Module PDE_Coefficients
         Real*8, Allocatable :: dsdr(:)
         Real*8, Allocatable :: dsdr_over_cp(:)     ! (1/c_P) ds/dr
         Real*8, Allocatable :: d2s_over_cp(:)      ! (1/c_P) d2s/dr2
+        Real*8, Allocatable :: dchirefadr(:,:)
+        Real*8, Allocatable :: dchirefpdr(:,:)
 
         Real*8, Allocatable :: heating(:)
+        Real*8, Allocatable :: chi_a_source(:,:)
+        Real*8, Allocatable :: chi_p_source(:,:)
 
         Real*8 :: Coriolis_Coeff ! Multiplies z_hat x u in momentum eq.
         Real*8 :: Lorentz_Coeff ! Multiplies (Del X B) X B in momentum eq.
@@ -75,8 +79,6 @@ Module PDE_Coefficients
     End Type ReferenceInfo
 
     Type(ReferenceInfo) :: ref
-    ! Allow up to 50 active/passive scalar fields
-    Integer, Parameter :: n_scalar_max = 50
 
     ! Version number for the "equation_coefficients" container that is output to the simulation directory
     ! (i.e., the human-obtainable version of "ref")
@@ -111,23 +113,36 @@ Module PDE_Coefficients
     Real*8 :: Angular_Velocity = -1.0d0 ! Frame rotation rate (sets Coriolis force)
 
     ! Custom reference-state variables (reference_type = 4)
-    Integer, Parameter   :: max_ra_constants = 11 + 2*n_scalar_max
-    Integer, Parameter   :: max_ra_functions = 14 + 2*n_scalar_max
-    Integer              :: n_ra_constants
-    Integer              :: n_ra_functions
+    Integer, Parameter   :: max_ra_constants = 11, max_chi_constants = 4
+    Integer, Parameter   :: max_ra_functions = 14, max_chi_functions = 5
+    Integer              :: n_ra_constants, n_chi_constants
+    Integer              :: n_ra_functions, n_chi_functions
     Logical              :: with_custom_reference = .false.
     Logical              :: override_constants = .false.
     Logical              :: override_constant(1:max_ra_constants) = .false. ! in namelist
+    Logical, target      :: override_chi_a_constant(1:n_scalar_max, 1:max_chi_constants) = .false. ! in namelist
+    Logical, target      :: override_chi_p_constant(1:n_scalar_max, 1:max_chi_constants) = .false. ! in namelist
     Integer              :: with_custom_constants(1:max_ra_constants) = 0   ! in namelist
     Integer              :: with_custom_functions(1:max_ra_functions) = 0   ! in namelist
+    Integer, target      :: with_custom_chi_a_constants(1:n_scalar_max, 1:max_chi_constants) = 0   ! in namelist
+    Integer, target      :: with_custom_chi_a_functions(1:n_scalar_max, 1:max_chi_functions) = 0   ! in namelist
+    Integer, target      :: with_custom_chi_p_constants(1:n_scalar_max, 1:max_chi_constants) = 0   ! in namelist
+    Integer, target      :: with_custom_chi_p_functions(1:n_scalar_max, 1:max_chi_functions) = 0   ! in namelist
     Real*8               :: ra_constants(1:max_ra_constants) = 0.0d0        ! in namelist
+    Real*8, target       :: chi_a_constants(1:n_scalar_max, 1:max_chi_constants) = 0.0d0        ! in namelist
+    Real*8, target       :: chi_p_constants(1:n_scalar_max, 1:max_chi_constants) = 0.0d0        ! in namelist
     Integer, Allocatable :: ra_constant_set(:)
     Integer, Allocatable :: ra_function_set(:)
+    Integer, Allocatable, target :: chi_a_constant_set(:,:), chi_p_constant_set(:,:)
+    Integer, Allocatable, target :: chi_a_function_set(:,:), chi_p_function_set(:,:)
     Logical, Allocatable :: use_custom_constant(:)
     Logical, Allocatable :: use_custom_function(:)
+    Logical, Allocatable, target :: chi_a_use_custom_constant(:,:), chi_p_use_custom_constant(:,:)
+    Logical, Allocatable, target :: chi_a_use_custom_function(:,:), chi_p_use_custom_function(:,:)
     Real*8, Allocatable  :: ra_functions(:,:)
-    Logical              :: custom_reference_read = .false.
-    Character*120        :: custom_reference_file ='nothing'    
+    Real*8, Allocatable, target  :: chi_a_functions(:,:,:), chi_p_functions(:,:,:)
+    Logical              :: custom_reference_read = .false., chi_a_custom_reference_read = .false., chi_p_custom_reference_read = .false.
+    Character*120        :: custom_reference_file ='nothing', chi_a_custom_reference_file = 'nothing', chi_p_custom_reference_file = 'nothing'    
 
     ! General nondimensional anelastic polytrope variables (reference_type = 5)
     Logical :: ND_Volume_Average = .true.
@@ -167,7 +182,12 @@ Module PDE_Coefficients
             & chi_a_convective_rossby_number, chi_p_prandtl_number, &
             & ND_Volume_Average, ND_Inner_Radius, ND_Outer_Radius, &
             & Assume_Flux_Ra, Specific_Heat_Ratio, Buoyancy_Number_Visc,&
-            & Buoyancy_Number_Rot, Sigma_Parameter, Length_Scale
+            & Buoyancy_Number_Rot, Sigma_Parameter, Length_Scale,&
+            & chi_a_custom_reference_file, chi_p_custom_reference_file,&
+            & override_chi_a_constant, override_chi_p_constant,&
+            & chi_a_constants, chi_p_constants,&
+            & with_custom_chi_a_constants, with_custom_chi_p_constants,&
+            & with_custom_chi_a_functions, with_custom_chi_p_functions
 
     !///////////////////////////////////////////////////////////////////////////////////////
     ! II.  Variables Related to the Transport Coefficients
@@ -248,7 +268,11 @@ Contains
             Call stdout%print(" ")
         Endif
 
-        If (with_custom_reference) Call Augment_Reference()  
+        If (with_custom_reference) Then 
+            Call Augment_Reference()  
+            if (n_active_scalars > 0) Call Augment_Scalar_Reference(.true.)
+            if (n_passive_scalars > 0) Call Augment_Scalar_reference(.false.)
+        Endif
 
         If (rotation) Call Set_Rotation_dt()
 
@@ -259,8 +283,11 @@ Contains
     Subroutine Allocate_Reference_State
         Implicit None
 
-        n_ra_constants = 11 + 2*(n_active_scalars + n_passive_scalars)
-        n_ra_functions = 14 + 2*(n_active_scalars + n_passive_scalars)
+        n_ra_constants = 11
+        n_ra_functions = 14
+
+        n_chi_constants = 4
+        n_chi_functions = 5
 
         Allocate(ref%density(1:N_R))
         Allocate(ref%temperature(1:N_R))
@@ -278,7 +305,11 @@ Contains
         Allocate(ref%ohmic_amp(1:N_R))
         Allocate(ref%viscous_amp(1:N_R))
         Allocate(ref%heating(1:N_R))
-        Allocate(ref%chi_buoyancy_coeff(n_active_scalars,1:N_R))
+        Allocate(ref%chi_buoyancy_coeff(1:N_R,n_active_scalars))
+        Allocate(ref%chi_a_source(1:N_R,n_active_scalars))
+        Allocate(ref%chi_p_source(1:N_R,n_passive_scalars))
+        Allocate(ref%dchirefadr(1:N_R,n_active_scalars))
+        Allocate(ref%dchirefpdr(1:N_R,n_passive_scalars))
 
         Allocate(ra_constant_set(1:n_ra_constants))
         ra_constant_set = 0
@@ -290,6 +321,28 @@ Contains
         use_custom_function = .false.
         Allocate(ra_functions(1:N_R, 1:n_ra_functions))
         ra_functions(:,:) = Zero
+
+        Allocate(chi_a_constant_set(1:n_chi_constants,1:n_active_scalars))
+        chi_a_constant_set = 0
+        Allocate(chi_a_function_set(1:n_chi_functions,1:n_active_scalars))
+        chi_a_function_set = 0
+        Allocate(chi_a_use_custom_constant(1:n_chi_constants,1:n_active_scalars))
+        chi_a_use_custom_constant = .false.
+        Allocate(chi_a_use_custom_function(1:n_chi_functions,1:n_active_scalars))
+        chi_a_use_custom_function = .false.
+        Allocate(chi_a_functions(1:n_r, 1:n_chi_functions, 1:n_active_scalars))
+        chi_a_functions(:,:,:) = Zero
+
+        Allocate(chi_p_constant_set(1:n_chi_constants,1:n_passive_scalars))
+        chi_p_constant_set = 0
+        Allocate(chi_p_function_set(1:n_chi_functions,1:n_passive_scalars))
+        chi_p_function_set = 0
+        Allocate(chi_p_use_custom_constant(1:n_chi_constants,1:n_passive_scalars))
+        chi_p_use_custom_constant = .false.
+        Allocate(chi_p_use_custom_function(1:n_chi_functions,1:n_passive_scalars))
+        chi_p_use_custom_function = .false.
+        Allocate(chi_p_functions(1:n_r, 1:n_chi_functions, 1:n_passive_scalars))
+        chi_p_functions(:,:,:) = Zero
 
         ref%density(:)            = Zero
         ref%temperature(:)        = Zero
@@ -337,6 +390,7 @@ Contains
         Integer :: i,j
         Real*8 :: r_outer, r_inner, prefactor, amp, pscaling
         Character*12 :: dstring
+        Character(len=2) :: sind
         Character*8 :: dofmt = '(ES12.5)'
 
 
@@ -366,6 +420,10 @@ Contains
         ref%dsdr         = 0.0d0
         ref%dsdr_over_cp = 0.0d0
         ref%d2s_over_cp  = 0.0d0
+        ref%dchirefadr   = 0.0d0
+        ref%dchirefpdr   = 0.0d0
+        ref%chi_a_source = 0.0d0
+        ref%chi_p_source = 0.0d0
 
         amp = Rayleigh_Number/Prandtl_Number
 
@@ -374,11 +432,18 @@ Contains
         Enddo
 
         do j = 1, n_active_scalars
-          amp = -chi_a_Rayleigh_Number(j)/chi_a_Prandtl_Number(j)
+            If (my_rank .eq. 0) Then
+                Write(sind,'(I2)') j
+                Write(dstring,dofmt)chi_a_Rayleigh_Number(j)
+                Call stdout%print(" ---- Chi Rayleigh Number "//Adjustl(sind)//"    : "//trim(dstring))
+                Write(dstring,dofmt)chi_a_Prandtl_Number(j)
+                Call stdout%print(" ---- Chi Prandtl Number "//Adjustl(sind)//"     : "//trim(dstring))
+            Endif
+            amp = -chi_a_Rayleigh_Number(j)/chi_a_Prandtl_Number(j)
 
-          Do i = 1, N_R
-              ref%chi_buoyancy_coeff(j,i) = amp*(radius(i)/radius(1))**gravity_power
-          Enddo
+            Do i = 1, N_R
+                ref%chi_buoyancy_coeff(i,j) = amp*(radius(i)/radius(1))**gravity_power
+            Enddo
         enddo
 
         pressure_specific_heat = 1.0d0
@@ -429,7 +494,8 @@ Contains
         ra_functions(:,2) = (radius(:)/radius(1))**gravity_power
         ra_constants(2) = Rayleigh_Number/Prandtl_Number
         Do i = 1, n_active_scalars
-            ra_constants(12+(i-1)*2) = -chi_a_Rayleigh_Number(i)/chi_a_Prandtl_Number(i)
+            chi_a_constants(i,4) = -chi_a_Rayleigh_Number(i)/chi_a_Prandtl_Number(i)
+            chi_a_functions(:,5,i) = (radius(:)/radius(1))**gravity_power
         Enddo
 
     End Subroutine Constant_Reference
@@ -473,7 +539,7 @@ Contains
         gravity = (rmax**2)*OneOverRSquared(:)
         ref%Buoyancy_Coeff = gravity*Modified_Rayleigh_Number*ref%density
         do i = 1, n_active_scalars
-          ref%chi_buoyancy_coeff(i,:) = -gravity*chi_a_modified_rayleigh_number(i)*ref%density
+          ref%chi_buoyancy_coeff(:,i) = -gravity*chi_a_modified_rayleigh_number(i)*ref%density
         enddo
 
         !Compute the background temperature gradient : dTdr = -Dg,  d2Tdr2 = 2*D*g/r (for g ~1/r^2)
@@ -529,7 +595,8 @@ Contains
         ra_functions(:,2) = gravity*ref%density
         ra_constants(2) = Modified_Rayleigh_Number
         Do i = 1, n_active_scalars
-            ra_constants(12+(i-1)*2) = -chi_a_modified_rayleigh_number(i)
+            chi_a_constants(i,4) = -chi_a_modified_rayleigh_number(i)
+            chi_a_functions(:,5,i) = gravity*ref%density
         Enddo
 
         DeAllocate(dtmparr, gravity)
@@ -543,6 +610,7 @@ Contains
         Real*8, Allocatable :: gravity(:), flux_nonrad(:), partial_heating(:), nsquared(:), &
             & zeta(:), dzeta(:), d2zeta(:), dlnzeta(:), d2lnzeta(:)
         Character*12 :: dstring
+        Character(len=2) :: sind
         Character*8 :: dofmt = '(ES12.5)'
         Logical :: ND_Length_Shell_Depth = .false. ! Defaults to .true. under following logic
         Logical :: Adiabatic_Polytrope ! To be determined (to within the tolerance tol)
@@ -846,7 +914,14 @@ Contains
 
         ref%Buoyancy_Coeff(:) = (Rayleigh_Number/Prandtl_Number)*ref%density(:)*gravity(:)
         Do i = 1, n_active_scalars
-            ref%Chi_Buoyancy_Coeff(i,:) = -(Chi_A_Rayleigh_Number(i)/Chi_A_Prandtl_Number(i))*&
+            If (my_rank .eq. 0) Then
+                Write(sind,'(I2)') i
+                Write(dstring,dofmt)chi_a_Rayleigh_Number(i)
+                Call stdout%print(" ---- Chi Rayleigh Number "//Adjustl(sind)//"    : "//trim(dstring))
+                Write(dstring,dofmt)chi_a_Prandtl_Number(i)
+                Call stdout%print(" ---- Chi Prandtl Number "//Adjustl(sind)//"     : "//trim(dstring))
+            Endif
+            ref%Chi_Buoyancy_Coeff(:,i) = -(Chi_A_Rayleigh_Number(i)/Chi_A_Prandtl_Number(i))*&
                 & ref%density(:)*gravity(:)
         Enddo
 
@@ -914,9 +989,9 @@ Contains
         ! Set the buoyancy constants / functions
         ra_functions(:,2) = gravity*ref%density
         ra_constants(2) = Rayleigh_Number/Prandtl_Number
-
         Do i = 1, n_active_scalars
-            ra_constants(12+(i-1)*2) = -Chi_A_Rayleigh_Number(i)/Chi_A_Prandtl_Number(i)
+            chi_a_constants(i,4) = -(Chi_A_Rayleigh_Number(i)/Chi_A_Prandtl_Number(i))
+            chi_a_functions(:,5,i) = ref%density(:)*gravity(:)
         Enddo
 
         DeAllocate(gravity, zeta, dzeta, d2zeta, dlnzeta, d2lnzeta, flux_nonrad, partial_heating)
@@ -1021,7 +1096,7 @@ Contains
         Ref%Buoyancy_Coeff = gravity/Pressure_Specific_Heat*ref%density
 
         do i = 1, n_active_scalars
-          ref%chi_buoyancy_coeff(i,:) = -gravity/pressure_specific_heat*ref%density
+          ref%chi_buoyancy_coeff(:,i) = -gravity/pressure_specific_heat*ref%density
         end do
 
         Deallocate(zeta, gravity)
@@ -1045,8 +1120,9 @@ Contains
         ra_functions(:,2) = ref%Buoyancy_Coeff
         ra_constants(2) = 1.0d0
         Do i = 1, n_active_scalars
-            ra_constants(12+(i-1)*2) = -1.0d0
-        Enddo 
+            chi_a_constants(i,4) = 1.0d0
+            chi_a_functions(:,5,i) = ref%chi_buoyancy_coeff(:,i)
+        Enddo
 
     End Subroutine Polytropic_Reference
 
@@ -1191,6 +1267,140 @@ Contains
 
     End Subroutine Augment_Reference
 
+    Subroutine Augment_Scalar_Reference(active)
+        Implicit None
+        Logical, intent(in) :: active
+        Real*8, Allocatable :: temp_functions(:,:,:), temp_constants(:,:)
+        Character(len=2) :: intstring
+        Character*12 :: dstring
+        Character*8 :: dofmt = '(ES12.5)'
+        Character(len=2) :: sind
+        ! variables to point at different global parameters depending on whether we are reading in active or passive scalar info
+        Real*8, pointer :: chi_l_constants(:,:), chi_l_functions(:,:,:)
+        Logical, pointer :: chi_l_use_custom_constant(:,:), chi_l_use_custom_function(:,:)
+        Integer, pointer :: chi_l_constant_set(:,:), chi_l_function_set(:,:)
+        Character*120 :: chi_l_custom_reference_file
+        Character*7 :: chi_l_type_str
+        Integer :: i, n_l_scalars
+
+        if (active) then
+            chi_l_constant_set => chi_a_constant_set
+            chi_l_function_set => chi_a_function_set
+            chi_l_constants => chi_a_constants
+            chi_l_functions => chi_a_functions
+            chi_l_use_custom_constant => chi_a_use_custom_constant
+            chi_l_use_custom_function => chi_a_use_custom_function
+            chi_l_custom_reference_file = chi_a_custom_reference_file
+            n_l_scalars = n_active_scalars
+            chi_l_type_str = 'active'
+        else
+            chi_l_constant_set => chi_p_constant_set
+            chi_l_function_set => chi_p_function_set
+            chi_l_constants => chi_p_constants
+            chi_l_functions => chi_p_functions
+            chi_l_use_custom_constant => chi_p_use_custom_constant
+            chi_l_use_custom_function => chi_p_use_custom_function
+            chi_l_custom_reference_file = chi_p_custom_reference_file
+            n_l_scalars = n_passive_scalars
+            chi_l_type_str = 'passive'
+        endif
+
+        If (my_rank .eq. 0) Then
+            if (active) Then
+                Call stdout%print('Active scalar field reference state will be augmented.')
+                Call stdout%print('Only source, buoyancy, or background dchidr may be modified.')
+            else
+                Call stdout%print('Passive scalar field reference state will be augmented.')
+                Call stdout%print('Only source or background dchidr may be modified.')
+            endif
+            Call stdout%print('Source requires both d_3 and g_3 to be set.')
+            if (active) Call stdout%print('Buoyancy requires both d_4 and g_5 to be set.')
+            Call stdout%print('Reference dchidr requires g_1 to be set (sets d_11 to 1 if unspecified).')
+            Call stdout%print('Reading '//Adjustl(chi_l_type_str)//' scalars from: '//TRIM(ADJUSTL(chi_l_custom_reference_file)) )
+        Endif
+
+        ! Before reading the custom reference file, guard against
+        ! potential overwrites of all chi_functions and chi_constants which,
+        ! in this case were determined by ref_types 1,2,3.  Only certain
+        ! combinations are allowed to be overwritten.
+
+        Allocate(temp_functions(1:n_r, 1:n_chi_functions, 1:n_l_scalars))
+        Allocate(temp_constants(1:n_l_scalars, 1:n_chi_constants))
+
+        temp_functions(:,:,:) = chi_l_functions(:,:,:)
+        ! Note that chi_a_constants is allocated up to n_scalar_max x max_chi_constants,
+        ! which could be more than n_active_scalars xn_chi_constants
+        temp_constants(:,:) = chi_l_constants(1:n_l_scalars, 1:n_chi_constants)
+
+        Call Read_Scalar_Custom_Reference_File(chi_l_custom_reference_file, active)
+
+        Do i = 1, n_l_scalars
+            If (my_rank .eq. 0) Write(sind,'(I2)') i
+
+            If (chi_l_use_custom_constant(3,i) .and. chi_l_use_custom_function(3,i)) Then
+                If (my_rank .eq. 0) Then
+                    Call stdout%print('Chi source for '//Adjustl(chi_l_type_str)//' scalar field '//Adjustl(sind)//' has been set to:')
+                    Call stdout%print('d_3*g_3')
+                    Call stdout%print(' ')
+                Endif
+                ! can't declare items in type as a target so have to do this if statement instead
+                if (active) then
+                    ref%chi_a_source(:,i) = chi_l_constants(i,3)*chi_l_functions(:,3,i)
+                else
+                    ref%chi_p_source(:,i) = chi_l_constants(i,3)*chi_l_functions(:,3,i)
+                endif
+                temp_functions(:,3,i) = chi_l_functions(:,3,i)
+                temp_constants(i,3)  = chi_l_constants(i,3)
+            Endif
+
+            If (active) Then
+                If (chi_l_use_custom_constant(4,i) .and. chi_l_use_custom_function(5,i)) Then
+                    If (my_rank .eq. 0) Then
+                        Call stdout%print('Chi buoyancy source for active scalar field '//Adjustl(sind)//' has been set to:')
+                        Call stdout%print('d_4*f_5')
+                        Call stdout%print(' ')
+                    Endif
+                    ref%chi_buoyancy_coeff(:,i) = chi_l_constants(i,4)*chi_l_functions(:,5,i)
+                    temp_functions(:,5,i) = chi_l_functions(:,5,i)
+                    temp_constants(i,4) = chi_l_constants(i,4)
+                Endif
+            Endif
+
+            If (chi_l_use_custom_function(1,i)) Then
+                ! Set d_1 = 1 by default
+                If (.not. chi_l_use_custom_constant(1,i)) Then
+                    If (my_rank .eq. 0) Then
+                        Call stdout%print("User didn't set d_1 for "//Adjustl(chi_l_type_str)//' scalar field '//Adjustl(sind)//'.  Now setting d_1 to 1.')
+                    Endif
+                    chi_l_constants(i,1) = 1.0d0
+                Else
+                    If (my_rank .eq. 0) Then
+                        Write(dstring,dofmt) chi_l_constants(i,1)
+                        Call stdout%print('User set d_1 to '//Adjustl(dstring)//' for '//Adjustl(chi_l_type_str)//' scalar field '//Adjustl(sind)//'.')
+                    Endif
+                Endif
+                If (my_rank .eq. 0) Then
+                    Call stdout%print('Background dchidr for '//Adjustl(chi_l_type_str)//' scalar field '//Adjustl(sind)//' has been set to:')
+                    Call stdout%print('d_1*g_1')
+                    Call stdout%print(' ')
+                Endif
+                ! can't declare items in type as a target so have to do this if statement instead
+                if (active) then
+                    ref%dchirefadr(:,i) = chi_l_constants(i,1)*chi_l_functions(:,1,i)
+                else
+                    ref%dchirefpdr(:,i) = chi_l_constants(i,1)*chi_l_functions(:,1,i)
+                endif
+                temp_functions(:,1,i) = chi_l_functions(:,1,i)
+                temp_constants(i,1)  = chi_l_constants(i,1)
+            Endif
+        Enddo
+
+        chi_l_functions(:,:,:) = temp_functions(:,:,:)
+        chi_l_constants(1:n_l_scalars, 1:n_chi_constants) = temp_constants(:,:)
+        DeAllocate(temp_functions, temp_constants)
+
+    End Subroutine Augment_Scalar_Reference
+
     Subroutine Constant_Energy_Heating()
         Implicit None
         ! rho T dSdt = alpha : energy deposition per unit volume is constant
@@ -1253,6 +1463,20 @@ Contains
 
         Call Read_Custom_Reference_File(custom_reference_file)
 
+        if (n_active_scalars > 0) then
+            If (my_rank .eq. 0) Then
+                Call stdout%print('And active scalars from: '//TRIM(ADJUSTL(chi_a_custom_reference_file)) )
+            Endif
+            Call Read_Scalar_Custom_Reference_File(chi_a_custom_reference_file, .true.)
+        endif
+
+        if (n_passive_scalars > 0) then
+            If (my_rank .eq. 0) Then
+                Call stdout%print('And passive scalars from: '//TRIM(ADJUSTL(chi_p_custom_reference_file)) )
+            Endif
+            Call Read_Scalar_Custom_Reference_File(chi_p_custom_reference_file, .false.)
+        endif
+
         Do i=1,4
             fi = fi_to_check(i)
             If (ra_function_set(fi) .eq. 0) Then
@@ -1268,7 +1492,7 @@ Contains
         ref%d2lnrho(:) = ra_functions(:,9)
         ref%buoyancy_coeff(:) = ra_constants(2)*ra_functions(:,2)
         Do i = 1, n_active_scalars
-            ref%chi_buoyancy_coeff(i,:) = ra_constants(12+(i-1)*2)*ra_functions(:,2)
+            ref%chi_buoyancy_coeff(:,i) = chi_a_constants(i,4)*chi_a_functions(:,5,i)
         Enddo
 
         ref%temperature(:) = ra_functions(:,4)
@@ -1283,6 +1507,12 @@ Contains
         Endif
 
         ref%heating(:) = ra_functions(:,6)/(ref%density*ref%temperature)*ra_constants(10)
+        do i = 1, n_active_scalars
+            ref%chi_a_source(:,i) = chi_a_constants(i,3)*chi_a_functions(:,3,i)
+        enddo
+        do i = 1, n_passive_scalars
+            ref%chi_p_source(:,i) = chi_p_constants(i,3)*chi_p_functions(:,3,i)
+        enddo
         
         ref%Coriolis_Coeff = ra_constants(1)
         If (Angular_Velocity .gt. 0) Then
@@ -1305,6 +1535,14 @@ Contains
         ref%exp_entropy = exp(ref%entropy/pressure_specific_heat)
         ref%dsdr_over_cp = ref%dsdr/pressure_specific_heat
         Call log_deriv(ref%dsdr_over_cp(:), ref%d2s_over_cp(:), no_log=.true.)
+
+        do i = 1, n_active_scalars
+            ref%dchirefadr(:,i) = chi_a_constants(i,1)*chi_a_functions(:,1,i)
+        enddo
+
+        do i = 1, n_passive_scalars
+            ref%dchirefpdr(:,i) = chi_p_constants(i,1)*chi_p_functions(:,1,i)
+        enddo
 
     End Subroutine Get_Custom_Reference
 
@@ -1347,7 +1585,7 @@ Contains
         Character*120, Intent(In) :: filename
         Character*120 :: ref_file
         Integer :: pi_integer,nr_ref, eqversion
-        Integer :: i, k, j, n_scalars, dummy
+        Integer :: i, k, j, dummy
         Integer :: cset(1:n_ra_constants), fset(1:n_ra_functions)
         Real*8  :: input_constants(1:n_ra_constants)
         Real*8, Allocatable :: ref_arr_old(:,:), rtmp(:), rtmp2(:)
@@ -1387,14 +1625,13 @@ Contains
             Read(15) eqversion
             If (eqversion .eq. 1) Then
                 !Read(15) cset(1:n_ra_constants-1) ! c_11 didn't exist yet
-                Read(15) cset(1:10) ! equation_coefficients couldn't write the custom active/passive scalar constants yet, and c_11 didn't exist yet
+                Read(15) cset(1:10) ! c_11 didn't exist yet
                 Read(15) fset(1:n_ra_functions)                
                 Read(15) input_constants(1:10)
                 cset(11) = 1 ! treat this as if c_11 = 1 was specified in the custom reference file
                 input_constants(11) = 1.0d0 
             Else
-                Read(15) dummy ! n_ra_constants, but its up to the user to make sure this is the same 
-                               ! same number specified in Rayleigh via "n_active_scalars"
+                Read(15) dummy ! n_ra_constants, which Rayleigh should already know
                 Read(15) dummy ! n_ra_functions, which Rayleigh should already know           
                 Read(15) cset(1:n_ra_constants)
                 Read(15) fset(1:n_ra_functions) 
@@ -1520,12 +1757,6 @@ Contains
             If ((fset(13) .eq. 0) .and. (fset(7) .eq. 1)) Then
                 Call log_deriv(ra_functions(:,7), ra_functions(:,13)) !dlneta
             Endif
-            n_scalars = n_active_scalars + n_passive_scalars
-            do i = 0, (n_scalars - 1)
-              If ((fset(16+i*2) .eq. 0) .and. (fset(15+i*2) .eq. 1)) Then
-                  Call log_deriv(ra_functions(:,15+i*2), ra_functions(:,16+i*2)) !dlnkappa_chi
-              Endif
-            end do
         Else
             Call stdout%print('Error.  This file appears to be corrupt (check Endian convention).')
         Endif
@@ -1571,6 +1802,265 @@ Contains
         Endif
 
     End Subroutine Read_Custom_Reference_File
+
+    Subroutine Read_Scalar_Custom_Reference_File(filename, active)
+        Character*120, Intent(In) :: filename
+        Logical, Intent(In) :: active ! if .true., read in active scalar info; otherwise, read in passive scalar info
+        Character*120 :: ref_file
+        Integer :: pi_integer,nr_ref, eqversion
+        Integer :: i, k, j, n_scalars, dummy
+        Integer :: cset(1:n_chi_constants,1:n_scalar_max), fset(1:n_chi_functions,1:n_scalar_max)
+        Real*8  :: input_constants(1:n_chi_constants,1:n_scalar_max)
+        Real*8, Allocatable :: ref_arr_old(:,:,:), rtmp(:), rtmp2(:)
+        Real*8, Allocatable :: old_radius(:)
+        Character*12 :: dstring
+        Character*8 :: dofmt = '(ES12.5)'
+        Character(len=2) :: cind, sind
+        Character*3 :: intstr
+        ! variables to point at different global parameters depending on whether we are reading in active or passive scalar info
+        Integer :: n_l_scalars
+        Real*8, pointer :: chi_l_constants(:,:), chi_l_functions(:,:,:)
+        Logical, pointer :: override_chi_l_constant(:,:)
+        Logical, pointer :: chi_l_use_custom_constant(:,:), chi_l_use_custom_function(:,:)
+        Integer, pointer :: chi_l_constant_set(:,:), chi_l_function_set(:,:)
+        Integer, pointer :: with_custom_chi_l_constants(:,:), with_custom_chi_l_functions(:,:)
+        Character*7 :: chi_l_type_str
+
+
+        if (active) then
+            n_l_scalars = n_active_scalars
+            override_chi_l_constant => override_chi_a_constant
+            chi_l_constant_set => chi_a_constant_set
+            chi_l_function_set => chi_a_function_set
+            chi_l_constants => chi_a_constants
+            chi_l_functions => chi_a_functions
+            with_custom_chi_l_constants => with_custom_chi_a_constants
+            with_custom_chi_l_functions => with_custom_chi_a_functions
+            chi_l_use_custom_constant => chi_a_use_custom_constant
+            chi_l_use_custom_function => chi_a_use_custom_function
+            chi_l_type_str = 'active'
+        else
+            n_l_scalars = n_passive_scalars
+            override_chi_l_constant => override_chi_p_constant
+            chi_l_constant_set => chi_p_constant_set
+            chi_l_function_set => chi_p_function_set
+            chi_l_constants => chi_p_constants
+            chi_l_functions => chi_p_functions
+            with_custom_chi_l_constants => with_custom_chi_p_constants
+            with_custom_chi_l_functions => with_custom_chi_p_functions
+            chi_l_use_custom_constant => chi_p_use_custom_constant
+            chi_l_use_custom_function => chi_p_use_custom_function
+            chi_l_type_str = 'passive'
+        end if
+
+        cset(:,:) = 0
+        fset(:,:) = 0
+        input_constants(:,:) = 0.0d0
+
+        ref_file = Trim(my_path)//filename
+
+        Open(unit=15,file=ref_file,form='unformatted', status='old',access='stream')
+
+        !Verify Endianness
+        Read(15)pi_integer
+        If (pi_integer .ne. 314) Then
+            close(15)
+            Open(unit=15,file=ref_file,form='unformatted', status='old', &
+                 CONVERT = 'BIG_ENDIAN' , access='stream')
+            Read(15)pi_integer
+            If (pi_integer .ne. 314) Then
+                Close(15)
+                Open(unit=15,file=ref_file,form='unformatted', status='old', &
+                 CONVERT = 'LITTLE_ENDIAN' , access='stream')
+                Read(15)pi_integer
+            Endif
+        Endif
+
+        If (pi_integer .eq. 314) Then
+
+            ! Read in constants and their 'set' flags
+            Read(15) eqversion
+            Read(15) dummy ! n_chi_constants
+            Read(15) dummy ! n_chi_functions
+            Read(15) n_scalars
+            if (n_scalars .gt. n_l_scalars) then
+                Call stdout%print('ERROR: number of scalars in the custom reference file exceeds the number of '//Adjustl(chi_l_type_str)//' scalars specified in main_input.')
+                Call stdout%print('Check your scalar custom reference file and main_input settings.')
+            end if
+            Read(15) ((cset(i, j), i = 1, n_chi_constants), j = 1, n_scalars)
+            Read(15) ((fset(i, j), i = 1, n_chi_constants), j = 1, n_scalars)
+            Read(15) ((input_constants(i, j), i = 1, n_chi_constants), j = 1, n_scalars)
+            
+            ! Cset(i) is 1 if a constant(i) was set; it is 0 otherwise.
+            ! The logic below deals with a constant set in both the reference
+            ! file and in main_input.  Main_input values take precedence if
+            ! override_chi_a_constant(s) is set or if the reference file constant 
+            ! was not set.
+            Do j = 1, n_scalars
+                Do i = 1, n_chi_constants
+                    If ( (.not. override_constants) .and. (.not. override_chi_l_constant(j,i)) ) Then
+                        chi_l_constants(j,i) = chi_l_constants(j,i) + cset(i,j)*(input_constants(i,j)-chi_l_constants(j,i))
+                    Endif
+                Enddo
+            Enddo
+
+            ! determine which functions/constants were set by the user
+            chi_l_function_set(:,:) = fset(:,:)
+            Do j = 1, n_scalars
+                Do i = 1, n_chi_constants
+                    If ((cset(i,j) .eq. 1) .or. override_chi_l_constant(j,i) .or. override_constants) Then
+                        chi_l_constant_set(i,j) = 1
+                    Endif
+                Enddo
+            Enddo
+
+            ! Print the values of the constants
+            Do j = 1, n_scalars
+                Do i = 1, n_chi_constants
+                     If (my_rank .eq. 0) Then
+                        Write(cind, '(I2)') j
+                        Write(sind,'(I2)') i
+                        Write(dstring,dofmt) chi_l_constants(j,i)
+                        Call stdout%print('c_'//Adjustl(cind)//' for '//Adjustl(chi_l_type_str)//' scalar '//Adjustl(sind)//' = '//Trim(dstring))
+                    Endif
+                Enddo
+            Enddo
+
+            ! Read the reference file's radial grid
+            Read(15) nr_ref
+            Allocate(ref_arr_old(1:nr_ref, 1:n_chi_functions, 1:n_scalars)) 
+            Allocate(old_radius(1:nr_ref))
+
+            Read(15)(old_radius(i),i=1,nr_ref)
+            Do k = 1, n_scalars
+                Do j = 1, n_chi_functions
+                    Read(15)(ref_arr_old(i, j, k),i=1,nr_ref)
+                EndDo
+            EndDo
+
+            !Check to see if radius is tabulated in ascending or descending order.
+            !If it is found to be in ascending order, reverse the radius and the 
+            !input array of functions
+            If (old_radius(1) .lt. old_radius(nr_ref)) Then
+
+                If (my_rank .eq. 0) Call stdout%print('Reversing Radial Indices in Custom Ref File!')
+
+                Allocate(rtmp(1:nr_ref))
+
+                rtmp = old_radius
+                Do i = 1, nr_ref
+                    old_radius(i) = rtmp(nr_ref-i+1)
+                Enddo
+
+                Do k = 1, n_scalars
+                    Do j = 1, n_chi_functions
+                        rtmp(:) = ref_arr_old(:,j,k)
+                        Do i = 1, nr_ref
+                            ref_arr_old(i,j,k) = rtmp(nr_ref-i+1)
+                        Enddo
+                    Enddo
+                Enddo
+
+                DeAllocate(rtmp)
+
+            Endif
+
+            Close(15)
+            if (active) then
+                chi_a_custom_reference_read = .true.
+            else
+                chi_p_custom_reference_read = .true.
+            end if
+
+            If (nr_ref .ne. n_r) Then
+                !Interpolate onto the current radial grid if necessary
+                !Note that the underlying assumption here is that same # of grid points
+                ! means same grid - come back to this later for generality
+                Allocate(   rtmp2(1:n_r))
+                Allocate( rtmp(1:nr_ref))
+
+                Do k = 1, n_scalars
+                    Do j = 1, n_chi_functions
+                        rtmp(:) = ref_arr_old(:,j,k)
+                        rtmp2(:) = 0.0d0
+                        Call Spline_Interpolate(rtmp, old_radius, rtmp2, radius)
+
+                        chi_l_functions(1:n_r,j,k) = rtmp2
+                    Enddo
+                Enddo
+
+                DeAllocate(rtmp,rtmp2)
+            Else
+
+                ! Bit redundant here, but may want to do filtering on ref_arr array
+                chi_l_functions(1:n_r, 1:n_chi_functions, 1:n_scalars) = &
+                          ref_arr_old(1:n_r,1:n_chi_functions,1:n_scalars)
+
+                If (my_rank .eq. 0) Then
+                    call stdout%print(" WARNING:  nr = nr_old.  Assuming grids are the same.")
+                Endif
+            Endif
+            DeAllocate(ref_arr_old,old_radius)
+            
+            ! Finally, if the logarithmic derivatives of kappa_chi was
+            ! not specified, then we compute it here.
+            ! only calculate the log derivative if kappa_chi was set, otherwise there
+            ! are divide by zero issues
+            n_scalars = n_active_scalars + n_passive_scalars
+            Do k = 1, n_scalars
+                If ((fset(4,k) .eq. 0) .and. (fset(2,k) .eq. 1)) Then
+                    Call log_deriv(chi_l_functions(:,2,k), chi_l_functions(:,4,k)) !dlnkappa_chi
+                Endif
+            Enddo
+        Else
+            Call stdout%print('Error.  This file appears to be corrupt (check Endian convention).')
+        Endif
+
+        ! only used if user wants to change reference_type=1,2,3
+        If (with_custom_reference) Then
+            Do i = 1, n_scalars
+                Do k = 1, n_chi_constants
+                    j = with_custom_chi_l_constants(i,k)
+                    if ((j .gt. 0) .and. (j .le. n_chi_constants)) Then
+                        If (chi_l_constant_set(j,i) .eq. 1) Then
+                            chi_l_use_custom_constant(j,i) = .true.
+                        Else
+                            If (my_rank .eq. 0) Then
+                                Write(intstr,'(i3)') j
+                                Write(sind, '(I2)') i
+                                Call stdout%print(' ')
+                                Call stdout%print('You set with_custom_constant: '//TRIM(ADJUSTL(intstr))//' for '//Adjustl(chi_l_type_str)//' scalar '//Adjustl(sind))
+                                Call stdout%print('But this constant was not set in either main_input or ')
+                                Call stdout%print('the custom reference file.  Selection will be ignored.')
+                                Call stdout%print(' ')
+                            Endif
+                        Endif
+                    Endif
+                Enddo
+            Enddo
+
+            Do i = 1, n_scalars
+                Do k = 1, n_chi_constants
+                    j = with_custom_chi_l_functions(i,k)
+                    if ((j .gt. 0) .and. (j .le. n_chi_functions)) Then
+                        If (chi_l_function_set(j,i) .eq. 1) Then
+                            chi_l_use_custom_function(j,i) = .true.
+                        Else
+                            If (my_rank .eq. 0) Then
+                                Write(intstr,'(i3)') j
+                                Write(sind, '(I2)') i
+                                Call stdout%print(' ')
+                                Call stdout%print('You set with_custom_function: '//TRIM(ADJUSTL(intstr))//' for '//Adjustl(chi_l_type_str)//' scalar '//Adjustl(sind))
+                                Call stdout%print('But this function was not set.  Selection will be ignored.')
+                                Call stdout%print(' ')
+                            Endif
+                        Endif
+                    Endif
+                Enddo
+            Enddo
+        Endif
+
+    End Subroutine Read_Scalar_Custom_Reference_File
 
     Subroutine Log_Deriv(arr1,arr2, no_log)
         Implicit None
@@ -1710,8 +2200,8 @@ Contains
         If (allocated(ref%Temperature)) DeAllocate(ref%Temperature)
         If (allocated(ref%dlnT)) DeAllocate(ref%dlnT)
 
-	If (allocated(ref%entropy)) DeAllocate(ref%entropy)
-	If (allocated(ref%exp_entropy)) DeAllocate(ref%exp_entropy)
+        If (allocated(ref%entropy)) DeAllocate(ref%entropy)
+        If (allocated(ref%exp_entropy)) DeAllocate(ref%exp_entropy)
         If (allocated(ref%dsdr)) DeAllocate(ref%dsdr)
         If (allocated(ref%dsdr_over_cp)) DeAllocate(ref%dsdr_over_cp)
         If (allocated(ref%d2s_over_cp)) DeAllocate(ref%d2s_over_cp)
@@ -1721,6 +2211,10 @@ Contains
         !       NOTE: ref%Coriolis_Coeff and ref%Lorentz_Coeff have no default values (but maybe do, if you consider the Allocate_Reference_State() routine)
         If (allocated(ref%Buoyancy_Coeff)) DeAllocate(ref%Buoyancy_Coeff)
         If (allocated(ref%chi_buoyancy_coeff)) DeAllocate(ref%chi_buoyancy_coeff)
+        If (allocated(ref%chi_a_source)) DeAllocate(ref%chi_a_source)
+        If (allocated(ref%chi_p_source)) DeAllocate(ref%chi_p_source)
+        If (allocated(ref%dchirefadr)) DeAllocate(ref%dchirefadr)
+        If (allocated(ref%dchirefpdr)) DeAllocate(ref%dchirefpdr)
         If (allocated(ref%dpdr_w_term)) DeAllocate(ref%dpdr_w_term)
         If (allocated(ref%pressure_dwdr_term)) DeAllocate(ref%pressure_dwdr_term)
 
@@ -1767,9 +2261,13 @@ Contains
         Implicit None
         Integer :: i
         Real*8, Allocatable :: temp_functions(:,:), temp_constants(:)
-        Logical :: restore, need_custom
+        Real*8, Allocatable :: temp_chi_a_functions(:,:,:), temp_chi_a_constants(:,:)
+        Real*8, Allocatable :: temp_chi_p_functions(:,:,:), temp_chi_p_constants(:,:)
+        Logical :: restore, restore_chi_a, restore_chi_p, need_custom
 
         restore = .false.
+        restore_chi_a = .false.
+        restore_chi_p = .false.
 
         Call Allocate_Transport_Coefficients
 
@@ -1779,18 +2277,6 @@ Contains
         If ( (nu_type .eq. 3) .or. (kappa_type .eq. 3) .or. (eta_type .eq. 3) ) Then
             need_custom = .true.
         EndIf
-
-        Do i = 1, n_active_scalars
-            If (kappa_chi_a_type(i) .eq. 3) Then
-                need_custom = .true.
-            Endif
-        Enddo
-
-        Do i = 1, n_passive_scalars
-            If (kappa_chi_p_type(i) .eq. 3) Then
-                need_custom = .true.
-            Endif
-        Enddo
 
         If ((.not. custom_reference_read) .and. need_custom) Then
             Allocate(temp_functions(1:n_r, 1:n_ra_functions))
@@ -1807,18 +2293,64 @@ Contains
             Call Read_Custom_Reference_File(custom_reference_file)
         EndIf
 
+        ! reset to false
+        need_custom = .false.
+        Do i = 1, n_active_scalars
+            If (kappa_chi_a_type(i) .eq. 3) Then
+                need_custom = .true.
+            Endif
+        Enddo
+
+        If ((.not. chi_a_custom_reference_read) .and. need_custom) Then
+            Allocate(temp_chi_a_functions(1:n_r, 1:n_chi_functions, 1:n_active_scalars))
+            Allocate(temp_chi_a_constants(1:n_active_scalars, 1:n_chi_constants))
+            temp_chi_a_functions(:,:,:) = chi_a_functions(:,:,:)
+            ! Note that chi_a_constants is allocated up to n_scalar_max x max_chi_constants,
+            ! which could be more than n_active_scalars xn_chi_constants
+            temp_chi_a_constants(:,:) = chi_a_constants(1:n_active_scalars, 1:n_chi_constants)
+            restore_chi_a = .true.
+            ! If we read the custom file, we may overwrite things besides the diffusion coefficients
+            ! We "back up" the current reference state in temp_constants and temp_functions
+            ! Below, we modify only the "temp" equation coefficients associated with custom diffusions
+            ! Then we restore ra_constants and ra_functions from the "temp" arrays
+            Call Read_Scalar_Custom_Reference_File(chi_a_custom_reference_file, .true.)
+        EndIf
+
+        ! reset to false
+        need_custom = .false.
+        Do i = 1, n_passive_scalars
+            If (kappa_chi_p_type(i) .eq. 3) Then
+                need_custom = .true.
+            Endif
+        Enddo
+
+        If ((.not. chi_p_custom_reference_read) .and. need_custom) Then
+            Allocate(temp_chi_p_functions(1:n_r, 1:n_chi_functions, 1:n_passive_scalars))
+            Allocate(temp_chi_p_constants(1:n_passive_scalars, 1:n_chi_constants))
+            temp_chi_p_functions(:,:,:) = chi_p_functions(:,:,:)
+            ! Note that chi_p_constants is allocated up to n_scalar_max x max_chi_constants,
+            ! which could be more than n_passive_scalars x n_chi_constants
+            temp_chi_p_constants(:,:) = chi_p_constants(1:n_passive_scalars, 1:n_chi_constants)
+            restore_chi_p = .true.
+            ! If we read the custom file, we may overwrite things besides the diffusion coefficients
+            ! We "back up" the current reference state in temp_constants and temp_functions
+            ! Below, we modify only the "temp" equation coefficients associated with custom diffusions
+            ! Then we restore ra_constants and ra_functions from the "temp" arrays
+            Call Read_Scalar_Custom_Reference_File(chi_p_custom_reference_file, .false.)
+        EndIf
+
 
         Call Initialize_Diffusivity(nu,dlnu,nu_top,nu_type,nu_power,5,3,11)
         Call Initialize_Diffusivity(kappa,dlnkappa,kappa_top,kappa_type,kappa_power,6,5,12)
         do i = 1, n_active_scalars
-          Call Initialize_Diffusivity(kappa_chi_a(i,:),dlnkappa_chi_a(i,:),&
+          Call Initialize_Scalar_Diffusivity(kappa_chi_a(i,:),dlnkappa_chi_a(i,:),&
                                       kappa_chi_a_top(i),kappa_chi_a_type(i),kappa_chi_a_power(i),&
-                                      12+(i-1)*2,15+(i-1)*2,16+(i-1)*2)
+                                      i,2,2,4,.true.)
         end do
         do i = 1, n_passive_scalars
-          Call Initialize_Diffusivity(kappa_chi_p(i,:),dlnkappa_chi_p(i,:),&
+          Call Initialize_Scalar_Diffusivity(kappa_chi_p(i,:),dlnkappa_chi_p(i,:),&
                                       kappa_chi_p_top(i),kappa_chi_p_type(i),kappa_chi_p_power(i),&
-                                      12+(n_active_scalars+i-1)*2,15+(n_active_scalars+i-1)*2,16+(n_active_scalars+i-1)*2)
+                                      i,2,2,4,.false.)
         end do
 
         If (viscous_heating) Then
@@ -1852,22 +2384,6 @@ Contains
                 temp_constants(6)    = ra_constants(6)
             Endif
 
-            do i = 0, n_active_scalars-1
-              If (kappa_chi_a_type(i+1) .eq. 3) Then
-                  temp_functions(:,15+i*2) = ra_functions(:,15+i*2)
-                  temp_functions(:,16+i*2) = ra_functions(:,16+i*2)
-                  temp_constants(12+i*2)   = ra_constants(12+i*2)
-              Endif
-            end do
-
-            do i = 0, n_passive_scalars-1
-              If (kappa_chi_p_type(i+1) .eq. 3) Then
-                  temp_functions(:,15+(n_active_scalars+i)*2) = ra_functions(:,15+(n_active_scalars+i)*2)
-                  temp_functions(:,16+(n_active_scalars+i)*2) = ra_functions(:,16+(n_active_scalars+i)*2)
-                  temp_constants(12+(n_active_scalars+i)*2)   = ra_constants(12+(n_active_scalars+i)*2)
-              Endif
-            end do
-
             If (nu_type .eq. 3) Then
                 temp_functions(:,3)  = ra_functions(:,3)
                 temp_functions(:,11) = ra_functions(:,11)
@@ -1877,9 +2393,35 @@ Contains
             ra_constants(1:n_ra_constants) = temp_constants(:)
             ra_functions(:,:) = temp_functions(:,:)
             DeAllocate(temp_functions, temp_constants)
+        endif
 
+        if (restore_chi_a) then
 
-        Endif
+            do i = 1, n_active_scalars
+              If (kappa_chi_a_type(i) .eq. 3) Then
+                  temp_chi_a_functions(:,2,i) = chi_a_functions(:,2,i)
+                  temp_chi_a_functions(:,4,i) = chi_a_functions(:,4,i)
+                  temp_chi_a_constants(i,4) = chi_a_constants(i,4)
+              Endif
+            end do
+
+            chi_a_functions(:,:,:) = temp_chi_a_functions(:,:,:)
+            chi_a_constants(1:n_active_scalars, 1:n_chi_constants) = temp_chi_a_constants(:,:)
+        endif
+
+        if (restore_chi_p) then
+
+            do i = 1, n_passive_scalars
+              If (kappa_chi_p_type(i) .eq. 3) Then
+                  temp_chi_p_functions(:,2,i) = chi_p_functions(:,2,i)
+                  temp_chi_p_functions(:,4,i) = chi_p_functions(:,4,i)
+                  temp_chi_p_constants(i,4) = chi_p_constants(i,4)
+              Endif
+            end do
+
+            chi_p_functions(:,:,:) = temp_chi_p_functions(:,:,:)
+            chi_p_constants(1:n_passive_scalars, 1:n_chi_constants) = temp_chi_p_constants(:,:)
+        endif
 
         Call Compute_Diffusion_Coefs()
 
@@ -1966,6 +2508,92 @@ Contains
         Endif
 
     End Subroutine Initialize_Diffusivity
+
+    Subroutine Initialize_Scalar_Diffusivity(x,dlnx,xtop,xtype,xpower,si,ci,fi,dlnfi,active)
+        Implicit None
+        Real*8, Intent(InOut) :: x(:), dlnx(:)
+        Real*8, Intent(InOut) :: xtop
+        Integer, Intent(In) :: si, ci, fi, dlnfi, xtype
+        Logical, Intent(In) :: active
+        Real*8, Intent(In) :: xpower
+        Character(len=2) :: ind, sind
+        Real*8 :: norm
+        ! variables to point at different global parameters depending on whether we are reading in active or passive scalar info
+        Real*8, pointer :: chi_l_constants(:,:), chi_l_functions(:,:,:)
+        Integer, pointer :: chi_l_constant_set(:,:), chi_l_function_set(:,:)
+        Character*7 :: chi_l_type_str
+
+        if (active) then
+            chi_l_constant_set => chi_a_constant_set
+            chi_l_function_set => chi_a_function_set
+            chi_l_constants => chi_a_constants
+            chi_l_functions => chi_a_functions
+            chi_l_type_str = 'active'
+        else
+            chi_l_constant_set => chi_p_constant_set
+            chi_l_function_set => chi_p_function_set
+            chi_l_constants => chi_p_constants
+            chi_l_functions => chi_p_functions
+            chi_l_type_str = 'passive'
+        end if
+
+        If (reference_type .eq. 4) Then
+            If (xtop .le. 0) Then
+                If (chi_l_constant_set(ci,si) .eq. 0) Then
+                    If (my_rank .eq. 0) Then
+                        Write(ind, '(I2)') ci
+                        Write(sind, '(I2)') si
+                        Call stdout%print('ERROR: constant c_'//Trim(Adjustl(ind))//' for '//Adjustl(chi_l_type_str)//' scalar field '//sind//' must be set in the custom reference file')
+                    Endif
+                Else
+                    xtop = chi_l_constants(si,ci)
+                Endif
+            Endif
+        Endif
+
+        Select Case(xtype)
+            Case(1)
+                x(:) = xtop
+                dlnx(:) = 0.0d0
+            Case(2)
+                Call vary_with_density(x,dlnx,xtop, xpower)
+            Case(3)
+                If ((chi_l_function_set(fi,si) .eq. 1) .and. (chi_l_constant_set(ci,si) .eq. 1)) Then
+                    
+                    x(:) = chi_l_constants(si,ci)*chi_l_functions(:,fi,si)
+                    dlnx(:) = chi_l_functions(:,dlnfi,si)
+                    xtop = x(1)
+                    ! Nothing to be done here for functions and constants -- completely set
+                ElseIf ((chi_l_function_set(fi,si) .eq. 1) .and. (chi_l_constant_set(ci,si) .eq. 0)) Then
+                    x(:) = xtop*chi_l_functions(:,fi,si)
+                    dlnx(:) = chi_l_functions(:,dlnfi,si)
+                Else
+                    If (my_rank .eq. 0) Then
+                        Write(ind, '(I2)') fi
+                        Write(sind, '(I2)') si
+                        Call stdout%print('ERROR: function f_'//Trim(Adjustl(ind))//' for '//Adjustl(chi_l_type_str)//' scalar field '//sind//' must be set in the custom reference file')
+                    EndIf
+                EndIf
+
+        End Select
+
+        ! We potentially need to renormalize for the Polytropic_ReferenceND_General() non-dimensionalization
+        If (reference_type .eq. 5) Then
+            If (ND_Inner_Radius) Then
+                ! We want "xtop" to be the value at the inner radius instead
+                norm = x(N_R)
+                x = xtop * (x/norm)
+                xtop = x(1)
+            Elseif (ND_Volume_Average) Then
+                ! We want "xtop" to be the value averaged over the whole shell instead
+                Call Integrate_in_radius(x,norm)
+                norm = four_pi*norm/shell_volume
+                x = xtop * (x/norm)
+                xtop = x(1)
+            Endif
+        Endif
+
+    End Subroutine Initialize_Scalar_Diffusivity
 
     Subroutine Vary_With_Density(coeff, dln, coeff_top, coeff_power)
         Implicit None
@@ -2209,17 +2837,17 @@ Contains
 
         Do i = 1, n_active_scalars
             If (kappa_chi_a_type(i) .ne. 3) Then 
-                ra_constants(12+(i-1)*2) = kappa_chi_a_norm(i)
-                ra_functions(:,15+(i-1)*2) = kappa_chi_a(i,:)/kappa_chi_a_norm(i)
-                ra_functions(:,16+(i-1)*2) = dlnkappa_chi_a(i,:)
+                chi_a_constants(i,2) = kappa_chi_a_norm(i)
+                chi_a_functions(:,2,i) = kappa_chi_a(i,:)/kappa_chi_a_norm(i)
+                chi_a_functions(:,4,i) = dlnkappa_chi_a(i,:)
             Endif
         Enddo
 
         Do i = 1, n_passive_scalars
             If (kappa_chi_p_type(i) .ne. 3) Then 
-                ra_constants(12+(n_active_scalars+i-1)*2) = kappa_chi_p_norm(i)
-                ra_functions(:,15+(n_active_scalars+i-1)*2) = kappa_chi_p(i,:)/kappa_chi_p_norm(i)
-                ra_functions(:,16+(n_active_scalars+i-1)*2) = dlnkappa_chi_p(i,:)
+                chi_p_constants(i,2) = kappa_chi_p_norm(i)
+                chi_p_functions(:,2,i) = kappa_chi_p(i,:)/kappa_chi_p_norm(i)
+                chi_p_functions(:,4,i) = dlnkappa_chi_p(i,:)
             Endif
         Enddo
 

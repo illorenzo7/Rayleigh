@@ -758,7 +758,7 @@ if __name__ == "__main__":
     #--------------------------------------------------------------------------------
     #  )+                       end of grouping
     # - from http://rick.measham.id.au/paste/explain.pl
-    r = re.compile(r'(?:[^,; '+os.linesep+'([{]|\([^)]*\)|\[[^]]*\]|\{[^}]*\})+')
+    r = re.compile(r'(?:[^,; '+os.linesep+'([{]|\\([^)]*\\)|\\[[^]]*\\]|\\{[^}]*\\})+')
     modelist = r.findall(modestr)
     for index in modelist[:min(3,len(modelist)-1)]:
       if not index.isdigit():
