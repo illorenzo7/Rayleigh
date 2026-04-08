@@ -141,8 +141,12 @@ Module PDE_Coefficients
     Logical, Allocatable, target :: chi_a_use_custom_function(:,:), chi_p_use_custom_function(:,:)
     Real*8, Allocatable  :: ra_functions(:,:)
     Real*8, Allocatable, target  :: chi_a_functions(:,:,:), chi_p_functions(:,:,:)
-    Logical              :: custom_reference_read = .false., chi_a_custom_reference_read = .false., chi_p_custom_reference_read = .false.
-    Character*120        :: custom_reference_file ='nothing', chi_a_custom_reference_file = 'nothing', chi_p_custom_reference_file = 'nothing'    
+    Logical              :: custom_reference_read = .false.
+    Logical              :: chi_a_custom_reference_read = .false.
+    Logical              :: chi_p_custom_reference_read = .false.
+    Character*120        :: custom_reference_file ='nothing'
+    Character*120        :: chi_a_custom_reference_file = 'nothing'
+    Character*120        :: chi_p_custom_reference_file = 'nothing'
 
     ! General nondimensional anelastic polytrope variables (reference_type = 5)
     Logical :: ND_Volume_Average = .true.
@@ -1339,7 +1343,8 @@ Contains
 
             If (chi_l_use_custom_constant(3,i) .and. chi_l_use_custom_function(3,i)) Then
                 If (my_rank .eq. 0) Then
-                    Call stdout%print('Chi source for '//Adjustl(chi_l_type_str)//' scalar field '//Adjustl(sind)//' has been set to:')
+                    Call stdout%print('Chi source for '//Adjustl(chi_l_type_str))
+                    Call stdout%print('scalar field '//Adjustl(sind)//' has been set to:')
                     Call stdout%print('d_3*g_3')
                     Call stdout%print(' ')
                 Endif
@@ -1356,7 +1361,8 @@ Contains
             If (active) Then
                 If (chi_l_use_custom_constant(4,i) .and. chi_l_use_custom_function(5,i)) Then
                     If (my_rank .eq. 0) Then
-                        Call stdout%print('Chi buoyancy source for active scalar field '//Adjustl(sind)//' has been set to:')
+                        Call stdout%print('Chi buoyancy source for active scalar field ')
+                        Call stdout%print(Adjustl(sind)//' has been set to:')
                         Call stdout%print('d_4*f_5')
                         Call stdout%print(' ')
                     Endif
@@ -1370,17 +1376,22 @@ Contains
                 ! Set d_1 = 1 by default
                 If (.not. chi_l_use_custom_constant(1,i)) Then
                     If (my_rank .eq. 0) Then
-                        Call stdout%print("User didn't set d_1 for "//Adjustl(chi_l_type_str)//' scalar field '//Adjustl(sind)//'.  Now setting d_1 to 1.')
+                        Call stdout%print("User didn't set d_1 for "//Adjustl(chi_l_type_str))
+                        Call stdout%print('scalar field '//Adjustl(sind)//'.')
+                        Call stdout%print('Now setting d_1 to 1.')
                     Endif
                     chi_l_constants(i,1) = 1.0d0
                 Else
                     If (my_rank .eq. 0) Then
                         Write(dstring,dofmt) chi_l_constants(i,1)
-                        Call stdout%print('User set d_1 to '//Adjustl(dstring)//' for '//Adjustl(chi_l_type_str)//' scalar field '//Adjustl(sind)//'.')
+                        Call stdout%print('User set d_1 to '//Adjustl(dstring)//' for ')
+                        Call stdout%print(Adjustl(chi_l_type_str)//' scalar field ')
+                        Call stdout%print(Adjustl(sind)//'.')
                     Endif
                 Endif
                 If (my_rank .eq. 0) Then
-                    Call stdout%print('Background dchidr for '//Adjustl(chi_l_type_str)//' scalar field '//Adjustl(sind)//' has been set to:')
+                    Call stdout%print('Background dchidr for '//Adjustl(chi_l_type_str))
+                    Call stdout%print('scalar field '//Adjustl(sind)//' has been set to:')
                     Call stdout%print('d_1*g_1')
                     Call stdout%print(' ')
                 Endif
@@ -1884,7 +1895,9 @@ Contains
             Read(15) dummy ! n_chi_functions
             Read(15) n_scalars
             if (n_scalars .gt. n_l_scalars) then
-                Call stdout%print('ERROR: number of scalars in the custom reference file exceeds the number of '//Adjustl(chi_l_type_str)//' scalars specified in main_input.')
+                Call stdout%print('ERROR: number of scalars in the custom reference file')
+                Call stdout%print('exceeds the number of '//Adjustl(chi_l_type_str)//' scalars')
+                Call stdout%print('specified in main_input.')
                 Call stdout%print('Check your scalar custom reference file and main_input settings.')
             end if
             Read(15) ((cset(i, j), i = 1, n_chi_constants), j = 1, n_scalars)
@@ -1921,7 +1934,8 @@ Contains
                         Write(cind, '(I2)') j
                         Write(sind,'(I2)') i
                         Write(dstring,dofmt) chi_l_constants(j,i)
-                        Call stdout%print('c_'//Adjustl(cind)//' for '//Adjustl(chi_l_type_str)//' scalar '//Adjustl(sind)//' = '//Trim(dstring))
+                        Call stdout%print('c_'//Adjustl(cind)//' for '//Adjustl(chi_l_type_str))
+                        Call stdout%print('  scalar '//Adjustl(sind)//' = '//Trim(dstring))
                     Endif
                 Enddo
             Enddo
@@ -2029,7 +2043,8 @@ Contains
                                 Write(intstr,'(i3)') j
                                 Write(sind, '(I2)') i
                                 Call stdout%print(' ')
-                                Call stdout%print('You set with_custom_constant: '//TRIM(ADJUSTL(intstr))//' for '//Adjustl(chi_l_type_str)//' scalar '//Adjustl(sind))
+                                Call stdout%print('You set with_custom_constant: '//TRIM(ADJUSTL(intstr)))
+                                Call stdout%print('for '//Adjustl(chi_l_type_str)//' scalar '//Adjustl(sind))
                                 Call stdout%print('But this constant was not set in either main_input or ')
                                 Call stdout%print('the custom reference file.  Selection will be ignored.')
                                 Call stdout%print(' ')
@@ -2050,7 +2065,8 @@ Contains
                                 Write(intstr,'(i3)') j
                                 Write(sind, '(I2)') i
                                 Call stdout%print(' ')
-                                Call stdout%print('You set with_custom_function: '//TRIM(ADJUSTL(intstr))//' for '//Adjustl(chi_l_type_str)//' scalar '//Adjustl(sind))
+                                Call stdout%print('You set with_custom_function: '//TRIM(ADJUSTL(intstr)))
+                                Call stdout%print('for '//Adjustl(chi_l_type_str)//' scalar '//Adjustl(sind))
                                 Call stdout%print('But this function was not set.  Selection will be ignored.')
                                 Call stdout%print(' ')
                             Endif
@@ -2144,7 +2160,8 @@ Contains
         Angular_Velocity = -1.0d0 ! Frame rotation rate (sets Coriolis force)
 
         ! Custom reference-state variables (reference_type = 4)
-        !       NOTE: n_ra_constants / n_ra_functions do not have default values (but maybe do, if you consider the Allocate_Reference_State() routine)
+        !       NOTE: n_ra_constants / n_ra_functions do not have default values 
+        !       (but maybe do, if you consider the Allocate_Reference_State() routine)
         custom_reference_file ='nothing'  
 
         ! Internal heating variables
@@ -2208,7 +2225,8 @@ Contains
 
         If (allocated(ref%heating)) DeAllocate(ref%heating)
 
-        !       NOTE: ref%Coriolis_Coeff and ref%Lorentz_Coeff have no default values (but maybe do, if you consider the Allocate_Reference_State() routine)
+        !       NOTE: ref%Coriolis_Coeff and ref%Lorentz_Coeff have no default values 
+        !      (but maybe do, if you consider the Allocate_Reference_State() routine)
         If (allocated(ref%Buoyancy_Coeff)) DeAllocate(ref%Buoyancy_Coeff)
         If (allocated(ref%chi_buoyancy_coeff)) DeAllocate(ref%chi_buoyancy_coeff)
         If (allocated(ref%chi_a_source)) DeAllocate(ref%chi_a_source)
@@ -2543,7 +2561,9 @@ Contains
                     If (my_rank .eq. 0) Then
                         Write(ind, '(I2)') ci
                         Write(sind, '(I2)') si
-                        Call stdout%print('ERROR: constant c_'//Trim(Adjustl(ind))//' for '//Adjustl(chi_l_type_str)//' scalar field '//sind//' must be set in the custom reference file')
+                        Call stdout%print('ERROR: constant c_'//Trim(Adjustl(ind))//' for ')
+                        Call stdout%print(Adjustl(chi_l_type_str)//' scalar field '//Adjustl(sind))
+                        Call stdout%print('must be set in the custom reference file')
                     Endif
                 Else
                     xtop = chi_l_constants(si,ci)
@@ -2571,7 +2591,9 @@ Contains
                     If (my_rank .eq. 0) Then
                         Write(ind, '(I2)') fi
                         Write(sind, '(I2)') si
-                        Call stdout%print('ERROR: function f_'//Trim(Adjustl(ind))//' for '//Adjustl(chi_l_type_str)//' scalar field '//sind//' must be set in the custom reference file')
+                        Call stdout%print('ERROR: function f_'//Trim(Adjustl(ind))//' for')
+                        Call stdout%print(Adjustl(chi_l_type_str)//' scalar field '//Adjustl(sind))
+                        Call stdout%print('must be set in the custom reference file')
                     EndIf
                 EndIf
 
