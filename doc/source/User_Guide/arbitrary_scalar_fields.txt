@@ -233,6 +233,10 @@ Physical controls
    * reference_type 3: :math:`\kappa_\mathrm{top}=\mathrm{Ek}/\mathrm{Pr_{\chi_{p_i}}}`
 **kappa_chi_p_power(i)**
   Denotes the value of the exponent *n* in the :math:`\rho^{n}` variation associated with diffusion type 2 for passive scalar i
+**chi_a_advect_reference_state**
+  List of booleans that determine whether the reference-state chi is advected for each active scalar field.  The default is .true. for all active scalar fields (which makes no difference if the reference-state gradient is set to 0, the default).  When set to .false., the :math:`v_r\frac{\partial\overline{\chi}_a}{\partial r} = d_{a1_i}g_{a1,i}(r)v_r` term is omitted in the active scalar equation.
+**chi_p_advect_reference_state**
+  List of booleans that determine whether the reference-state chi is advected for each passive scalar field.  The default is .true. for all passive scalar fields (which makes no difference if the reference-state gradient is set to 0, the default).  When set to .false., the :math:`v_r\frac{\partial\overline{\chi}_p}{\partial r} = d_{p1_i}g_{p1,i}(r)v_r` term is omitted in the passive scalar equation.
 
 Reference
 *********
