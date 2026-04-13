@@ -1343,8 +1343,7 @@ Contains
 
             If (chi_l_use_custom_constant(3,i) .and. chi_l_use_custom_function(3,i)) Then
                 If (my_rank .eq. 0) Then
-                    Call stdout%print('Chi source for '//Adjustl(chi_l_type_str))
-                    Call stdout%print('scalar field '//Adjustl(sind)//' has been set to:')
+                    Call stdout%print('Chi source for '//Adjustl(chi_l_type_str)//' scalar field '//Adjustl(sind)//' has been set to:')
                     Call stdout%print('d_3*g_3')
                     Call stdout%print(' ')
                 Endif
@@ -1361,8 +1360,7 @@ Contains
             If (active) Then
                 If (chi_l_use_custom_constant(4,i) .and. chi_l_use_custom_function(5,i)) Then
                     If (my_rank .eq. 0) Then
-                        Call stdout%print('Chi buoyancy source for active scalar field ')
-                        Call stdout%print(Adjustl(sind)//' has been set to:')
+                        Call stdout%print('Chi buoyancy source for active scalar field '//Adjustl(sind)//' has been set to:')
                         Call stdout%print('d_4*f_5')
                         Call stdout%print(' ')
                     Endif
@@ -1376,22 +1374,18 @@ Contains
                 ! Set d_1 = 1 by default
                 If (.not. chi_l_use_custom_constant(1,i)) Then
                     If (my_rank .eq. 0) Then
-                        Call stdout%print("User didn't set d_1 for "//Adjustl(chi_l_type_str))
-                        Call stdout%print('scalar field '//Adjustl(sind)//'.')
+                        Call stdout%print("User didn't set d_1 for "//Adjustl(chi_l_type_str)//' scalar field '//Adjustl(sind)//'.')
                         Call stdout%print('Now setting d_1 to 1.')
                     Endif
                     chi_l_constants(i,1) = 1.0d0
                 Else
                     If (my_rank .eq. 0) Then
                         Write(dstring,dofmt) chi_l_constants(i,1)
-                        Call stdout%print('User set d_1 to '//Adjustl(dstring)//' for ')
-                        Call stdout%print(Adjustl(chi_l_type_str)//' scalar field ')
-                        Call stdout%print(Adjustl(sind)//'.')
+                        Call stdout%print('User set d_1 to '//Adjustl(dstring)//' for '//Adjustl(chi_l_type_str)//' scalar field '//Adjustl(sind)//'.')
                     Endif
                 Endif
                 If (my_rank .eq. 0) Then
-                    Call stdout%print('Background dchidr for '//Adjustl(chi_l_type_str))
-                    Call stdout%print('scalar field '//Adjustl(sind)//' has been set to:')
+                    Call stdout%print('Background dchidr for '//Adjustl(chi_l_type_str)//' scalar field '//Adjustl(sind)//' has been set to:')
                     Call stdout%print('d_1*g_1')
                     Call stdout%print(' ')
                 Endif
@@ -1819,7 +1813,7 @@ Contains
         Logical, Intent(In) :: active ! if .true., read in active scalar info; otherwise, read in passive scalar info
         Character*120 :: ref_file
         Integer :: pi_integer,nr_ref, eqversion
-        Integer :: i, k, j, n_scalars, dummy
+        Integer :: i, k, j, n_scalars, dummy, ios
         Integer :: cset(1:n_chi_constants,1:n_scalar_max), fset(1:n_chi_functions,1:n_scalar_max)
         Real*8  :: input_constants(1:n_chi_constants,1:n_scalar_max)
         Real*8, Allocatable :: ref_arr_old(:,:,:), rtmp(:), rtmp2(:)
@@ -1870,7 +1864,11 @@ Contains
 
         ref_file = Trim(my_path)//filename
 
-        Open(unit=15,file=ref_file,form='unformatted', status='old',access='stream')
+        Open(unit=15,file=ref_file,form='unformatted', status='old',access='stream',iostat=ios)
+        if (ios /= 0) then
+            Call stdout%print('WARNING: custom reference file for '//Adjustl(chi_l_type_str)//' scalars not found, skipping.')
+            return
+        endif
 
         !Verify Endianness
         Read(15)pi_integer
@@ -1901,7 +1899,7 @@ Contains
                 Call stdout%print('Check your scalar custom reference file and main_input settings.')
             end if
             Read(15) ((cset(i, j), i = 1, n_chi_constants), j = 1, n_scalars)
-            Read(15) ((fset(i, j), i = 1, n_chi_constants), j = 1, n_scalars)
+            Read(15) ((fset(i, j), i = 1, n_chi_functions), j = 1, n_scalars)
             Read(15) ((input_constants(i, j), i = 1, n_chi_constants), j = 1, n_scalars)
             
             ! Cset(i) is 1 if a constant(i) was set; it is 0 otherwise.
@@ -1918,7 +1916,7 @@ Contains
             Enddo
 
             ! determine which functions/constants were set by the user
-            chi_l_function_set(:,:) = fset(:,:)
+            chi_l_function_set(:,1:n_scalars) = fset(:,1:n_scalars)
             Do j = 1, n_scalars
                 Do i = 1, n_chi_constants
                     If ((cset(i,j) .eq. 1) .or. override_chi_l_constant(j,i) .or. override_constants) Then
@@ -1931,11 +1929,10 @@ Contains
             Do j = 1, n_scalars
                 Do i = 1, n_chi_constants
                      If (my_rank .eq. 0) Then
-                        Write(cind, '(I2)') j
-                        Write(sind,'(I2)') i
+                        Write(cind, '(I2)') i
+                        Write(sind,'(I2)') j
                         Write(dstring,dofmt) chi_l_constants(j,i)
-                        Call stdout%print('c_'//Adjustl(cind)//' for '//Adjustl(chi_l_type_str))
-                        Call stdout%print('  scalar '//Adjustl(sind)//' = '//Trim(dstring))
+                        Call stdout%print('d_'//Adjustl(cind)//' for '//Adjustl(chi_l_type_str)//'  scalar '//Adjustl(sind)//' = '//Trim(dstring))
                     Endif
                 Enddo
             Enddo
