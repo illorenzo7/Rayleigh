@@ -1343,7 +1343,8 @@ Contains
 
             If (chi_l_use_custom_constant(3,i) .and. chi_l_use_custom_function(3,i)) Then
                 If (my_rank .eq. 0) Then
-                    Call stdout%print('Chi source for '//Adjustl(chi_l_type_str)//' scalar field '//Adjustl(sind)//' has been set to:')
+                    Call stdout%print('Chi source for '//Adjustl(chi_l_type_str)// &
+                                      ' scalar field '//Adjustl(sind)//' has been set to:')
                     Call stdout%print('d_3*g_3')
                     Call stdout%print(' ')
                 Endif
@@ -1374,18 +1375,22 @@ Contains
                 ! Set d_1 = 1 by default
                 If (.not. chi_l_use_custom_constant(1,i)) Then
                     If (my_rank .eq. 0) Then
-                        Call stdout%print("User didn't set d_1 for "//Adjustl(chi_l_type_str)//' scalar field '//Adjustl(sind)//'.')
+                        Call stdout%print("User didn't set d_1 for "//Adjustl(chi_l_type_str)// &
+                        ' scalar field '//Adjustl(sind)//'.')
                         Call stdout%print('Now setting d_1 to 1.')
                     Endif
                     chi_l_constants(i,1) = 1.0d0
                 Else
                     If (my_rank .eq. 0) Then
                         Write(dstring,dofmt) chi_l_constants(i,1)
-                        Call stdout%print('User set d_1 to '//Adjustl(dstring)//' for '//Adjustl(chi_l_type_str)//' scalar field '//Adjustl(sind)//'.')
+                        Call stdout%print('User set d_1 to '//Adjustl(dstring)//' for '// &
+                                          Adjustl(chi_l_type_str)//' scalar field '// &
+                                          Adjustl(sind)//'.')
                     Endif
                 Endif
                 If (my_rank .eq. 0) Then
-                    Call stdout%print('Background dchidr for '//Adjustl(chi_l_type_str)//' scalar field '//Adjustl(sind)//' has been set to:')
+                    Call stdout%print('Background dchidr for '//Adjustl(chi_l_type_str)// &
+                                      ' scalar field '//Adjustl(sind)//' has been set to:')
                     Call stdout%print('d_1*g_1')
                     Call stdout%print(' ')
                 Endif
@@ -1932,7 +1937,8 @@ Contains
                         Write(cind, '(I2)') i
                         Write(sind,'(I2)') j
                         Write(dstring,dofmt) chi_l_constants(j,i)
-                        Call stdout%print('d_'//Adjustl(cind)//' for '//Adjustl(chi_l_type_str)//'  scalar '//Adjustl(sind)//' = '//Trim(dstring))
+                        Call stdout%print('d_'//Adjustl(cind)//' for '//Adjustl(chi_l_type_str)// &
+                                          '  scalar '//Adjustl(sind)//' = '//Trim(dstring))
                     Endif
                 Enddo
             Enddo
