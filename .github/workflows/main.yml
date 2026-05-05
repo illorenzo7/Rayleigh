@@ -86,7 +86,7 @@ jobs:
         git diff --exit-code --name-only
 
     - name: archive results
-      uses: actions/upload-artifact@v6
+      uses: actions/upload-artifact@v7
       with:
           name: ${{ matrix.result-file }}
           path: changes.diff
@@ -100,7 +100,7 @@ jobs:
         git diff --exit-code --name-only
 
     - name: archive results
-      uses: actions/upload-artifact@v6
+      uses: actions/upload-artifact@v7
       with:
           name: ${{ matrix.unit-result-file }}
           path: tests/unit_tests/SHT/changes.diff
