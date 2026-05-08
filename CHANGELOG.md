@@ -8,6 +8,15 @@ Add new entries a the bottom of the current list in the subheading. Item format:
 This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
+
+### Added
+
+### Changed
+
+### Fixed
+
+## [1.3.0] - 5-8-2026
+
 ### Added
 
 - Allow the boundary conditions of scalar fields (both the thermal temperature/entropy field and active scalar fields) to be linearly coupled together.  This is documented in the "Under Development" section of the User Guide and has an example test. \[Cian Wilson; 6-21-2024; [#460](https://github.com/geodynamics/Rayleigh/pull/460)\]
@@ -27,8 +36,9 @@ This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 
 - Added a function called checkpoint_read to the rayleigh_diagnostics.py file to read in checkpoint files    \[Rathish Ratnasingam; 6-21-2024; [#543](https://github.com/geodynamics/Rayleigh/pull/543)\]
 
--Added a jupyter notebook to read in the checkpoint files, transform it and output the results.         \[Brandon Lazard; 6-21-2024; [#551](https://github.com/geodynamics/Rayleigh/pull/551)]
+- Added a jupyter notebook to read in the checkpoint files, transform it and output the results.         \[Brandon Lazard; 6-21-2024; [#551](https://github.com/geodynamics/Rayleigh/pull/551)]
 
+- The checkpointing interval can now be specified in minutes by setting the value of checkpoint\_minutes and/or quicksave\_minutes in the temporal\_controls namelist \[Nick Featherstone; 8-15-2024; [#573](https://github.com/geodynamics/Rayleigh/pull/573) \]
 
 ### Changed
 
@@ -52,6 +62,11 @@ This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 
 - Fixed a bug that was causing Rayleigh to crash during output if finite-difference mode was active and second-order derivatives in radius were required for output. \[Nick Featherstone; 6-26-2024; [#566](https://github.com/geodynamics/Rayleigh/pull/566) \]
 
+- Slice-like outputs (e.g., Shell\_Slices, Meridional\_Slices) now ignore positional-index values that fall outside of the grid bounds. \[Nick Featherstone; 8-19-2024; [#574](https://github.com/geodynamics/Rayleigh/pull/574) \]
+
+- Timing output files now record the actual number of timesteps taken by a timing run.  Previously, they always recorded the maximum allowable number of timesteps. \[Nick Featherstone; 9-9-2024; [#577](https://github.com/geodynamics/Rayleigh/pull/577) \]
+
+- The documentation has been updated to reflect that output quantity 1434 (volumetric heating) contains a factor of c10. \[Loren Matilsky; 12-5-2024; [#579](https://github.com/geodynamics/Rayleigh/pull/579) \]
 
 ## [1.2.0] - 5-29-2024
 
