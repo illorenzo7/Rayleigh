@@ -7,20 +7,20 @@ We ask that you cite the appropriate references if you publish results that were
 part using Rayleigh.  Receiving citations for Rayleigh is important to demonstrate the relevance of our work to our funding agencies and is a matter of fairness to all the developers that have donated their effort and time to make Rayleigh what it is today.
 
 Please cite the code as:
-  Featherstone, Nicholas A., Edelmann, Philipp V. F., Gassmoeller, Rene, Matilsky, Loren I., & Wilson, Cian R. (2024). Rayleigh Version 1.2.0 (v1.2.0). Zenodo. https://doi.org/10.5281/zenodo.11391213
+  Featherstone, Nicholas A., Edelmann, Philipp V. F., Gassmoeller, Rene, Matilsky, Loren I., & Wilson, Cian R. (2026). Rayleigh Version 1.3.0 (v1.3.0). Zenodo. https://doi.org/10.5281/zenodo.20088701
 
 To cite other versions of the code, please see: https://geodynamics.org/resources/rayleigh/howtocite
 
 .. code-block::
 
-  @Software{featherstone_et_al_2024,
+  @Software{featherstone_et_al_2026,
 	author = "{Featherstone}, N.~A. and {Edelmann}, P.~V.~F. and {Gassmoeller}, R. and {Matilsky}, L.~I. and {Wilson}, C.~R.",
-	title="Rayleigh 1.2.0",
-	year="2024",
+	title="Rayleigh 1.3.0",
+	year="2026",
 	organization="",
 	optkeywords="Rayleigh",
-	doi="http://doi.org/10.5281/zenodo.11391213",
-	opturl="https://doi.org/10.5281/zenodo.11391213"}
+	doi="http://doi.org/10.5281/zenodo.20088701",
+	opturl="https://doi.org/10.5281/zenodo.20088701"}
 
 Please also cite the following references:
 
