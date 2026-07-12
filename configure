@@ -473,7 +473,7 @@ do
       ;;
 
     --for-athena)
-      FORATHENA="True";
+      FORATHENA="TRUE";
       ;;
     *)
       echo "unknown option: $option"
