@@ -61,6 +61,7 @@ Module PDE_Coefficients
 
         Real*8, Allocatable :: heating(:)
 
+        Real*8 :: Centrifugal_Coeff ! Multiplies in the s term in compressible eq
         Real*8 :: Coriolis_Coeff ! Multiplies z_hat x u in momentum eq.
         Real*8 :: Lorentz_Coeff ! Multiplies (Del X B) X B in momentum eq.
         Real*8, Allocatable :: Buoyancy_Coeff(:) ! Multiplies {S,T} in momentum eq. ..typically = gravity/cp
@@ -153,6 +154,12 @@ Module PDE_Coefficients
     ! (determined by the reference state)
     Real*8 :: max_dt_rotation = 0.0d0
 
+
+    !Compressible nondimensional eq
+    Real*8 :: bigz = 0.0d0
+    Real*8 :: gas_gamma = 5.0d0/3.0d0
+
+
     ! Alter some of the above (I) by reading the main_input file
     Namelist /Reference_Namelist/ reference_type,poly_n, poly_Nrho, poly_mass, poly_rho_i, &
             & pressure_specific_heat, heating_type, luminosity, Angular_Velocity, &
@@ -167,7 +174,8 @@ Module PDE_Coefficients
             & chi_a_convective_rossby_number, chi_p_prandtl_number, &
             & ND_Volume_Average, ND_Inner_Radius, ND_Outer_Radius, &
             & Assume_Flux_Ra, Specific_Heat_Ratio, Buoyancy_Number_Visc,&
-            & Buoyancy_Number_Rot, Sigma_Parameter, Length_Scale
+            & Buoyancy_Number_Rot, Sigma_Parameter, Length_Scale, &
+            & bigz, gas_gamma
 
     !///////////////////////////////////////////////////////////////////////////////////////
     ! II.  Variables Related to the Transport Coefficients
@@ -404,6 +412,7 @@ Contains
         ref%dpdr_w_term(:)        =  ref%density*pscaling
         ref%pressure_dwdr_term(:) = -1.0d0*ref%density*pscaling
         ref%Coriolis_Coeff        =  2.0d0/Ekman_Number
+        ref%Centrifugal_Coeff     =  1.0d0/(Ekman_Number**2)
 
         nu_top       = 1.0d0
         kappa_top       = 1.0d0/Prandtl_Number
