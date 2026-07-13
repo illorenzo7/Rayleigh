@@ -170,8 +170,8 @@ Contains
 
 
 
-        Call Compute_dvtheta_by_dtheta()
-        Call Compute_dvphi_by_dtheta()
+        If (.not. compressible) Call Compute_dvtheta_by_dtheta()
+        If (.not. compressible) Call Compute_dvphi_by_dtheta()
 
         If (magnetism) Then
             Call rsintheta_div(curlbtheta)

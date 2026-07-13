@@ -97,7 +97,7 @@ Contains
         nullify(gridpointer)
         gridpointer => gridcp
         If (chebyshev) Call Use_Chebyshev(gridpointer)    ! Turns chebyshev mode to "on" for the linear solve
-
+        write(6,*) 'neq,nvar: ',n_equations,n_variables
         Call Initialize_Equation_Set(n_equations,n_variables,N_R,my_nl_lm, my_nm_lm,2)
 
         Do lp = 1, my_nl_lm
@@ -646,7 +646,10 @@ Contains
                 ! If band solve, do the redefinition of the matrix here
 
             Endif
-            Call Set_Boundary_Conditions(lp)
+
+            If (.not. compressible) Call Set_Boundary_Conditions(lp)
+            If (compressible) Call Set_Boundary_Conditions_Compressible(lp)
+
             If (sparsesolve) Then
                 !Write(6,*)'matrix: ', weq,lp, my_rank, l
                 Call Sparse_Load(weq,lp)

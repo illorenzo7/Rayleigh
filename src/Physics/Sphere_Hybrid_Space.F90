@@ -187,12 +187,14 @@ Contains
            END_DO
         Endif 
         ! Now for the Z RHS, formed from the radial component of the curl of u dot grad u
-        If (compressible .AND. magnetism) Then
-           Call Allocate_rlm_Field(ftemp1)
-           Call Allocate_rlm_Field(ftemp2)
-           Call adjust_emf()
-           Call DeAllocate_rlm_Field(ftemp1)
-           Call DeAllocate_rlm_Field(ftemp2)
+        If (compressible) Then
+            If (magnetism) Then
+                Call Allocate_rlm_Field(ftemp1)
+                Call Allocate_rlm_Field(ftemp2)
+                Call adjust_emf()
+                Call DeAllocate_rlm_Field(ftemp1)
+                Call DeAllocate_rlm_Field(ftemp2)
+            Endif
         Else
            Call Allocate_rlm_Field(ftemp1)
            Call Allocate_rlm_Field(ftemp2)
