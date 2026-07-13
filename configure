@@ -47,7 +47,7 @@ function opt_flags {
 
   if [[ $1 == "GNU" ]]
   then
-    echo '-O3 -ffixed-line-length-132'
+    echo '-O3 -ffixed-line-length-132 -fallow-argument-mismatch'
   fi
 
   if [[ $1 == "AOCC" ]]
@@ -70,7 +70,7 @@ function dbg_flags {
   fi
   if [[ $1 == "GNU" ]]
   then
-    echo '-O0 -g -fbounds-check -ffpe-trap=invalid,zero,overflow -fbacktrace -ffixed-line-length-132'
+    echo '-O0 -g -fbounds-check -ffpe-trap=invalid,zero,overflow -fbacktrace -ffixed-line-length-132 -fallow-argument-mismatch'
   fi
   if [[ $1 == "AOCC" ]]
   then
@@ -305,6 +305,10 @@ function displayhelp {
     echo "      the standard Rayleigh source files."
     echo ""
 
+    echo "  --for-athena=<BOOL>"
+    echo "      Set this flag to use Cray's libsci for BLAS and LAPACK, use in"
+    echo "      combination with --with-blas and --with-lapack to point to the"
+    echo "      correct library."
 }
 
 
@@ -319,6 +323,7 @@ USE_MKL="FALSE"
 CONDAMKL="FALSE"
 DEBIANMKL="FALSE"
 CUSTOMROOT="none"
+FORATHENA="FALSE"
 
 
 ###############################################################################################
@@ -467,6 +472,9 @@ do
       BLANKMACHINE="TRUE";
       ;;
 
+    --for-athena)
+      FORATHENA="TRUE";
+      ;;
     *)
       echo "unknown option: $option"
       exit 1
@@ -605,8 +613,10 @@ else
 
   if [ $FVERSION == "CRAY" ]
   then
-      OPT_FLAGS="$OPT_FLAGS -DCRAY_COMPILER"
-      DBG_FLAGS="$DBG_FLAGS -DCRAY_COMPILER"
+      #OPT_FLAGS="$OPT_FLAGS -DCRAY_COMPILER"
+      #DBG_FLAGS="$DBG_FLAGS -DCRAY_COMPILER"
+      OPT_FLAGS="$OPT_FLAGS"
+      DBG_FLAGS="$DBG_FLAGS"
   fi
 
   echo ' '
@@ -912,14 +922,40 @@ else
         then
           BLASLINK="-L$BLASROOT/lib/libblas.a"
         else
-          BLASLINK="-L$BLASROOT/lib -lblas"
+	    if [ $FORATHENA == "FALSE" ]
+	    then
+		BLASLINK="-L$BLASROOT/lib -lblas"
+	    else
+		if [ $FVERSION == "CRAY" ]
+		then
+		    BLASLINK="-L$BLASROOT/lib -lsci_cray"
+		fi
+
+		if [ $FVERSION == "GNU" ]
+		then
+		    BLASLINK="-L$BLASROOT/lib -lsci_gnu"
+		fi
+	    fi
         fi
         #LAPACK
         if [[ $STATICLAPACK == "TRUE" ]]
         then
             LAPACKLINK="-L$LPROOT/lib/liblapack.a"
         else
-            LAPACKLINK="-L$LPROOT/lib -llapack"
+	    if [ $FORATHENA == "FALSE" ]
+	    then
+		LAPACKLINK="-L$LPROOT/lib -llapack"
+	    else
+		if [ $FVERSION == "CRAY" ]
+		then
+		    BLASLINK="-L$BLASROOT/lib -lsci_cray"
+		fi
+
+		if [ $FVERSION == "GNU" ]
+		then
+		    BLASLINK="-L$BLASROOT/lib -lsci_gnu"
+		fi
+	    fi
         fi
     fi
     
