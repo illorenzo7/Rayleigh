@@ -38,6 +38,15 @@ Module Sphere_Physical_Space
     Implicit None
 
     Real*8, Allocatable :: tvar_eq(:,:,:)
+    Real*8, Allocatable :: divu(:,:,:,:)
+    Real*8, Allocatable :: gnu(:,:,:,:), gkappa(:,:,:,:)
+    Real*8, Allocatable :: phi_visc(:,:,:), str(:,:,:,:)
+    Real*8, Allocatable :: csquared(:,:,:)  ! sound speed squared
+    Real*8, Allocatable :: work(:,:,:)
+    Logical :: vars_allocated = .false.
+    Integer, Parameter :: e_rr = 1, e_tt = 2, e_pp = 3
+    Integer, Parameter :: e_rt = 4, e_rp = 4, e_tp = 5
+    Logical :: debug = .false.
 
 Contains
     
@@ -97,7 +106,7 @@ Contains
 
     Subroutine physical_space()
         Implicit None
-        Integer :: i
+        Integer :: i, t, r, k
 
         ! We aren't quite in physical space yet.
         ! 1st, get the phi derivatives
@@ -107,6 +116,20 @@ Contains
             Call Diagnostics_Copy_and_Derivs()
         Endif
         Call StopWatch(dphi_time)%increment()
+
+        
+        !Brandon
+        If (.not. vars_allocated .and. compressible) Then
+            Allocate(divu(1:n_phi,my_r%min:my_r%max,my_theta%min:my_theta%max,1:4))
+            Allocate(phi_visc(1:n_phi,my_r%min:my_r%max,my_theta%min:my_theta%max))
+            Allocate(gnu(1:n_phi,my_r%min:my_r%max,my_theta%min:my_theta%max,1:4))
+            Allocate(gkappa(1:n_phi,my_r%min:my_r%max,my_theta%min:my_theta%max,1:4))
+            Allocate(str(1:n_phi,my_r%min:my_r%max,my_theta%min:my_theta%max,1:5))
+            Allocate(csquared(1:n_phi+2,my_r%min:my_r%max,my_theta%min:my_theta%max))
+            csquared = Zero
+            Allocate(work(1:n_phi,my_r%min:my_r%max,my_theta%min:my_theta%max))
+            vars_allocated = .true.
+        Endif
 
 
 
@@ -124,9 +147,19 @@ Contains
         Call sintheta_div(dvtdr)
         Call sintheta_div(dvpdr)
         Call sintheta_div(dtdt)
+        Call sintheta_div(drhodt)
         Call sintheta_div(dvrdt)
+        Call sintheta_div(dvtdt)
         Call sintheta_div(dvpdp)
+        Call sintheta_div(dvpdt)
         Call sintheta_div(dvtdp)
+
+        Call sintheta_div(d2vpdtdp)
+        Call sintheta_div(d2vtdtdp)
+        Call sintheta_div(d2vtdrdt)
+        Call sintheta_div(d2vrdrdt)
+        
+
         do i = 1, n_active_scalars
           Call sintheta_div(dchiadt(i))  ! dchidt initially contains sin(theta) dsdtheta -- divide by sintheta
         end do
@@ -150,7 +183,16 @@ Contains
             Call Diagnostics_Prep()
         Endif
 
+        If (compressible) Then 
+            Call sintheta_div(d2vtdt2)
 
+            DO_IDX
+                wsp%p3a(IDX,d2vtdt2) = wsp%p3a(IDX,d2vtdt2) - costheta(t)*wsp%p3a(IDX,dvtdt)
+            END_DO 
+
+            ! step 3:  divide by sin(theta), leaving d^2 vtheta/dtheta^2
+            Call sintheta_div(d2vtdt2)
+        Endif 
 
 
 
@@ -177,26 +219,56 @@ Contains
         !Nonlinear Advection
         Call StopWatch(nl_time)%startclock()
 
-        Call Temperature_Advection()
-        Call Volumetric_Heating()
+        !Logic for computing compressible terms in physical space
+        !Brandon 
+        If (compressible) Then
+            Call Compute_DivU()
+            Call Compute_Strain_Rate()
 
+            Call Compute_Grad_Kappa()
+            Call Compute_Grad_Nu()
 
-        do i = 1, n_active_scalars
-          Call chi_Advection(chiavar(i), dchiadr(i), dchiadt(i), dchiadp(i))
-          Call chi_Source_function(chiavar(i))
-        end do
-        do i = 1, n_passive_scalars
-          Call chi_Advection(chipvar(i), dchipdr(i), dchipdt(i), dchipdp(i))
-          Call chi_Source_function(chipvar(i))
-        end do
+            Call Compute_Phi_Visc()
 
-        If (viscous_heating) Call Compute_Viscous_Heating()
+            If (debug) Then
+                Call Temperature_Diffusion()
+                Call Temperature_Heating()
+            Else
+                Call Temperature_Advection_Compressible()
+                Call Temperature_Compression()
+                Call Temperature_Diffusion()
+                Call Temperature_Heating()
+                Call Temperature_Viscous_Heating()
 
+                Call Density_Advection()
+                Call Density_Compression()
 
-        Call Momentum_Advection_Radial()
-        Call Momentum_Advection_Theta()
-        Call Momentum_Advection_Phi()
+                Call Velocity_Advection()
+                Call Velocity_Diffusion()
+                Call Pressure_Force()
+                
+                If (rotation) Call Coriolis_Centrifugal()
+            Endif
+        Else
+            Call Temperature_Advection()
+            Call Volumetric_Heating()
 
+            do i = 1, n_active_scalars
+            Call chi_Advection(chiavar(i), dchiadr(i), dchiadt(i), dchiadp(i))
+            Call chi_Source_function(chiavar(i))
+            end do
+            do i = 1, n_passive_scalars
+            Call chi_Advection(chipvar(i), dchipdr(i), dchipdt(i), dchipdp(i))
+            Call chi_Source_function(chipvar(i))
+            end do
+        
+            If (viscous_heating) Call Compute_Viscous_Heating()
+
+            Call Momentum_Advection_Radial()
+            Call Momentum_Advection_Theta()
+            Call Momentum_Advection_Phi()
+
+        Endif
 
         If (magnetism) Then
             Call Compute_Ohmic_Heating()
@@ -223,9 +295,72 @@ Contains
         Call StopWatch(rtranspose_time)%increment()
     End Subroutine Physical_Space
 
+    Subroutine Compute_Sound_Speed()
+        Implicit None
+        Integer :: t, r, k
+        Real*8 :: gfactor
+        ! Checked:
+        !       Fredy (8/22/19)
+        !       Nick (8/27/19)
+        gfactor = gas_gamma*(gas_gamma-1.0d0)*bigz
+        DO_IDX
+            csquared(IDX) = gfactor*FIELDSP(IDX,tvar)
+        END_DO
+
+    End Subroutine Compute_Sound_Speed
+
+    Subroutine Compute_DivU()
+        Implicit None
+        Integer :: t, r, k
+        ! Checked:
+        !           Nick (8/27/19)
+
+        !Note -- divu is allocated already before calling this routine
+        DO_IDX
+            divu(IDX,1) = wsp%p3a(IDX,vr)*two_over_r(r)+wsp%p3a(IDX,dvrdr) + &
+                        One_Over_R(r)*( &
+                        cottheta(t)*wsp%p3a(IDX,vtheta)+wsp%p3a(IDX,dvtdt) + &
+                        csctheta(t)*wsp%p3a(IDX,dvpdp) )
+        END_DO 
+
+        ! Radial component of grad (div dot u)
+        DO_IDX
+            divu(IDX,2) = FIELDSP(IDX,d2vrdr2)                                 &
+                          -OneOverRsquared(r)*(Two*FIELDSP(IDX,vr) +           &
+                          cottheta(t)*FIELDSP(IDX,vtheta)+FIELDSP(IDX,dvtdt) + &
+                          csctheta(t)*FIELDSP(IDX,dvpdp) ) +                   &
+                          One_Over_R(r)*(Two*FIELDSP(IDX,dvrdr) +              &
+                          cottheta(t)*FIELDSP(IDX,dvtdr)+FIELDSP(IDX,d2vtdrdt) + &
+                          csctheta(t)*FIELDSP(IDX,d2vpdrdp) )            
+        END_DO
+
+
+        ! Theta component of grad (div dot  u)
+        DO_IDX
+            divu(IDX,3) =  One_Over_R(r)*FIELDSP(IDX,d2vrdrdt)          &
+                           + OneOverRSquared(r)* (Two*FIELDSP(IDX,dvrdt) &
+                           + FIELDSP(IDX,d2vtdt2)    &
+                           + cottheta(t)*FIELDSP(IDX,dvtdt) &
+                           - csctheta(t)*csctheta(t)*OneOverRSquared(r)*FIELDSP(IDX,vtheta) &
+                           + csctheta(t)*FIELDSP(IDX,d2vpdtdp) &
+                           -csctheta(t)*cottheta(t)*FIELDSP(IDX,dvpdp) )
+        END_DO
+
+        ! Phi component of grad (div dot u)
+        DO_IDX
+            divu(IDX,4) = OneOverRSquared(r)*csctheta(t)*(Two*FIELDSP(IDX,dvrdp) &
+                         +FIELDSP(IDX,d2vtdtdp) &
+                         +cottheta(t)*FIELDSP(IDX,dvtdp) &
+                         +csctheta(t)*FIELDSP(IDX,d2vpdp2) ) &
+                         +One_Over_R(r)*csctheta(t)*FIELDSP(IDX,d2vrdrdp) 
+        END_DO
+
+
+    End Subroutine Compute_DivU
+
     Subroutine Compute_dvtheta_by_dtheta()
         Implicit None
-        Integer :: t, r,k
+        Integer :: t, r, k
 
         DO_IDX
             wsp%p3a(IDX,dvtdt) = -wsp%p3a(IDX,vr)*(radius(r)*ref%dlnrho(r)+2.0d0) &
@@ -246,6 +381,7 @@ Contains
         END_DO
         !$OMP END PARALLEL DO
     End Subroutine Compute_dvphi_by_dtheta
+
 
     Subroutine chi_Advection(chivar, dchidr, dchidt, dchidp)
         Implicit None
@@ -740,8 +876,659 @@ Contains
         Endif
         
     End Subroutine Momentum_Advection_Phi
+
+    !/////////////////////////////////////////////////////
+    ! COMPRESSIONAL ROUTINES START HERE  
+    Subroutine Velocity_Advection()
+        Implicit None
+        Integer :: t, r,k
+
+        ! Checked:
+        !           Nick (8/20/19)
+
+        ! Add advection terms to RHS of vr, vtheta, and vphi equations
+
+        ! Radial component:  -[u dot grad u]_r
+        !$OMP PARALLEL DO PRIVATE(t,r,k)
+        DO_IDX
+            RHSP(IDX,vr) = -FIELDSP(IDX,vr)*FIELDSP(IDX,dvrdr) &
+                - FIELDSP(IDX,vtheta) * ( FIELDSP(IDX,dvrdt)-FIELDSP(IDX,vtheta) )*One_Over_R(r)    &
+                - FIELDSP(IDX,vphi)*(FIELDSP(IDX,dvrdp)*csctheta(t)-FIELDSP(IDX,vphi) )*One_Over_R(r)
+        END_DO
+        !$OMP END PARALLEL DO
+
+        ! Theta component:  -[u dot grad u]_theta
+        !$OMP PARALLEL DO PRIVATE(t,r,k)
+        DO_IDX
+            RHSP(IDX,vtheta) = -FIELDSP(IDX,vr)*FIELDSP(IDX,dvtdr) &
+                - One_Over_R(r)*FIELDSP(IDX,vtheta) * ( FIELDSP(IDX,dvtdt) + FIELDSP(IDX,vr) ) &
+                - One_Over_R(r)*FIELDSP(IDX,vphi) & 
+                * ( csctheta(t)*FIELDSP(IDX,dvpdp) - FIELDSP(IDX,vphi)*cottheta(t) ) ! - ...
+        END_DO
+        !$OMP END PARALLEL DO
+
+        ! Phi component:  -[u dot grad u]_phi
+        !$OMP PARALLEL DO PRIVATE(t,r,k)
+        DO_IDX
+            RHSP(IDX,vphi) = -FIELDSP(IDX,vr)*FIELDSP(IDX,dvpdr) &
+                - FIELDSP(IDX,vtheta)* One_Over_R(r)*( FIELDSP(IDX,dvpdt) & 
+                + FIELDSP(IDX,vphi)*cottheta(t) ) & 
+                - One_Over_R(r)*FIELDSP(IDX,vphi) & 
+                * ( csctheta(t)*FIELDSP(IDX,dvpdp) + FIELDSP(IDX,vr) )
+        END_DO
+        !$OMP END PARALLEL DO
+
+
+
+    End Subroutine Velocity_Advection
+
+    Subroutine Pressure_Force()
+        Implicit None
+        Integer :: t, r,k
+        Real*8 :: gfactor
+        ! Add terms like du/dt = a Grad T + b T Grad lnrho
+        ! Checked:
+        !           Nick (8/20/19)
+
+
+
+        gfactor = (1.0-gas_gamma)*bigz
+
+        ! Radial component
+        !$OMP PARALLEL DO PRIVATE(t,r,k)
+        DO_IDX
+            RHSP(IDX,vr) = RHSP(IDX,vr) + gfactor*( FIELDSP(IDX,dtdr) &
+                                        +FIELDSP(IDX,tvar)*FIELDSP(IDX,drhodr))
+        END_DO
+        !$OMP END PARALLEL DO
+
+        ! Theta component
+        !$OMP PARALLEL DO PRIVATE(t,r,k)
+        DO_IDX
+            RHSP(IDX,vtheta) = RHSP(IDX,vtheta) + gfactor*One_Over_R(r) & 
+                                *( FIELDSP(IDX,dtdt) &
+                                  +FIELDSP(IDX,tvar)*FIELDSP(IDX,drhodt) )
+        END_DO
+        !$OMP END PARALLEL DO
+
+        ! Phi component
+        !$OMP PARALLEL DO PRIVATE(t,r,k)
+        DO_IDX
+            RHSP(IDX,vphi) = RHSP(IDX,vphi) +gfactor*One_Over_R(r)*csctheta(t) &
+                                *( FIELDSP(IDX,dtdp) &
+                                 + FIELDSP(IDX,tvar)*FIELDSP(IDX,drhodp) )
+        END_DO
+        !$OMP END PARALLEL DO
+
+
+    End Subroutine Pressure_Force
+
+    Subroutine Velocity_Diffusion()
+        Implicit None
+        Integer :: t, r,k
+        Integer :: dvrdrdr,dvrdtdt,dvrdpdp      ! Maybe need to add this??
+        Integer :: dvtdrdr,dvtdtdt,dvtdpdp
+        Integer :: dvpdrdr,dvpdtdt,dvpdpdp
+        ! These are pretty tough.
+        ! See src_copy/Diagnostics/Diagnostics_Velocity_Diffusion lines 54, 87, and 115
+        ! Compare what I did here against wikipedia Del^2{u}_{r,theta,phi} and see what's
+        ! done there for inspiration.
+        ! Rho is allowed to vary as r,theta, phi.   Nu only varies with radius.
+
+        ! The goal for now is to compute nu * Del^2{u}_{r,theta,phi}.  There are other pieces too
+        ! but those are a bit complicated and I need to do some careful math.
+        
+        ! Checked:
+        !           Nick (8/27/2019)
+
+
+        ! RADIAL DIFFUSION
+        ! 1st:  nu*Del^2 {u_r}  (  NOT nu*[ Del^2{u} ]_r )
+        !$OMP PARALLEL DO PRIVATE(t,r,k)
+        DO_IDX
+            RHSP(IDX,vr) = RHSP(IDX,vr)+gnu(IDX,1)*(FIELDSP(IDX,d2vrdr2)+ &
+                           Two_Over_R(r)*FIELDSP(IDX,dvrdr) -FIELDSP(IDX,hvr))
+        END_DO
+        !$OMP END PARALLEL DO
+
+        !2nd:  Add geomtric terms to make this nu*[Del^2{u}]_r
+        !$OMP PARALLEL DO PRIVATE(t,r,k)
+        DO_IDX
+            RHSP(IDX,vr) = RHSP(IDX,vr) -2.0d0*OneOverRsquared(r)*gnu(IDX,1)*( &
+                        FIELDSP(IDX,vr) + FIELDSP(IDX,dvtdt)+FIELDSP(IDX,vtheta)*cottheta(t) &
+                        + csctheta(t)*FIELDSP(IDX,dvpdp) )
+        END_DO
+        !$OMP END PARALLEL DO
+
+        !3rd:   Add radial component of gradient of div dot v (1/3 grad div.v)
+        !$OMP PARALLEL DO PRIVATE(t,r,k)
+        DO_IDX
+            RHSP(IDX,vr) = RHSP(IDX,vr) + One_Third*gnu(IDX,1)*divu(IDX,2)
+        END_DO
+        !$OMP END PARALLEL DO
+
+
+        !4th:
+        
+        ! Theta DIFFUSION
+        ! 1st: nu*Del^2(u_t)
+        !$OMP PARALLEL DO PRIVATE(t,r,k)
+        DO_IDX
+            RHSP(IDX,vtheta) = RHSP(IDX,vtheta)+gnu(IDX,1)*(FIELDSP(IDX,d2vtdr2)+ &
+                           Two_Over_R(r)*FIELDSP(IDX,dvtdr) -FIELDSP(IDX,hvtheta))
+        END_DO
+        !$OMP END PARALLEL DO
+
+
+        ! 2nd: Add geometric terms to make this nu*[Del^2{u}]_t
+        DO_IDX
+            RHSP(IDX,vtheta) = RHSP(IDX,vtheta) -OneOverRSquared(r)*gnu(IDX,1)*( &
+                        csctheta(t)*csctheta(t)*FIELDSP(IDX,vtheta) &
+                        -2.0d0*FIELDSP(IDX,dvrdt)+2.0d0*cottheta(t) &
+                        *csctheta(t)*FIELDSP(IDX,dvpdp) )
+        END_DO
+
+        !3rd:   Add theta component of gradient of div dot v (1/3 grad div.v)
+
+        !$OMP PARALLEL DO PRIVATE(t,r,k)
+        DO_IDX
+            RHSP(IDX,vtheta) = RHSP(IDX,vtheta) + One_Third*gnu(IDX,1)*divu(IDX,3)
+        END_DO
+        !$OMP END PARALLEL DO
+
+
+        ! Phi DIFFUSION
+        ! 1st: nu*Del^2(u_p)
+        !$OMP PARALLEL DO PRIVATE(t,r,k)
+        DO_IDX
+            RHSP(IDX,vphi) = RHSP(IDX,vphi)+gnu(IDX,1)*(FIELDSP(IDX,d2vpdr2)+ &
+                           Two_Over_R(r)*FIELDSP(IDX,dvpdr) -FIELDSP(IDX,hvphi))
+        END_DO
+        !$OMP END PARALLEL DO
+
+
+
+        ! 2nd: Add geometric terms to make this nu*[Del^2{u}]_p
+        DO_IDX
+            RHSP(IDX,vphi) = RHSP(IDX,vphi)+csctheta(t)*OneOverRSquared(r) &
+                        *(-csctheta(t)*FIELDSP(IDX,vphi)+2.0d0 &
+                        *FIELDSP(IDX,dvrdp)+2.0d0*cottheta(t) &
+                        *FIELDSP(IDX,dvtdp)  )*gnu(IDX,1)
+        END_DO
+
+        !$OMP END PARALLEL DO
+
+        ! 3rd:  Add phi component of gradient of div dot v (1/3 grad div.v)
+        !$OMP PARALLEL DO PRIVATE(t,r,k)
+        DO_IDX
+            RHSP(IDX,vphi) = RHSP(IDX,vphi) + One_Third*gnu(IDX,1)*divu(IDX,4)
+        END_DO
+        !$OMP END PARALLEL DO
+
+
+        ! Finally, we compute 2/rho grad{rho nu} dot (e_ij - 1/3 divu del_ij)
+        ! 2/rho grad {rho nu} = 2 grad(nu) + 2 nu grad(lnrho)
+        ! Build each component and augment each RHS before building 
+        ! next component
+
+        ! I.  r-component of grad(mu)
+        !$OMP PARALLEL DO PRIVATE(t,r,k)
+        DO_IDX
+            work(IDX) = Two*(gnu(IDX,2) + gnu(IDX,1)*FIELDSP(IDX,drhodr))
+        END_DO
+        !$OMP END PARALLEL DO
+
+        !           ~~~~~~~~~~ r
+        !$OMP PARALLEL DO PRIVATE(t,r,k)
+        DO_IDX
+            RHSP(IDX,vr) = RHSP(IDX,vr) + work(IDX) * (STR(IDX,e_rr) - &
+                           One_Third*divu(IDX,1))
+        END_DO
+        !$OMP END PARALLEL DO       
+
+        !           ~~~~~~~~~~ theta
+        !$OMP PARALLEL DO PRIVATE(t,r,k)
+        DO_IDX
+            RHSP(IDX,vtheta) = RHSP(IDX,vtheta) + work(IDX) * STR(IDX,e_rt)
+        END_DO
+        !$OMP END PARALLEL DO     
+
+        !           ~~~~~~~~~~ phi
+        !$OMP PARALLEL DO PRIVATE(t,r,k)
+        DO_IDX
+            RHSP(IDX,vphi) = RHSP(IDX,vphi) + work(IDX) * STR(IDX,e_rp)
+        END_DO
+        !$OMP END PARALLEL DO     
+
+        ! II.  theta-component of grad(mu)
+        !$OMP PARALLEL DO PRIVATE(t,r,k)
+        DO_IDX
+            work(IDX) = Two*(gnu(IDX,3) + gnu(IDX,1)*FIELDSP(IDX,drhodt))
+        END_DO
+        !$OMP END PARALLEL DO
+
+        !           ~~~~~~~~~~ r
+        !$OMP PARALLEL DO PRIVATE(t,r,k)
+        DO_IDX
+            RHSP(IDX,vr) = RHSP(IDX,vr) + work(IDX) * STR(IDX,e_rt)
+        END_DO
+        !$OMP END PARALLEL DO       
+
+        !           ~~~~~~~~~~ theta
+        !$OMP PARALLEL DO PRIVATE(t,r,k)
+        DO_IDX
+            RHSP(IDX,vtheta) = RHSP(IDX,vtheta) + work(IDX) * ( STR(IDX,e_tt) - &
+                           One_Third*divu(IDX,1))
+        END_DO
+        !$OMP END PARALLEL DO     
+
+        !           ~~~~~~~~~~ phi
+        !$OMP PARALLEL DO PRIVATE(t,r,k)
+        DO_IDX
+            RHSP(IDX,vphi) = RHSP(IDX,vphi) + work(IDX) * STR(IDX,e_tp)
+        END_DO
+        !$OMP END PARALLEL DO     
+
+        ! III.  phi-component of grad(mu)
+        !$OMP PARALLEL DO PRIVATE(t,r,k)
+        DO_IDX
+            work(IDX) = Two*(gnu(IDX,4) + gnu(IDX,1)*FIELDSP(IDX,drhodp))
+        END_DO
+        !$OMP END PARALLEL DO
+
+        !           ~~~~~~~~~~ r
+        !$OMP PARALLEL DO PRIVATE(t,r,k)
+        DO_IDX
+            RHSP(IDX,vr) = RHSP(IDX,vr) + work(IDX) * STR(IDX,e_rp)
+        END_DO
+        !$OMP END PARALLEL DO       
+
+        !           ~~~~~~~~~~ theta
+        !$OMP PARALLEL DO PRIVATE(t,r,k)
+        DO_IDX
+            RHSP(IDX,vtheta) = RHSP(IDX,vtheta) + work(IDX) * STR(IDX,e_tp)
+        END_DO
+        !$OMP END PARALLEL DO     
+
+        !           ~~~~~~~~~~ phi
+        !$OMP PARALLEL DO PRIVATE(t,r,k)
+        DO_IDX
+            RHSP(IDX,vphi) = RHSP(IDX,vphi) + work(IDX) * (STR(IDX,e_pp) - &
+                           One_Third*divu(IDX,1))
+        END_DO
+        !$OMP END PARALLEL DO     
+
+
+    End Subroutine Velocity_Diffusion
+
+    Subroutine Coriolis_Centrifugal()
+        Implicit None
+        Integer :: t, r,k
+        ! Coriolis and centrifugal terms that appear on RHS of v-equations
+        ! Checked:
+        !           Nick (8/20/2019)
+        
+        If (coriolis) Then
+            ! Coriolis:  Radial
+            ! [- z_hat cross u ]_r =  sintheta u_phi
+            !$OMP PARALLEL DO PRIVATE(t,r,k)
+            DO_IDX
+                RHSP(IDX,vr) = RHSP(IDX,vr) + &
+                    & ref%Coriolis_Coeff*sintheta(t)*FIELDSP(IDX,vphi) !*R_squared(r)
+            END_DO
+            !$OMP END PARALLEL DO
+
+            ! Coriolis:  Theta
+            ! [-z_hat cross u]_theta = costheta u_phi
+            !$OMP PARALLEL DO PRIVATE(t,r,k)
+            DO_IDX
+                RHSP(IDX,vtheta) = RHSP(IDX,vtheta) + &
+                    & ref%Coriolis_Coeff*costheta(t)*FIELDSP(IDX,vphi)
+            END_DO
+            !$OMP END PARALLEL DO
+
+            ! Coriolis:  Phi  
+            ! [- z_hat cross u]_phi = -u_theta costheta - u_r sintheta 
+            !$OMP PARALLEL DO PRIVATE(t,r,k)
+            DO_IDX
+                RHSP(IDX,vphi) = RHSP(IDX,vphi) - &
+                    & ref%Coriolis_Coeff*(costheta(t)*FIELDSP(IDX,vtheta) &
+                    + sintheta(t)*FIELDSP(IDX,vr))
+            END_DO
+            !$OMP END PARALLEL DO
+        Endif
+
+        If (Centrifugal) Then
+            ! Centrifugal Force:  
+            ! Cylindrical radius s = r sin(theta)
+
+            ! Centrifugal Radial:  s sin(theta)  
+            !$OMP PARALLEL DO PRIVATE(t,r,k)
+            DO_IDX
+                RHSP(IDX,vr) = RHSP(IDX,vr) + &
+                    ref%Centrifugal_Coeff*sintheta(t)*sintheta(t)*radius(r)
+            END_DO
+            !$OMP END PARALLEL DO
+
+            ! Centrifugal Theta:  s cos(theta)  
+            !$OMP PARALLEL DO PRIVATE(t,r,k)
+            DO_IDX
+                RHSP(IDX,vtheta) = RHSP(IDX,vtheta) + &
+                    ref%Centrifugal_Coeff*costheta(t)*sintheta(t)*radius(r)
+            END_DO
+            !$OMP END PARALLEL DO
+        Endif
+
+        ! Centifugal force has no Phi-component
+        !If (my_rank .eq. 0) Write(6,*) 'Centrifual: ', ref%centrifugal_Coeff
+
+    End Subroutine Coriolis_Centrifugal
+
+    Subroutine Density_Advection()
+        Implicit None
+        Integer :: t, r,k
+        ! density advection (dlnrho/dt = -v dot grad lnrho )
+        ! rhovar is ln(rho), not rho
+
+        ! Checked:
+        !           Nick (8/20/19)
+        !          
+
+        !$OMP PARALLEL DO PRIVATE(t,r,k)
+        DO_IDX
+            RHSP(IDX,rhovar) = -FIELDSP(IDX,vr)*FIELDSP(IDX,drhodr)    &
+                             - one_over_r(r)*(                     &
+                             FIELDSP(IDX,drhodt)*FIELDSP(IDX,vtheta) &
+                             + FIELDSP(IDX,vphi)*FIELDSP(IDX,drhodp)*csctheta(t) )
+        END_DO
+        !$OMP END PARALLEL DO
+    End Subroutine Density_Advection
+
+    Subroutine Density_Compression()
+        Implicit None
+        Integer :: t, r,k
+        ! dlnrho/dt = -div dot v
+        ! Checked:
+        !           Nick (8/20/19)
+        !          
+
+        !$OMP PARALLEL DO PRIVATE(t,r,k)
+        DO_IDX
+            RHSP(IDX,rhovar) = RHSP(IDX,rhovar)-divu(IDX,1)
+        END_DO
+        !$OMP END PARALLEL DO
+    End Subroutine Density_Compression
+
+    Subroutine Temperature_Advection_Compressible()
+        Implicit None
+        Integer :: t, r,k
+        ! Temperature advection (dT/dt = -v dot grad T )
+        ! Checked:
+        !           Nick (8/20/19)
+        !    
+
+        !$OMP PARALLEL DO PRIVATE(t,r,k)
+        DO_IDX
+            RHSP(IDX,tvar) = -FIELDSP(IDX,vr)*FIELDSP(IDX,dtdr)    &
+                             - one_over_r(r)*(                     &
+                             FIELDSP(IDX,dtdt)*FIELDSP(IDX,vtheta) &
+                             + FIELDSP(IDX,vphi)*FIELDSP(IDX,dtdp)*csctheta(t) )
+        END_DO
+        !$OMP END PARALLEL DO
+    End Subroutine Temperature_Advection_Compressible
+
+
+    Subroutine Temperature_Heating()
+        Implicit None
+        Integer :: t, r,k
+        ! Real*8 :: delta
+        ! delta = 0.01d0 ! square wave edges sharpeness
+        ! Add the Q term to the temperature equation
+        !  Just leave this one alone for now.
+        !  I need to think about adding time-dependence into Q
+        ! Note: Microwave is pulsed in a square wave. 
+        !  when I get back from N.C.
+        ! Added rounded square wave using atan and sine. 
+
+        ! Still need to check
+
+        !$OMP PARALLEL DO PRIVATE(t,r,k)
+        DO_IDX
+            RHSP(IDX,tvar) = RHSP(IDX,tvar) + gas_gamma/Prandtl_Number
+                !+(two*atan(sin(pulse_freq*simulation_time)/pulse_sharpness)/Pi + 1.0d0)/2.0d0 ! + Q
+        END_DO
+        !$OMP END PARALLEL DO
+    End Subroutine Temperature_Heating
+
+    Subroutine Temperature_Viscous_Heating()
+        Implicit None
+        Integer :: t,r,k
+        Real*8 :: zfactor
+        zfactor = 1.0d0/bigz
+        ! Add the PHI term to the temperature equation
+        !$OMP PARALLEL DO PRIVATE(t,r,k)
+        DO_IDX
+            RHSP(IDX,tvar) = RHSP(IDX,tvar) +zfactor*Phi_Visc(IDX)
+        END_DO
+        !$OMP END PARALLEL DO
+    End Subroutine Temperature_Viscous_Heating
+
+    Subroutine Temperature_Compression()
+        Implicit None
+        Integer :: t, r,k
+        Real*8 :: gfactor
+        ! Add the div dot v term to the temperature equation
+        ! Checked:
+        !           Nick (8/20/19)
+        !    
     
-    
+        gfactor = 1.0D0-gas_gamma
+        !$OMP PARALLEL DO PRIVATE(t,r,k)
+        DO_IDX
+            RHSP(IDX,tvar) = RHSP(IDX,tvar) + gfactor*RHSP(IDX,tvar)*divu(IDX,1)! + div V term
+        END_DO
+        !$OMP END PARALLEL DO
+    End Subroutine Temperature_Compression
+
+    Subroutine Temperature_Diffusion()
+        Implicit None
+        Integer :: t, r,k
+        Integer :: dtdtdt, dtdpdp
+        Real*8  ::kcoeff
+        Logical :: ddebug=.false.
+        ! Add the diffusion term to the temperature equation
+        ! Checked:
+        !           Nick (8/20/19)
+        !    
+
+        kcoeff = gas_gamma/Prandtl_Number
+
+        If (ddebug) Then
+
+            DO_IDX
+                RHSP(IDX,tvar) = kcoeff*gkappa(IDX,1)*( &
+                    Two_Over_R(r)*FIELDSP(IDX,dtdr)+FIELDSP(IDX,d2tdr2) &
+                    -FIELDSP(IDX,htvar) ) 
+            END_DO
+            !Write(6,*)'This branch'
+        Else
+
+
+        ! Kappa * del^2 T
+        !$OMP PARALLEL DO PRIVATE(t,r,k)
+        DO_IDX
+            RHSP(IDX,tvar) = RHSP(IDX,tvar) +kcoeff*gkappa(IDX,1)*( &
+                Two_Over_R(r)*FIELDSP(IDX,dtdr)+FIELDSP(IDX,d2tdr2) &
+                -FIELDSP(IDX,htvar) ) ! This term is equivalent to those below
+                !+OneOverRSquared(r)*(cottheta(t)*FIELDSP(IDX,dtdt) &
+                !+FIELDSP(IDX,dtdtdt)+csctheta(t)*csctheta(t) &
+                !*FIELDSP(IDX,dtdpdp))! + diffusion terms
+        END_DO
+        !$OMP END PARALLEL DO
+
+
+        !kcoeff = 0.0d0
+        ! Grad T dot Grad Kappa
+        !$OMP PARALLEL DO PRIVATE(t,r,k)
+        DO_IDX
+            RHSP(IDX,tvar) = RHSP(IDX,tvar) +kcoeff*( &
+                             FIELDSP(IDX,dtdr)*gkappa(IDX,2) + &  ! 2 is dkappa/dr
+                             OneOverRSquared(r)*( &
+                             FIELDSP(IDX,dtdt)*gkappa(IDX,3) + &  ! 3 is dkappa/dtheta
+                             FIELDSP(IDX,dtdp)*gkappa(IDX,4)*csctheta(t)*csctheta(t))) ! 4 is dkappa/dphi
+        END_DO
+        !$OMP END PARALLEL DO
+
+
+
+        ! Kapp Grad T dot Grad lnrho
+        !$OMP PARALLEL DO PRIVATE(t,r,k)
+        DO_IDX
+            RHSP(IDX,tvar) = RHSP(IDX,tvar) +kcoeff*gkappa(IDX,1)*( &
+                             FIELDSP(IDX,dtdr)*FIELDSP(IDX,drhodr) + &
+                             OneOverRSquared(r)*( &
+                             FIELDSP(IDX,dtdt)*FIELDSP(IDX,drhodt) + & 
+                             FIELDSP(IDX,dtdp)*FIELDSP(IDX,drhodp)*csctheta(t)*csctheta(t))) 
+        END_DO
+        !$OMP END PARALLEL DO
+        Endif
+
+    End Subroutine Temperature_Diffusion
+
+    Subroutine Compute_Grad_Kappa()
+        Implicit None
+        Integer :: k,r,t
+        ! Compute kappa and its 1st derivatives
+        ! Kappa could be a function of position / depend on T, etc.
+        ! For now, we set it (nondimensional kappa) to 1
+        ! Checked:
+        !           Nick (8/20/19)
+        !    
+
+        gkappa(:,:,:,1) = One
+        gkappa(:,:,:,2:4) = Zero
+        
+    End Subroutine Compute_Grad_Kappa
+
+    Subroutine Compute_Grad_Nu()
+        Implicit None
+        Integer :: k,r,t
+        ! Compute nu and its 1st derivatives
+        ! Nu could be a function of position / depend on T, etc.
+        ! For now, we set it (nondimensional nu) to 1
+        ! Checked:
+        !           Nick (8/20/19)
+        !    
+
+        gnu(:,:,:,1) = One
+        gnu(:,:,:,2:4) = Zero
+        
+    End Subroutine Compute_Grad_Nu
+
+    Subroutine Compute_Strain_Rate()
+        Implicit None
+        Integer :: k,r,t
+        ! We need this is a couple of places.  Let's just compute it once
+        ! Checked:
+        !       Fredy (8/22/19)
+        !       Nick  (8/27/19)
+
+        ! e_rr = du_r/dr
+        !$OMP PARALLEL DO PRIVATE(t,r,k)
+        DO_IDX
+            STR(IDX,e_rr) = FIELDSP(IDX,dvrdr)
+        END_DO
+        !$OMP END PARALLEL DO  
+
+        ! e_theta_theta = 1/r( du_theta/dtheta + u_r)
+        !$OMP PARALLEL DO PRIVATE(t,r,k)
+        DO_IDX
+            STR(IDX,e_tt) = One_Over_R(r)*(FIELDSP(IDX,vr)+FIELDSP(IDX,dvtdt))
+        END_DO
+        !$OMP END PARALLEL DO       
+
+        ! e_phi_phi = 1/r( {1/sin(theta)}{du_phi/phi} + u_r + u_theta*cot(theta) )
+        !$OMP PARALLEL DO PRIVATE(t,r,k)
+        DO_IDX
+            STR(IDX,e_pp) = One_Over_R(r)*(FIELDSP(IDX,vr)+ &
+                                           FIELDSP(IDX,dvpdp)*csctheta(t) + &
+                                           FIELDSP(IDX,vtheta)*cottheta(t))
+        END_DO
+        !$OMP END PARALLEL DO      
+
+        !e_theta_phi = 1/2[dvphi/dtheta - vphi*cotan(theta) +csc(theta)*dvtheta/dphi]
+        !$OMP PARALLEL DO PRIVATE(t,r,k)
+        DO_IDX
+            STR(IDX,e_tp) = Half*One_Over_R(r)*(FIELDSP(IDX,dvpdt) - &
+                            FIELDSP(IDX,vphi)*cottheta(t) + &
+                            csctheta(t)*FIELDSP(IDX,dvtdp) )
+        END_DO
+        !$OMP END PARALLEL DO  
+
+        !e_r_phi = 1/2*[csc(theta)/r*du_r/dphi + du_phi/dr -u_phi/r]
+        !$OMP PARALLEL DO PRIVATE(t,r,k)
+        DO_IDX
+            STR(IDX,e_rp) = Half*(One_Over_R(r)*csctheta(t)*FIELDSP(IDX,dvrdp) &
+                        + FIELDSP(IDX,dvpdr) - One_Over_R(r)*FIELDSP(IDX,vphi))
+        END_DO
+        !$OMP END PARALLEL DO  
+
+        !e_r_theta = (1/2)*[ 1/r du_r/dtheta + du_theta/dr -u_theta/r]
+        !$OMP PARALLEL DO PRIVATE(t,r,k)
+        DO_IDX
+            STR(IDX,e_rt) = Half*One_Over_R(r)*(FIELDSP(IDX,dvrdt) - &
+                            FIELDSP(IDX,vtheta)) + Half*FIELDSP(IDX,dvtdr)
+        END_DO
+        !$OMP END PARALLEL DO  
+
+    End Subroutine Compute_Strain_Rate
+
+    Subroutine Compute_Phi_Visc()
+        Implicit None
+        Integer :: k,r,t
+        ! Computes Phi/rho   where
+        ! Phi = 2*mu*{e_ij}{e_ij}-2/3*mu*(divu)^2
+        ! mu  = rho*nu
+        ! rho, nu, e_ij nondimensional
+        ! Checked:
+        !       Fredy (8/22/19)
+        !       Nick  (8/27/19)
+
+        ! Step 1.  divu term
+        !$OMP PARALLEL DO PRIVATE(t,r,k)
+        DO_IDX
+            Phi_Visc(IDX) = -One_Third*(divu(IDX,1))**2
+        END_DO
+        !$OMP END PARALLEL DO        
+
+        ! Step 2.  Diagonal terms: e_rr^2 + e_tt^2 + e_pp^2
+        !$OMP PARALLEL DO PRIVATE(t,r,k)
+        DO_IDX
+            Phi_Visc(IDX) = Phi_Visc(IDX)+STR(IDX,e_rr)**2 + &
+                            STR(IDX,e_tt)**2 + STR(IDX,e_pp)**2
+        END_DO
+
+        ! Step 3.  Off-diagonal terms
+        ! 2*( e_r_theta^2 + e_r_phi^2 + e_theta_phi^2)
+        !$OMP PARALLEL DO PRIVATE(t,r,k)
+        DO_IDX
+            Phi_Visc(IDX) = Phi_Visc(IDX)+Two*(STR(IDX,e_rt)**2 + &
+                            STR(IDX,e_rp)**2 + STR(IDX,e_tp)**2)
+        END_DO
+        !$OMP END PARALLEL DO  
+
+        ! Step 4.  Multiply by 2*nu
+        !$OMP PARALLEL DO PRIVATE(t,r,k)
+        DO_IDX
+            Phi_Visc(IDX) = Phi_Visc(IDX)*Two*gnu(IDX,1)
+        END_DO
+        !$OMP END PARALLEL DO 
+
+    End Subroutine Compute_Phi_Visc
+    !END Compressional Routines
+    !Some code can be recycled from routines below.
+    !///////////////////////////////////////////////
+
     Subroutine Phi_Derivatives()
         Implicit None
         Integer :: i
