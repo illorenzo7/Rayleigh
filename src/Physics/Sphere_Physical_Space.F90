@@ -147,18 +147,19 @@ Contains
         Call sintheta_div(dvtdr)
         Call sintheta_div(dvpdr)
         Call sintheta_div(dtdt)
-        Call sintheta_div(drhodt)
         Call sintheta_div(dvrdt)
-        Call sintheta_div(dvtdt)
         Call sintheta_div(dvpdp)
-        Call sintheta_div(dvpdt)
         Call sintheta_div(dvtdp)
-
-        Call sintheta_div(d2vpdtdp)
-        Call sintheta_div(d2vtdtdp)
-        Call sintheta_div(d2vtdrdt)
-        Call sintheta_div(d2vrdrdt)
         
+        If (compressible) Then
+            Call sintheta_div(drhodt)
+            Call sintheta_div(dvtdt)
+            Call sintheta_div(dvpdt)
+            Call sintheta_div(d2vpdtdp)
+            Call sintheta_div(d2vtdtdp)
+            Call sintheta_div(d2vtdrdt)
+            Call sintheta_div(d2vrdrdt)
+        Endif
 
         do i = 1, n_active_scalars
           Call sintheta_div(dchiadt(i))  ! dchidt initially contains sin(theta) dsdtheta -- divide by sintheta
