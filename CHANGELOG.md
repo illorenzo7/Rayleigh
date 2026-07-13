@@ -11,6 +11,8 @@ This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 
 ### Added
 
+- Implemented new diagnostic quantity codes for scalar fields.  Added buoyancy forces, buoyancy work, and buoyant KE production associated with the active chi fields.  These are documented in the "Under Development" section of the User Guide.  Additional placeholders have been included for future codes to be added. \[Cian Wilson; 7-13-2026; [#582](https://github.com/geodynamics/Rayleigh/pull/582)\]
+
 ### Changed
 
 ### Fixed

@@ -52,7 +52,7 @@
     Integer, Parameter :: chi_m_dphi   = chi_off + 12  ! :tex:  $\frac{\partial \overline{\chi}}{\partial \phi}$
 
 
-    ! FIXME: placeholder
+    ! FIXME: not implemented, placeholder
     ! !------------ (1/r) * Theta Derivatives --------!
     ! Integer, Parameter :: chi_dtr     = chi_off + 13 !  :tex:  $\frac{1}{r}\frac{\partial \chi}{\partial \theta}$
     ! Integer, Parameter :: chi_p_dtr   = chi_off + 14 !  :tex:  $\frac{1}{r}\frac{\partial \chi'}{\partial \theta}$
@@ -87,7 +87,7 @@
     ! Integer, Parameter :: chi_m_d2tp   = chi_off + 36  ! :tex:  $\frac{\partial^2 \overline{\chi}}{\partial \theta \partial \phi}$
 
 
-    ! FIXME: placeholder - NOTE definitions are not correct/finalized
+    ! FIXME: not implemented, placeholder - NOTE definitions are not correct/finalized
     Integer, Parameter :: chim_off = chi_off + 50 ! :OFFSET CODE:
     ! !---  Masses
     ! Integer, Parameter :: compositional_mass_full = chim_off + 1  ! rho_bar chi  :tex: $\mathrm{f}_1\mathrm{f}_4\Theta$
@@ -105,7 +105,7 @@
     Integer, Parameter :: chi_buoyancy_pforce =  chi_mom_eq_off+2  ! :tex: $d_{7_i}\mathrm{g}_{7_i}\chi'$
     Integer, Parameter :: chi_buoyancy_mforce =  chi_mom_eq_off+3  ! :tex: $d_{7_i}\mathrm{g}_{7_i}\overline{\chi}$
 
-    ! FIXME: placeholder
+    ! FIXME: not implemented, placeholder
     ! ! ell=0 pressure and buoyancy forces (r-direction only)
     ! ! These are substracted out from the radial terms above
     ! ! because they do not contribute to the dynamics.
@@ -114,7 +114,7 @@
     Integer, Parameter :: chi_buoyancy_force_ell0 = chi_mom_eq_off+4    ! :tex: $d_{7_i}\mathrm{g}_{7_i}\chi_{00}$
 
 
-    ! FIXME: placeholder - NOTE definitions are not correct/finalized
+    ! FIXME: not implemented, placeholder - NOTE definitions are not correct/finalized
     ! !--- Chi equations contributions
     Integer, Parameter :: chi_eq_off = chi_mom_eq_off + 10 ! :OFFSET CODE:
     ! ! Advection (Full)

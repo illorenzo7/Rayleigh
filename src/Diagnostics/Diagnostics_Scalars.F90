@@ -154,7 +154,7 @@ Contains
                         qty(PSI) = ref%chi_buoyancy_coeff(ii,r)*(buffer(PSI,chivar)-&
                                 & ell0_values(r,chivar))
                     END_DO
-                    If (compute_quantity(chi_buoyancy_force+scoff))Call Add_Quantity(qty)
+                    If (compute_quantity(chi_buoyancy_force+scoff)) Call Add_Quantity(qty)
                     If (compute_quantity(chi_buoy_work+scoff)) Then
                         DO_PSI
                             qty(PSI)=buffer(PSI,vr)*qty(PSI)
