@@ -60,6 +60,8 @@ Module Controls
     Logical :: momentum_advection = .true.  ! u dot grad u is not calculated (mostly useful for debugging)
     Logical :: inertia = .true.             ! If false, Du/Dt is set to zero (useful for mantle convection problems)
     Logical :: Rotation = .false.           ! Rotate or not
+    Logical :: Coriolis = .false.            ! turn off or on
+    Logical :: Centrifugal = .false.         ! turn off or on
     Logical :: lorentz_forces = .true.      ! Turn Lorentz forces on or off (default is on - as long as magnetism is on)
     Logical :: viscous_heating = .true.     ! Turns viscous heating on/off
     Logical :: ohmic_heating = .true.
@@ -71,6 +73,8 @@ Module Controls
 
     ! Allow up to 50 active/passive scalar fields
     Integer, Parameter :: n_scalar_max = 50
+
+    Logical :: compressible = .false.           !run compressible or not
     Integer :: n_active_scalars = 0         ! number of active scalar fields
     Integer :: n_passive_scalars = 0        ! number of passive scalar fields
 
@@ -83,6 +87,10 @@ Module Controls
     Integer :: benchmark_integration_interval = -1 ! manual override of integration_interval
     Integer :: benchmark_report_interval = -1      ! and report interval in Benchmarking.F90 (for debugging)
 
+
+    Real*8 :: pulse_freq = 3.14d0
+    Real*8 :: pulse_sharpness = 0.01d0
+
     ! --- Newtonian Cooling Variables
     Logical :: newtonian_cooling = .false.  ! Turn newtonian_cooling on/off
     Integer :: newtonian_cooling_type = 1
@@ -94,10 +102,11 @@ Module Controls
     Namelist /Physical_Controls_Namelist/ magnetism, nonlinear, rotation, lorentz_forces, &
                 & viscous_heating, ohmic_heating, advect_reference_state, benchmark_mode, &
                 & benchmark_integration_interval, benchmark_report_interval, &
-                & momentum_advection, inertia, n_active_scalars, n_passive_scalars, &
+                & momentum_advection, inertia, coriolis, centrifugal, n_active_scalars, n_passive_scalars, &
                 & newtonian_cooling, newtonian_cooling_type, newtonian_cooling_time, &
                 & newtonian_cooling_tvar_amp, newtonian_cooling_profile_file, &
-                & pseudo_incompressible, chi_a_advect_reference_state, chi_p_advect_reference_state
+                & pseudo_incompressible, compressible, pulse_freq, pulse_sharpness, &
+                & chi_a_advect_reference_state, chi_p_advect_reference_state
 
     !///////////////////////////////////////////////////////////////////////////
     !   Temporal Controls
@@ -237,6 +246,7 @@ Contains
         viscous_heating = .true.
         ohmic_heating = .true.
         pseudo_incompressible = .false.
+        compressible = .false.
         advect_reference_state = .true.
         chi_a_advect_reference_state = .true.
         chi_p_advect_reference_state = .true.
