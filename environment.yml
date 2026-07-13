@@ -15,7 +15,7 @@ dependencies:
   - jupyter=1.0
   - scipy=1.10
   - sphinx=4.0
-  - sphinxcontrib-bibtex=2.2
+  - sphinxcontrib-bibtex=2.6.5
   - nbsphinx=0.8
   - pandoc=3.2
   - recommonmark=0.7

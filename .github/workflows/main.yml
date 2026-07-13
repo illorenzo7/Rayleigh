@@ -34,7 +34,7 @@ jobs:
     container: geodynamics/rayleigh-buildenv-jammy
 
     steps:
-    - uses: actions/checkout@v4
+    - uses: actions/checkout@v7
     - name: Build documentation
       # First make sure notebooks do not contain output, then build doc
       run: |
@@ -62,6 +62,14 @@ jobs:
         cd "$GITHUB_WORKSPACE"/tests/c2001_case0_FD_uniform
         mpirun -np 4 ../../bin/rayleigh.dbg
 
+        # J2011 steady hydro test
+        # cd "$GITHUB_WORKSPACE"/tests/j2011_steady_hydro_minimal
+        # mpirun -np 4 ../../bin/rayleigh.dbg
+
+        # J2011 steady mhd test
+        # cd "$GITHUB_WORKSPACE"/tests/j2011_steady_mhd_minimal
+        # mpirun -np 4 ../../bin/rayleigh.dbg
+
         # Generic input test
         cd "$GITHUB_WORKSPACE"
         sh ./tests/generic_input/run_test.sh
@@ -82,7 +90,7 @@ jobs:
         git diff --exit-code --name-only
 
     - name: archive results
-      uses: actions/upload-artifact@v4
+      uses: actions/upload-artifact@v7
       with:
           name: ${{ matrix.result-file }}
           path: changes.diff
@@ -96,7 +104,7 @@ jobs:
         git diff --exit-code --name-only
 
     - name: archive results
-      uses: actions/upload-artifact@v4
+      uses: actions/upload-artifact@v7
       with:
           name: ${{ matrix.unit-result-file }}
           path: tests/unit_tests/SHT/changes.diff
@@ -116,8 +124,8 @@ jobs:
         shell: bash -l {0}
 
     steps:
-    - uses: actions/checkout@v4
-    - uses: conda-incubator/setup-miniconda@v3
+    - uses: actions/checkout@v7
+    - uses: conda-incubator/setup-miniconda@v4
       with:
         activate-environment: radev
         environment-file: environment.yml
