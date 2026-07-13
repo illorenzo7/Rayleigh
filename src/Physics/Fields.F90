@@ -518,6 +518,7 @@ Contains
             Call wsp_indices%Add_Field(dpdr , config)
             Call wsp_indices%Add_Field(dpdt , config)
             Call wsp_indices%Add_Field(dpdp , config)
+        Else
             Call wsp_indices%Add_Field(drhodp  , config)
         Endif
 
