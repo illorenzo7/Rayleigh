@@ -13,6 +13,8 @@ This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 
 ### Changed
 
+- Containers for the TACC systems are no longer supported. \[Philipp Edelmann; 7-12-2026; [#608](https://github.com/geodynamics/Rayleigh/pull/608)\]
+
 ### Fixed
 
 ## [1.3.0] - 5-8-2026
