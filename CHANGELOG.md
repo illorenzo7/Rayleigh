@@ -11,6 +11,8 @@ This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 
 ### Added
 
+- Extend custom references states to active and passive scalar fields by adding a new custom reference state file type (with an accompanying python preprocessing class and namelist options) for scalar fields.  This allows the scalar equations to include non-zero (and potentially radially dependent) reference state advection and source terms. \[Cian Wilson; 7-13-2026; [#586](https://github.com/geodynamics/Rayleigh/pull/586)\]
+
 ### Changed
 
 ### Fixed
