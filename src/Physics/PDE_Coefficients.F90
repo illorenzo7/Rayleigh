@@ -1319,7 +1319,7 @@ Contains
             endif
             Call stdout%print('Source requires both d_3 and g_3 to be set.')
             if (active) Call stdout%print('Buoyancy requires both d_4 and g_5 to be set.')
-            Call stdout%print('Reference dchidr requires g_1 to be set (sets d_11 to 1 if unspecified).')
+            Call stdout%print('Reference dchidr requires g_1 to be set (sets d_1 to 1 if unspecified).')
             Call stdout%print('Reading '//Adjustl(chi_l_type_str)//' scalars from: '//TRIM(ADJUSTL(chi_l_custom_reference_file)) )
         Endif
 
