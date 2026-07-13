@@ -60,8 +60,8 @@ Module Controls
     Logical :: momentum_advection = .true.  ! u dot grad u is not calculated (mostly useful for debugging)
     Logical :: inertia = .true.             ! If false, Du/Dt is set to zero (useful for mantle convection problems)
     Logical :: Rotation = .false.           ! Rotate or not
-    Logical :: Coriolis = .true.            ! turn off or on
-    Logical :: Centrifugal = .true.         ! turn off or on
+    Logical :: Coriolis = .false.            ! turn off or on
+    Logical :: Centrifugal = .false.         ! turn off or on
     Logical :: lorentz_forces = .true.      ! Turn Lorentz forces on or off (default is on - as long as magnetism is on)
     Logical :: viscous_heating = .true.     ! Turns viscous heating on/off
     Logical :: ohmic_heating = .true.
