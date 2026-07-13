@@ -15,6 +15,8 @@ This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 
 ### Fixed
 
+- Fixed a bug in rayleigh_diagnostics.py (Shell_Slices). The time and iteration number were read incorrectly if the user specified that only a single shell slice be read (a single iteration, a single quantity code, and a single radius). The code did not skip to the end of the record to read the time and iteration number.  \[Brad Hindman; 6-13-202; [#612](https://github.com/geodynamics/Rayleigh/pull/612)\]
+
 ## [1.3.0] - 5-8-2026
 
 ### Added
