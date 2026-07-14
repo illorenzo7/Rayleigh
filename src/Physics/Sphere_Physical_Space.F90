@@ -342,7 +342,7 @@ Contains
                            + OneOverRSquared(r)* (Two*FIELDSP(IDX,dvrdt) &
                            + FIELDSP(IDX,d2vtdt2)    &
                            + cottheta(t)*FIELDSP(IDX,dvtdt) &
-                           - csctheta(t)*csctheta(t)*OneOverRSquared(r)*FIELDSP(IDX,vtheta) &
+                           - csctheta(t)*csctheta(t)*FIELDSP(IDX,vtheta) &
                            + csctheta(t)*FIELDSP(IDX,d2vpdtdp) &
                            -csctheta(t)*cottheta(t)*FIELDSP(IDX,dvpdp) )
         END_DO
