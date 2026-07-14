@@ -488,12 +488,12 @@ Contains
         !here we have some indices within the cobuffer
         ! Config p1a
         config = 'p1a'
-        Call co_indices%Add_Field(dpdr_cb,config)
+        If (.not. compressible) Call co_indices%Add_Field(dpdr_cb,config)
 
 
         ! Config p2a
         config = 'p2a'
-        Call co_indices%Add_Field(dpdt_cb,config)
+        If (.not. compressible) Call co_indices%Add_Field(dpdt_cb,config)
 
         
         If (magnetism) Then

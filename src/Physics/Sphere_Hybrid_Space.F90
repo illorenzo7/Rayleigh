@@ -76,7 +76,7 @@ Contains
         Call Allocate_rlm_Field(ftemp2)
 
         !Come back to this 
-        !If (output_iteration) Call Hybrid_Output_Initial()
+        If (output_iteration) Call Hybrid_Output_Initial()
         
         If (compressible) Then
            ! First theta-derivatives...
@@ -121,8 +121,9 @@ Contains
            do i = 1, n_passive_scalars
               Call d_by_dtheta(wsp%s2a,chipvar(i),dchipdt(i))
            end do
-           If (output_iteration) Call Hybrid_Output_Final()
         Endif 
+        
+        If (output_iteration) Call Hybrid_Output_Final()
 
         If (magnetism) Call compute_BandCurlB()
 
@@ -542,6 +543,7 @@ Contains
     Subroutine Hybrid_Output_Initial()
         Implicit None
         Integer :: r, m, mp, imi
+        If (compressible) Call cobuffer%construct("s2a")
         If (magnetism) Then
             Call Allocate_rlm_Field(ftemp3)
             Call Allocate_rlm_Field(ftemp4)

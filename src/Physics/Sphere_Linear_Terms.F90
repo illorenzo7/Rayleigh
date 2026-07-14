@@ -97,7 +97,6 @@ Contains
         nullify(gridpointer)
         gridpointer => gridcp
         If (chebyshev) Call Use_Chebyshev(gridpointer)    ! Turns chebyshev mode to "on" for the linear solve
-        write(6,*) 'neq,nvar: ',n_equations,n_variables
         Call Initialize_Equation_Set(n_equations,n_variables,N_R,my_nl_lm, my_nm_lm,2)
 
         Do lp = 1, my_nl_lm

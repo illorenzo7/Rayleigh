@@ -1578,10 +1578,10 @@ Contains
         ovt2 = 0.0d0    ! "over t squared"
         If (compressible) Then
             Do r = my_r%min, my_r%max
-                ovht2 = Maxval(csquared(:,r,:)**2 + wsp%p3a(:,r,:,vtheta)**2+wsp%p3a(:,r,:,vphi)**2) &
+                ovht2 = Maxval(csquared(:,r,:) + wsp%p3a(:,r,:,vtheta)**2+wsp%p3a(:,r,:,vphi)**2) &
                                     *OneOverRSquared(r)*l_l_plus1(l_max) ! horizontal
                 ovt2  = Max(ovt2, ovht2)
-                ovrt2 = Maxval(csquared(:,r,:)**2+wsp%p3a(:,r,:,vr)**2)/(delta_r(r)**2)    ! radial
+                ovrt2 = Maxval(csquared(:,r,:) + wsp%p3a(:,r,:,vr)**2)/(delta_r(r)**2)    ! radial
                 ovt2  = Max(ovt2,ovrt2)
             Enddo
 
@@ -1621,9 +1621,8 @@ Contains
         Implicit None
         !Copy everything from out auxiliary output buffer into the main buffer
 
-        !wsp%p3a(:,:,:,dpdr) = cobuffer%p3a(:,:,:,dpdr_cb)
-        !wsp%p3a(:,:,:,dpdt) = cobuffer%p3a(:,:,:,dpdt_cb)
-
+        If (.not. compressible) wsp%p3a(:,:,:,dpdr) = cobuffer%p3a(:,:,:,dpdr_cb)
+        If (.not. compressible) wsp%p3a(:,:,:,dpdt) = cobuffer%p3a(:,:,:,dpdt_cb)
         If (magnetism) Then
             wsp%p3a(:,:,:,dbrdr) = cobuffer%p3a(:,:,:,dbrdr_cb)
             wsp%p3a(:,:,:,dbtdr) = cobuffer%p3a(:,:,:,dbtdr_cb)
