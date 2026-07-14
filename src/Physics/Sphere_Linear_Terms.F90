@@ -144,10 +144,16 @@ Contains
                 do i = 1, n_active_scalars
                   Call Initialize_Equation_Coefficients(weq,chiavar(i), 0,lp)
                   Call Initialize_Equation_Coefficients(chiaeq(i),chiavar(i), 2,lp)
+                  if (chi_a_advect_reference_state(i)) then
+                    Call Initialize_Equation_Coefficients(chiaeq(i),wvar, 0,lp)
+                  end if
                 end do
 
                 do i = 1, n_passive_scalars
                   Call Initialize_Equation_Coefficients(chipeq(i),chipvar(i), 2,lp)
+                  if (chi_p_advect_reference_state(i)) then
+                    Call Initialize_Equation_Coefficients(chipeq(i),wvar, 0,lp)
+                  end if
                 end do
 
                 If (advect_reference_state) Then
@@ -239,7 +245,7 @@ Contains
                 Call add_implicit_term(peq, tvar, 0, amp,lp, static = .true.)            ! Gravity    --- Need LHS_Only Flag
 
                 do i = 1, n_active_scalars
-                  amp = -ref%chi_buoyancy_coeff(i,:)
+                  amp = -ref%chi_buoyancy_coeff(:,i)
                   Call add_implicit_term(peq, chiavar(i), 0, amp,lp, static = .true.)    ! Gravity    --- Need LHS_Only Flag
                 end do
 
@@ -298,7 +304,7 @@ Contains
 
                 ! Chi
                 do i = 1, n_active_scalars
-                  amp = -ref%chi_buoyancy_coeff(i,:)/H_Laplacian
+                  amp = -ref%chi_buoyancy_coeff(:,i)/H_Laplacian
                   If (pseudo_incompressible) Then
                       amp = amp*ref%exp_entropy
                   Endif
@@ -413,7 +419,6 @@ Contains
                     Call add_implicit_term(teq,wvar,0,amp,lp)
                 Endif
 
-
                 !CHIVAR equation ----  (no ell =0)
                 do i = 1, n_active_scalars
                   amp = 1.0d0
@@ -430,6 +435,11 @@ Contains
 
                   amp = H_Laplacian*kappa_chi_a(i,:)*diff_factor
                   Call add_implicit_term(chiaeq(i),chiavar(i), 0, amp,lp)
+
+                  if (chi_a_advect_reference_state(i)) then
+                    amp = H_Laplacian*ref%dchirefadr(:,i)
+                    Call add_implicit_term(chiaeq(i),wvar, 0, amp,lp)
+                  endif
                 end do
 
                 do i = 1, n_passive_scalars
@@ -447,6 +457,11 @@ Contains
 
                   amp = H_Laplacian*kappa_chi_p(i,:)*diff_factor
                   Call add_implicit_term(chipeq(i),chipvar(i), 0, amp,lp)
+
+                  if (chi_p_advect_reference_state(i)) then
+                    amp = H_Laplacian*ref%dchirefpdr(:,i)
+                    Call add_implicit_term(chipeq(i),wvar, 0, amp,lp)
+                  endif
                 end do
 
                 !=====================================================
