@@ -1933,7 +1933,7 @@ Contains
             Enddo
 
             ! determine which functions/constants were set by the user
-            chi_l_function_set(:,1:n_scalars) = fset(:,1:n_scalars)
+            chi_l_function_set(:,1:n_l_scalars) = fset(:,1:n_l_scalars)
             Do j = 1, n_l_scalars
                 Do i = 1, n_chi_constants
                     If ((cset(i,j) .eq. 1) .or. override_chi_l_constant(j,i) .or. override_constants) Then
