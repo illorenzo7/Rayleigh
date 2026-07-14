@@ -186,6 +186,7 @@ Contains
            SBUFFB(IDX2,wvar) = SBUFFB(IDX2,wvar)*over_l_l_plus1(m:l_max)
            END_DO
         Endif 
+        
         ! Now for the Z RHS, formed from the radial component of the curl of u dot grad u
         If (compressible) Then
             If (magnetism) Then

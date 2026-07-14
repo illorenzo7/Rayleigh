@@ -99,11 +99,11 @@ Contains
         Endif        
 
         numfields = n_equations + n_active_scalars + n_passive_scalars
-        if (magnetism) then
-          numfields = numfields + 2
-        end if
+        !if (magnetism) then
+        !  numfields = numfields + 2
+        !end if
         allocate(checkpoint_suffix(numfields*2))
-        
+        print *,numfields
         If (.not. compressible) Then 
             checkpoint_suffix(1:4) = (/ 'W     ', 'P     ', 'T     ', 'Z     '/)
             i = 4
