@@ -69,11 +69,17 @@ Module Controls
     Logical :: advect_reference_state = .true.  ! Set to true to advect the reference state temperature or entropy
                                                 ! This has no effect for adiabatic reference states.
                                                 ! Generally only do this if reference state is nonadiabatic
+    ! Nondimensional variables for the active/passive scalar fields
+
+    ! Allow up to 50 active/passive scalar fields
+    Integer, Parameter :: n_scalar_max = 50
 
     Logical :: compressible = .false.           !run compressible or not
     Integer :: n_active_scalars = 0         ! number of active scalar fields
     Integer :: n_passive_scalars = 0        ! number of passive scalar fields
 
+    Logical :: chi_a_advect_reference_state(1:n_scalar_max)  = .true.
+    Logical :: chi_p_advect_reference_state(1:n_scalar_max)  = .true.
 
     ! --- This flag determines if the code is run in benchmark mode
     !     0 (default) is no benchmarking.  1-5 are various accuracy benchmarks (see documentation)
@@ -99,7 +105,8 @@ Module Controls
                 & momentum_advection, inertia, coriolis, centrifugal, n_active_scalars, n_passive_scalars, &
                 & newtonian_cooling, newtonian_cooling_type, newtonian_cooling_time, &
                 & newtonian_cooling_tvar_amp, newtonian_cooling_profile_file, &
-                & pseudo_incompressible, compressible, pulse_freq, pulse_sharpness
+                & pseudo_incompressible, compressible, pulse_freq, pulse_sharpness, &
+                & chi_a_advect_reference_state, chi_p_advect_reference_state
 
     !///////////////////////////////////////////////////////////////////////////
     !   Temporal Controls
@@ -241,6 +248,8 @@ Contains
         pseudo_incompressible = .false.
         compressible = .false.
         advect_reference_state = .true.
+        chi_a_advect_reference_state = .true.
+        chi_p_advect_reference_state = .true.
         benchmark_mode = 0
         benchmark_integration_interval = -1
         benchmark_report_interval = -1

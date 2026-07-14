@@ -231,6 +231,7 @@ Contains
 
             Call Compute_Phi_Visc()
 
+
             If (debug) Then
                 Call Temperature_Diffusion()
                 Call Temperature_Heating()
@@ -256,13 +257,13 @@ Contains
 
             do i = 1, n_active_scalars
             Call chi_Advection(chiavar(i), dchiadr(i), dchiadt(i), dchiadp(i))
-            Call chi_Source_function(chiavar(i))
+            Call chi_Source_function(chiavar(i), ref%chi_a_source(:,i))
             end do
             do i = 1, n_passive_scalars
             Call chi_Advection(chipvar(i), dchipdr(i), dchipdt(i), dchipdp(i))
-            Call chi_Source_function(chipvar(i))
+            Call chi_Source_function(chipvar(i), ref%chi_p_source(:,i))
             end do
-        
+            
             If (viscous_heating) Call Compute_Viscous_Heating()
 
             Call Momentum_Advection_Radial()
@@ -454,16 +455,17 @@ Contains
     End Subroutine Volumetric_Heating
 
 
-    Subroutine chi_Source_Function(chivar)
+    Subroutine chi_Source_Function(chivar, source)
         Implicit None
-        Integer :: chivar
+        Integer, intent(in) :: chivar
+        Real*8, intent(in) :: source(:)
         Integer :: t,r,k
 
         !$OMP PARALLEL DO PRIVATE(t,r,k)
         Do t = my_theta%min, my_theta%max
             Do r = my_r%min, my_r%max
                 Do k =1, n_phi
-                    wsp%p3b(k,r,t,chivar) = wsp%p3b(k,r,t,chivar)+0.0d0  ! This is where you would put a source function
+                    wsp%p3b(k,r,t,chivar) = wsp%p3b(k,r,t,chivar)+source(r)
                 Enddo
             Enddo
         Enddo

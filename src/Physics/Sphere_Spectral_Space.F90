@@ -347,11 +347,17 @@ Contains
           Call Add_Derivative(chiaeq(i),chiavar(i),2,wsp%p1b,wsp%p1a,d2chiadr2(i))   
 
           Call Add_Derivative(weq,chiavar(i),0, wsp%p1b,wsp%p1a,chiavar(i))    ! gravity
+          If (chi_a_advect_reference_state(i)) Then
+            Call Add_Derivative(chiaeq(i),wvar,0,wsp%p1b,wsp%p1a,wvar)
+          Endif
         end do
         do i = 1, n_passive_scalars
           Call Add_Derivative(chipeq(i),chipvar(i),0,wsp%p1b,wsp%p1a,chipvar(i))       
           Call Add_Derivative(chipeq(i),chipvar(i),1,wsp%p1b,wsp%p1a,dchipdr(i))   
           Call Add_Derivative(chipeq(i),chipvar(i),2,wsp%p1b,wsp%p1a,d2chipdr2(i))   
+          If (chi_p_advect_reference_state(i)) Then
+            Call Add_Derivative(chipeq(i),wvar,0,wsp%p1b,wsp%p1a,wvar)
+          Endif
         end do
 
         !///////////////////////////////
