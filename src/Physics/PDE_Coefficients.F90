@@ -2433,7 +2433,7 @@ Contains
               If (kappa_chi_a_type(i) .eq. 3) Then
                   temp_chi_a_functions(:,2,i) = chi_a_functions(:,2,i)
                   temp_chi_a_functions(:,4,i) = chi_a_functions(:,4,i)
-                  temp_chi_a_constants(i,4) = chi_a_constants(i,4)
+                  temp_chi_a_constants(i,2) = chi_a_constants(i,2)
               Endif
             end do
 
@@ -2447,7 +2447,7 @@ Contains
               If (kappa_chi_p_type(i) .eq. 3) Then
                   temp_chi_p_functions(:,2,i) = chi_p_functions(:,2,i)
                   temp_chi_p_functions(:,4,i) = chi_p_functions(:,4,i)
-                  temp_chi_p_constants(i,4) = chi_p_constants(i,4)
+                  temp_chi_p_constants(i,2) = chi_p_constants(i,2)
               Endif
             end do
 
