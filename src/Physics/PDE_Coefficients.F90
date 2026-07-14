@@ -2069,7 +2069,7 @@ Contains
             Enddo
 
             Do i = 1, n_l_scalars
-                Do k = 1, n_chi_constants
+                Do k = 1, n_chi_functions
                     j = with_custom_chi_l_functions(i,k)
                     if ((j .gt. 0) .and. (j .le. n_chi_functions)) Then
                         If (chi_l_function_set(j,i) .eq. 1) Then
