@@ -106,18 +106,18 @@ Contains
         print *,numfields
         If (.not. compressible) Then 
             checkpoint_suffix(1:4) = (/ 'W     ', 'P     ', 'T     ', 'Z     '/)
-            i = 4
+            i = n_equations
             If (magnetism) Then
-            checkpoint_suffix(5:6) = (/'C     ', 'A     '/)
-            i = 6
+                checkpoint_suffix(5:6) = (/'C     ', 'A     '/)
+                i = n_equations
             Endif
 
         Else
             checkpoint_suffix(1:5) = (/ 'VR    ', 'VT    ', 'VP    ', 'T     ', 'RHO   '/)
-            i = 5
+            i = n_equations
             if (magnetism) then
                 checkpoint_suffix(6:7) = (/'C     ', 'A     '/)
-                i = 7
+                i = n_equations
             Endif
         Endif
 

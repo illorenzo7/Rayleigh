@@ -683,7 +683,7 @@ Contains
         END_DO
 
         !$OMP END PARALLEL DO
-
+        
         !$OMP PARALLEL DO PRIVATE(t,r,k)
 
         DO_IDX
@@ -693,7 +693,7 @@ Contains
         END_DO
 
         !$OMP END PARALLEL DO
-
+        
         !$OMP PARALLEL DO PRIVATE(t,r,k)
 
         DO_IDX
