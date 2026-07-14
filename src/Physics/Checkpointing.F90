@@ -97,31 +97,30 @@ Contains
             checkpoint_seconds = checkpoint_minutes*60
             checkpoint_interval = -1
         Endif        
-
-        numfields = n_equations + n_active_scalars + n_passive_scalars
+        
+        numfields = n_equations 
         !if (magnetism) then
         !  numfields = numfields + 2
         !end if
         allocate(checkpoint_suffix(numfields*2))
-        print *,numfields
+
+        print *, numfields, n_equations, n_active_scalars, n_passive_scalars
         If (.not. compressible) Then 
             checkpoint_suffix(1:4) = (/ 'W     ', 'P     ', 'T     ', 'Z     '/)
-            i = n_equations
+            i = 4
             If (magnetism) Then
                 checkpoint_suffix(5:6) = (/'C     ', 'A     '/)
-                i = n_equations
+                i = 6
             Endif
 
         Else
             checkpoint_suffix(1:5) = (/ 'VR    ', 'VT    ', 'VP    ', 'T     ', 'RHO   '/)
-            i = n_equations
+            i = 5
             if (magnetism) then
                 checkpoint_suffix(6:7) = (/'C     ', 'A     '/)
-                i = n_equations
+                i = 7
             Endif
         Endif
-
-
 
         do j = 1, n_active_scalars
           write(sstring,auto_fmt) (j)
