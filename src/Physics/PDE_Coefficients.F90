@@ -1907,21 +1907,24 @@ Contains
             Read(15) dummy ! n_chi_functions
             Read(15) n_scalars
             if (n_scalars .gt. n_l_scalars) then
-                Call stdout%print('ERROR: number of scalars in the custom reference file')
+                Call stdout%print('WARNING: number of scalars in the custom reference file')
                 Call stdout%print('exceeds the number of '//Adjustl(chi_l_type_str)//' scalars')
                 Call stdout%print('specified in main_input.')
-                Call stdout%print('Check your scalar custom reference file and main_input settings.')
+                Call stdout%print('Rayleigh will ignore the extra reference states specified in the file')
+                Call stdout%print('and assume that the first reference states specified correspond to the')
+                Call stdout%print('fields described in main_input.')
+                Call stdout%print('Please check your scalar custom reference file and main_input settings.')
             end if
             Read(15) ((cset(i, j), i = 1, n_chi_constants), j = 1, n_scalars)
             Read(15) ((fset(i, j), i = 1, n_chi_functions), j = 1, n_scalars)
             Read(15) ((input_constants(i, j), i = 1, n_chi_constants), j = 1, n_scalars)
             
-            ! Cset(i) is 1 if a constant(i) was set; it is 0 otherwise.
+            ! cset(i,j) is 1 if a constant(i) was set for scalar j; it is 0 otherwise.
             ! The logic below deals with a constant set in both the reference
             ! file and in main_input.  Main_input values take precedence if
             ! override_chi_a_constant(s) is set or if the reference file constant 
             ! was not set.
-            Do j = 1, n_scalars
+            Do j = 1, n_l_scalars
                 Do i = 1, n_chi_constants
                     If ( (.not. override_constants) .and. (.not. override_chi_l_constant(j,i)) ) Then
                         chi_l_constants(j,i) = chi_l_constants(j,i) + cset(i,j)*(input_constants(i,j)-chi_l_constants(j,i))
@@ -1931,7 +1934,7 @@ Contains
 
             ! determine which functions/constants were set by the user
             chi_l_function_set(:,1:n_scalars) = fset(:,1:n_scalars)
-            Do j = 1, n_scalars
+            Do j = 1, n_l_scalars
                 Do i = 1, n_chi_constants
                     If ((cset(i,j) .eq. 1) .or. override_chi_l_constant(j,i) .or. override_constants) Then
                         chi_l_constant_set(i,j) = 1
@@ -1940,7 +1943,7 @@ Contains
             Enddo
 
             ! Print the values of the constants
-            Do j = 1, n_scalars
+            Do j = 1, n_l_scalars
                 Do i = 1, n_chi_constants
                      If (my_rank .eq. 0) Then
                         Write(cind, '(I2)') i
@@ -2005,7 +2008,7 @@ Contains
                 Allocate(   rtmp2(1:n_r))
                 Allocate( rtmp(1:nr_ref))
 
-                Do k = 1, n_scalars
+                Do k = 1, n_l_scalars
                     Do j = 1, n_chi_functions
                         rtmp(:) = ref_arr_old(:,j,k)
                         rtmp2(:) = 0.0d0
@@ -2019,8 +2022,8 @@ Contains
             Else
 
                 ! Bit redundant here, but may want to do filtering on ref_arr array
-                chi_l_functions(1:n_r, 1:n_chi_functions, 1:n_scalars) = &
-                          ref_arr_old(1:n_r,1:n_chi_functions,1:n_scalars)
+                chi_l_functions(1:n_r, 1:n_chi_functions, 1:n_l_scalars) = &
+                          ref_arr_old(1:n_r,1:n_chi_functions,1:n_l_scalars)
 
                 If (my_rank .eq. 0) Then
                     call stdout%print(" WARNING:  nr = nr_old.  Assuming grids are the same.")
@@ -2032,8 +2035,7 @@ Contains
             ! not specified, then we compute it here.
             ! only calculate the log derivative if kappa_chi was set, otherwise there
             ! are divide by zero issues
-            n_scalars = n_active_scalars + n_passive_scalars
-            Do k = 1, n_scalars
+            Do k = 1, n_l_scalars
                 If ((fset(4,k) .eq. 0) .and. (fset(2,k) .eq. 1)) Then
                     Call log_deriv(chi_l_functions(:,2,k), chi_l_functions(:,4,k)) !dlnkappa_chi
                 Endif
@@ -2044,7 +2046,7 @@ Contains
 
         ! only used if user wants to change reference_type=1,2,3
         If (with_custom_reference) Then
-            Do i = 1, n_scalars
+            Do i = 1, n_l_scalars
                 Do k = 1, n_chi_constants
                     j = with_custom_chi_l_constants(i,k)
                     if ((j .gt. 0) .and. (j .le. n_chi_constants)) Then
@@ -2066,7 +2068,7 @@ Contains
                 Enddo
             Enddo
 
-            Do i = 1, n_scalars
+            Do i = 1, n_l_scalars
                 Do k = 1, n_chi_constants
                     j = with_custom_chi_l_functions(i,k)
                     if ((j .gt. 0) .and. (j .le. n_chi_functions)) Then
