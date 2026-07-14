@@ -460,9 +460,9 @@ Contains
             emftheta = cvar
             emfphi   = avar+1
             ! seven RHS's (plus scalars) go back for the solve (1 field is differentiated and combined at the end)
-            wsfcount(1,2) = n_equations + n_active_scalars + n_passive_scalars 
-            wsfcount(2,2) = n_equations + n_active_scalars + n_passive_scalars 
-            wsfcount(3,2) = n_equations + n_active_scalars + n_passive_scalars 
+            wsfcount(1,2) = n_equations + 1 + n_active_scalars + n_passive_scalars 
+            wsfcount(2,2) = n_equations + 1 + n_active_scalars + n_passive_scalars 
+            wsfcount(3,2) = n_equations + 1 + n_active_scalars + n_passive_scalars 
         endif
 
 

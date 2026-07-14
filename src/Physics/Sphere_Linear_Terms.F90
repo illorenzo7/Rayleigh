@@ -647,7 +647,6 @@ Contains
 
             Endif
 
-            If (.not. compressible) Call Set_Boundary_Conditions(lp)
             If (compressible) Call Set_Boundary_Conditions_Compressible(lp)
 
             If (sparsesolve) Then
