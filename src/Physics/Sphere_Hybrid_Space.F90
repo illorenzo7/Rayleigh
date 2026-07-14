@@ -75,7 +75,8 @@ Contains
         Call Allocate_rlm_Field(ftemp1)
         Call Allocate_rlm_Field(ftemp2)
 
-        If (output_iteration) Call Hybrid_Output_Initial()
+        !Come back to this 
+        !If (output_iteration) Call Hybrid_Output_Initial()
         
         If (compressible) Then
            ! First theta-derivatives...
@@ -186,7 +187,7 @@ Contains
            SBUFFB(IDX2,wvar) = SBUFFB(IDX2,wvar)*over_l_l_plus1(m:l_max)
            END_DO
         Endif 
-        
+
         ! Now for the Z RHS, formed from the radial component of the curl of u dot grad u
         If (compressible) Then
             If (magnetism) Then

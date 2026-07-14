@@ -139,7 +139,6 @@ Contains
             Call d_by_dx(avar,d2adr2,wsp%p1a,2)! 2nd derivative will be overwritten with dadr
             Call Add_Derivative(aeq,avar,2,wsp%p1b,wsp%p1a,d2adr2)
             Call d_by_dx(avar,dadr,wsp%p1a,1)
-
             Call Add_Derivative(aeq,avar,0,wsp%p1b,wsp%p1a,avar)
 
             !///////////////////
@@ -522,7 +521,7 @@ Contains
             ! A-terms (Toroidal magnetic field)
 
             Call Add_Derivative(aeq,avar,0,wsp%p1b,wsp%p1a,avar)
-
+            
             !///////////////////
             ! C-terms (Poloidal magnetic field)
 

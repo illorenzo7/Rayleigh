@@ -45,7 +45,7 @@ Module Sphere_Physical_Space
     Real*8, Allocatable :: work(:,:,:)
     Logical :: vars_allocated = .false.
     Integer, Parameter :: e_rr = 1, e_tt = 2, e_pp = 3
-    Integer, Parameter :: e_rt = 4, e_rp = 4, e_tp = 5
+    Integer, Parameter :: e_rt = 4, e_rp = 5, e_tp = 6
     Logical :: debug = .false.
 
 Contains
@@ -124,7 +124,7 @@ Contains
             Allocate(phi_visc(1:n_phi,my_r%min:my_r%max,my_theta%min:my_theta%max))
             Allocate(gnu(1:n_phi,my_r%min:my_r%max,my_theta%min:my_theta%max,1:4))
             Allocate(gkappa(1:n_phi,my_r%min:my_r%max,my_theta%min:my_theta%max,1:4))
-            Allocate(str(1:n_phi,my_r%min:my_r%max,my_theta%min:my_theta%max,1:5))
+            Allocate(str(1:n_phi,my_r%min:my_r%max,my_theta%min:my_theta%max,1:6))
             Allocate(csquared(1:n_phi+2,my_r%min:my_r%max,my_theta%min:my_theta%max))
             csquared = Zero
             Allocate(work(1:n_phi,my_r%min:my_r%max,my_theta%min:my_theta%max))
@@ -1594,7 +1594,7 @@ Contains
                 ovt2  = Max(ovt2,ovrt2)
             Enddo
         Endif 
-        
+
         If (magnetism) Then
             ! Check on alfven speed as well
             Do r = my_r%min, my_r%max
@@ -1621,8 +1621,8 @@ Contains
         Implicit None
         !Copy everything from out auxiliary output buffer into the main buffer
 
-        wsp%p3a(:,:,:,dpdr) = cobuffer%p3a(:,:,:,dpdr_cb)
-        wsp%p3a(:,:,:,dpdt) = cobuffer%p3a(:,:,:,dpdt_cb)
+        !wsp%p3a(:,:,:,dpdr) = cobuffer%p3a(:,:,:,dpdr_cb)
+        !wsp%p3a(:,:,:,dpdt) = cobuffer%p3a(:,:,:,dpdt_cb)
 
         If (magnetism) Then
             wsp%p3a(:,:,:,dbrdr) = cobuffer%p3a(:,:,:,dbrdr_cb)

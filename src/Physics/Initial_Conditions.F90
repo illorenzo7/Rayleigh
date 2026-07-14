@@ -269,7 +269,7 @@ Contains
 
         ! This routine also reads in the relevant magnetic quantities
         ! They are overwritten later by whatever the magnetic initialization does
-        numfields = 4 + n_active_scalars + n_passive_scalars
+        numfields = n_equations + n_active_scalars + n_passive_scalars
         if (magnetism) then
           numfields = numfields + 2
         end if
@@ -292,15 +292,22 @@ Contains
 
         If (rescale_velocity) Then
             euler_step = .true.
-            tempfield%p1a(:,:,:,wvar) = tempfield%p1a(:,:,:,wvar)*velocity_scale
-            tempfield%p1a(:,:,:,zvar) = tempfield%p1a(:,:,:,zvar)*velocity_scale
+            If (compressible) Then
+                tempfield%p1a(:,:,:,vr) = tempfield%p1a(:,:,:,vr)*velocity_scale
+                tempfield%p1a(:,:,:,vtheta) = tempfield%p1a(:,:,:,vtheta)*velocity_scale
+                tempfield%p1a(:,:,:,vphi) = tempfield%p1a(:,:,:,vphi)*velocity_scale
+            Else 
+                tempfield%p1a(:,:,:,wvar) = tempfield%p1a(:,:,:,wvar)*velocity_scale
+                tempfield%p1a(:,:,:,zvar) = tempfield%p1a(:,:,:,zvar)*velocity_scale
+            Endif 
+            
             wsp%p1b(:,:,:,:) = 0.0d0
-
             If (my_rank .eq. 0) Then
                 Write(scstr,scfmt)velocity_scale
                 Call stdout%print(" Rescaling velocity field by: "//scstr)
             Endif
         Endif
+
         If (rescale_bfield) Then
             euler_step = .true.
             tempfield%p1a(:,:,:,cvar) = tempfield%p1a(:,:,:,cvar)*bfield_scale

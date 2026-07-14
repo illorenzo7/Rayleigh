@@ -293,7 +293,7 @@ Contains
         read_var(:) = 0
         If (magnetism) Then
             ! hydro, magnetic, or both sets of field can be read
-            ab_offset = 7 + n_active_scalars + n_passive_scalars
+            ab_offset = n_equations + 1 + n_active_scalars + n_passive_scalars
             read_var(1:4)   = read_hydro
             read_var(ab_offset:ab_offset+3)  = read_hydro
             read_var(5:6)   = read_magnetism
