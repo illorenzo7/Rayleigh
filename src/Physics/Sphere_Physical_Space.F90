@@ -208,7 +208,7 @@ Contains
         Call Benchmark_Checkup(wsp%p3a, iteration,simulation_time)
         !////////////////////////////////////////////////////////////////////////
 
-
+        if (compressible) Call Compute_Sound_Speed
         Call Find_MyMinDT()    ! Piggyback CFL communication on transposes
 
 
@@ -693,7 +693,7 @@ Contains
         END_DO
 
         !$OMP END PARALLEL DO
-        
+
         !$OMP PARALLEL DO PRIVATE(t,r,k)
 
         DO_IDX
@@ -1576,13 +1576,25 @@ Contains
         Call StopWatch(ts_time)%startclock()
 
         ovt2 = 0.0d0    ! "over t squared"
-        Do r = my_r%min, my_r%max
-            ovht2 = Maxval(wsp%p3a(:,r,:,vtheta)**2+wsp%p3a(:,r,:,vphi)**2) &
-                                *OneOverRSquared(r)*l_l_plus1(l_max) ! horizontal
-            ovt2  = Max(ovt2, ovht2)
-            ovrt2 = Maxval(wsp%p3a(:,r,:,vr)**2)/(delta_r(r)**2)    ! radial
-            ovt2  = Max(ovt2,ovrt2)
-        Enddo
+        If (compressible) Then
+            Do r = my_r%min, my_r%max
+                ovht2 = Maxval(csquared(:,r,:)**2 + wsp%p3a(:,r,:,vtheta)**2+wsp%p3a(:,r,:,vphi)**2) &
+                                    *OneOverRSquared(r)*l_l_plus1(l_max) ! horizontal
+                ovt2  = Max(ovt2, ovht2)
+                ovrt2 = Maxval(csquared(:,r,:)**2+wsp%p3a(:,r,:,vr)**2)/(delta_r(r)**2)    ! radial
+                ovt2  = Max(ovt2,ovrt2)
+            Enddo
+
+        Else            
+            Do r = my_r%min, my_r%max
+                ovht2 = Maxval(wsp%p3a(:,r,:,vtheta)**2+wsp%p3a(:,r,:,vphi)**2) &
+                                    *OneOverRSquared(r)*l_l_plus1(l_max) ! horizontal
+                ovt2  = Max(ovt2, ovht2)
+                ovrt2 = Maxval(wsp%p3a(:,r,:,vr)**2)/(delta_r(r)**2)    ! radial
+                ovt2  = Max(ovt2,ovrt2)
+            Enddo
+        Endif 
+        
         If (magnetism) Then
             ! Check on alfven speed as well
             Do r = my_r%min, my_r%max
