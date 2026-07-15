@@ -2375,6 +2375,7 @@ class Shell_Spectra:
     --on the global grid that runs from 1 through N_R.
     """
 
+    print("Brads version of Shell_Spectra")
     def print_info(self):
         """ Prints all metadata associated with the shell-spectra object."""
         print( 'version  : ', self.version)
