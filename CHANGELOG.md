@@ -21,6 +21,8 @@ This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 
 - Fixed a bug in rayleigh_diagnostics.py (Shell_Slices). The time and iteration number were read incorrectly if the user specified that only a single shell slice be read (a single iteration, a single quantity code, and a single radius). The code did not skip to the end of the record to read the time and iteration number.  \[Brad Hindman; 6-13-202; [#612](https://github.com/geodynamics/Rayleigh/pull/612)\]
 
+- Rayleigh no longer produces a segmentation fault if all theta values local to a particular process are requested for the Point_Probe output. \[Nick Featherstone; 7-16-2026; [#622](https://github.com/geodynamics/Rayleigh/pull/622)\]
+
 ## [1.3.0] - 5-8-2026
 
 ### Added
