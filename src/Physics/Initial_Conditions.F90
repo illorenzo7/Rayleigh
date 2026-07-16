@@ -175,6 +175,7 @@ Contains
                 Call stdout%print(" ---- Hydro Init Type    : Benchmark (Jones et al. 2011) ")
             Endif
         Endif
+
         If (init_Type .eq. 7) Then
             If (my_rank .eq. 0) Then
                 Call stdout%print(" ---- Hydro Init Type    : Random Thermal Field ")
@@ -187,6 +188,13 @@ Contains
                 call stdout%print(" ---- Hydro Init Type    : Input File ")
             Endif
             call file_init()
+        Endif
+
+        if (init_type .eq. 9) then
+            If (my_rank .eq. 0) Then
+                call stdout%print(" ---- Hydro Init Type Compressible    : Benchmark (Jones et al. 2011) ")
+            Endif
+            call Compressible_Init_Hydro()
         Endif
 
         if (init_type .eq. 42) Then
@@ -861,6 +869,73 @@ Contains
 
         Call tempfield%deconstruct('p1b')
     End Subroutine Benchmark_Init_Hydro
+
+    Subroutine Compressible_Init_Hydro()
+        Implicit None
+        Real*8, Allocatable :: rfunc1(:), rfunc2(:)
+        Real*8 :: norm
+        Integer :: r, l, m, mp
+        Integer :: fcount(3,2)
+        type(SphericalBuffer) :: tempfield
+        fcount(:,:) = 2
+
+        Allocate(rfunc1(my_r%min: my_r%max))
+        Allocate(rfunc2(my_r%min: my_r%max))
+        !!!!!!!!!
+        temp_amp = 0.0d0
+
+        norm = 2.0d0*Pi/(radius(1)-radius(N_R))
+        Do r = my_r%min, my_r%max
+            
+            rfunc2(r) = T_bottom*((radius(N_R)/radius(r) - radius(N_R)/radius(1))/(1-radius(N_R)/radius(1)))
+
+            rfunc1(r) = (1.0d0-Cos(norm*(radius(r)-radius(N_R))))*temp_amp
+        Enddo
+
+        ! We put our temporary field in spectral space
+        Call tempfield%init(field_count = fcount, config = 's2b')
+        Call tempfield%construct('s2b')
+
+        ! Set the ell = 0 temperature and the real part of Y_19^19    and Y_1_1
+        Do mp = my_mp%min, my_mp%max
+            m = m_values(mp)
+            tempfield%s2b(mp)%data(:,:,:,:) = 0.0d0
+            Do l = m, l_max
+                if ( (l .eq. 19) .and. (m .eq. 19) ) Then
+                    Do r = my_r%min, my_r%max
+                        tempfield%s2b(mp)%data(l,r,1,1) = rfunc1(r)
+                    Enddo
+                endif
+                if ( (l .eq. 1) .and. (m .eq. 1) ) Then
+                    Do r = my_r%min, my_r%max
+                        tempfield%s2b(mp)%data(l,r,1,1) = rfunc1(r)*0.1d0
+                    Enddo
+                endif
+                if ( (l .eq. 0) .and. (m .eq. 0) ) Then
+                    Do r = my_r%min, my_r%max
+                        tempfield%s2b(mp)%data(l,r,1,1) = (ref%temperature(r) + rfunc2(r))*sqrt(4.0d0*pi)
+                        tempfield%s2b(mp)%data(l,r,1,2) = (ref%density(r))*sqrt(4.0d0*pi)
+                    Enddo
+                endif
+            Enddo
+        Enddo
+        DeAllocate(rfunc1,rfunc2)
+
+        Call tempfield%reform() ! goes to p1b
+        If (chebyshev) Then
+            ! we need to load the chebyshev coefficients, and not the physical representation into the RHS
+            Call tempfield%construct('p1a')
+            Call gridcp%to_Spectral(tempfield%p1b,tempfield%p1a)
+            tempfield%p1b(:,:,:,:) = tempfield%p1a(:,:,:,:)
+            Call tempfield%deconstruct('p1a')
+        Endif
+
+        ! Set temperature.  Leave the other fields alone
+        Call Set_RHS(teq,tempfield%p1b(:,:,:,1))
+        Call Set_RHS(rhoeq,tempfield%p1b(:,:,:,2))
+        Call tempfield%deconstruct('p1b')
+    End Subroutine Compressible_Init_Hydro 
+
 
     Subroutine ABenchmark_Init_Hydro()
         Implicit None

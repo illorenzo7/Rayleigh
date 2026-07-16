@@ -62,6 +62,7 @@ Module Controls
     Logical :: Rotation = .false.           ! Rotate or not
     Logical :: Coriolis = .false.            ! turn off or on
     Logical :: Centrifugal = .false.         ! turn off or on
+    Logical :: Gravity = .false.            ! Turn off or on. Specifically for compressible case
     Logical :: lorentz_forces = .true.      ! Turn Lorentz forces on or off (default is on - as long as magnetism is on)
     Logical :: viscous_heating = .true.     ! Turns viscous heating on/off
     Logical :: ohmic_heating = .true.
@@ -87,7 +88,7 @@ Module Controls
     Integer :: benchmark_integration_interval = -1 ! manual override of integration_interval
     Integer :: benchmark_report_interval = -1      ! and report interval in Benchmarking.F90 (for debugging)
 
-
+    Real*8 :: R_gas = -1 !erg/g/K
     Real*8 :: pulse_freq = 3.14d0
     Real*8 :: pulse_sharpness = 0.01d0
 
@@ -102,10 +103,10 @@ Module Controls
     Namelist /Physical_Controls_Namelist/ magnetism, nonlinear, rotation, lorentz_forces, &
                 & viscous_heating, ohmic_heating, advect_reference_state, benchmark_mode, &
                 & benchmark_integration_interval, benchmark_report_interval, &
-                & momentum_advection, inertia, coriolis, centrifugal, n_active_scalars, n_passive_scalars, &
+                & momentum_advection, inertia, coriolis, centrifugal, gravity, n_active_scalars, n_passive_scalars, &
                 & newtonian_cooling, newtonian_cooling_type, newtonian_cooling_time, &
                 & newtonian_cooling_tvar_amp, newtonian_cooling_profile_file, &
-                & pseudo_incompressible, compressible, pulse_freq, pulse_sharpness, &
+                & pseudo_incompressible, compressible, R_gas, pulse_freq, pulse_sharpness, &
                 & chi_a_advect_reference_state, chi_p_advect_reference_state
 
     !///////////////////////////////////////////////////////////////////////////

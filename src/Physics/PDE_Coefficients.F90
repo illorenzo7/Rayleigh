@@ -45,10 +45,12 @@ Module PDE_Coefficients
 
 
     ! The following derived type (the lone instance of which is "ref") is used by the code to access the PDE coefficients
-    Type ReferenceInfo
+    Type ReferenceInfo 
+        Real*8, Allocatable :: gravity(:)
         Real*8, Allocatable :: Density(:)
         Real*8, Allocatable :: dlnrho(:)
         Real*8, Allocatable :: d2lnrho(:)
+
 
         Real*8, Allocatable :: Temperature(:)
         Real*8, Allocatable :: dlnT(:)
@@ -317,11 +319,13 @@ Contains
         Allocate(ref%ohmic_amp(1:N_R))
         Allocate(ref%viscous_amp(1:N_R))
         Allocate(ref%heating(1:N_R))
+        If (compressible) Allocate(ref%gravity(1:N_R))
         Allocate(ref%chi_buoyancy_coeff(1:N_R,n_active_scalars))
         Allocate(ref%chi_a_source(1:N_R,n_active_scalars))
         Allocate(ref%chi_p_source(1:N_R,n_passive_scalars))
         Allocate(ref%dchirefadr(1:N_R,n_active_scalars))
         Allocate(ref%dchirefpdr(1:N_R,n_passive_scalars))
+        
 
         Allocate(ra_constant_set(1:n_ra_constants))
         ra_constant_set = 0
@@ -1066,7 +1070,7 @@ Contains
         !-----------------------------------------------------------
         ! allocate and define zeta
         ! also rho_c, T_c, P_c
-
+        
         Allocate(zeta(N_R), gravity(1:N_R))
         Allocate(dlnzeta(1:N_R), d2lnzeta(1:N_R))
 
@@ -1090,12 +1094,12 @@ Contains
         ! The following is needed to calculate the entropy gradient
         volume_specific_heat = pressure_specific_heat / Specific_Heat_Ratio
 
-        Ref%Density = rho_c * zeta**poly_n
+        Ref%Density = rho_c !* zeta**poly_n
 
         Ref%dlnrho = - poly_n * c1 * d / (zeta * Radius**2)
         Ref%d2lnrho = - Ref%dlnrho*(2.0d0/Radius-c1*d/zeta/Radius**2)
 
-        Ref%Temperature = T_c * zeta
+        Ref%Temperature = T_c !* zeta
         Ref%dlnT = dlnzeta
 
 	! Set the entropy to zero at the upper surface
@@ -1105,6 +1109,17 @@ Contains
         Ref%dsdr = volume_specific_heat * (Ref%dlnT - (Specific_Heat_Ratio - 1.0d0) * Ref%dlnrho)
         ref%dsdr_over_cp = ref%dsdr/pressure_specific_heat
         ref%d2s_over_cp = (1.0d0/specific_heat_ratio)*(d2lnzeta - (specific_heat_ratio - 1.0d0) * ref%d2lnrho)
+
+        If (compressible) Then
+            Ref%gravity = gravity
+            If (R_gas .gt. 0) Then 
+                bigZ = R_gas / (gas_gamma - 1)
+            Else
+                bigZ = bigZ 
+            EndIf
+        EndIf
+
+        
 
         Ref%Buoyancy_Coeff = gravity/Pressure_Specific_Heat*ref%density
 
