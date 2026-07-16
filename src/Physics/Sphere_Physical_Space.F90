@@ -1275,6 +1275,7 @@ Contains
         !$OMP END PARALLEL DO
     End Subroutine Density_Advection
 
+    
     Subroutine Density_Compression()
         Implicit None
         Integer :: t, r,k
