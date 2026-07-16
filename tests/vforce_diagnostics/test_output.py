@@ -39,12 +39,12 @@ if regen:
   with open("gavgs.json", "w", encoding='utf-8') as f:
     json.dump(gavgs, f)
 
-# ptps = get_results(Point_Probes, 'Point_Probes')
+ptps = get_results(Point_Probes, 'Point_Probes')
 
-# if regen:
-#   # write results
-#   with open("ptps.json", "w", encoding='utf-8') as f:
-#     json.dump(ptps, f)
+if regen:
+  # write results
+  with open("ptps.json", "w", encoding='utf-8') as f:
+    json.dump(ptps, f)
 
 if regen: sys.exit(0)
 
@@ -65,7 +65,7 @@ def check_results(results, filename, tol=1.e-10):
   return error
 
 error = check_results(gavgs, "gavgs.json")
-# error = check_results(ptps, "ptps.json") or error
+error = check_results(ptps, "ptps.json") or error
 
 if error: sys.exit(1)
 sys.exit(0)
