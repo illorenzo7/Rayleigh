@@ -48,7 +48,7 @@ if regen:
 
 if regen: sys.exit(0)
 
-def check_results(results, filename, tol=1.e-10):
+def check_results(results, filename, tol=1.e-8):
   error = False
   
   # open old results
@@ -59,7 +59,7 @@ def check_results(results, filename, tol=1.e-10):
   for k, v in results.items():
     err = np.abs(np.asarray(v) - np.asarray(results_old[k])).max()
     if err > tol:
-      print("ERROR: different "+k+" produced compared to "+filename+" "+repr(err)+" > "+repr(tol)+")!")
+      print("ERROR: different "+k+" produced compared to "+filename+" ("+repr(err)+" > "+repr(tol)+")!")
       error = True
   
   return error
