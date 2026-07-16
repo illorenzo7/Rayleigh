@@ -1118,7 +1118,7 @@ Contains
                 bigZ = bigZ 
             EndIf
         EndIf
-
+        Write(6, *) "TC", T_c
         
 
         Ref%Buoyancy_Coeff = gravity/Pressure_Specific_Heat*ref%density

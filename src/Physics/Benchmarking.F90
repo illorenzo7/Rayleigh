@@ -343,8 +343,8 @@ Contains
             no_slip_boundaries = .false.
             strict_L_Conservation = .false.
             dtdr_bottom = 0.0d0
-            T_Top    = 0.0d0
-            T_Bottom = 0.0d0 !42.34d2
+            T_Top    = 111577.0d0
+            T_Bottom = 111577.0d0 !42.34d2
             fix_tvar_top = .true.
             fix_tvar_bottom = .true.
             fix_dtdr_bottom = .false.

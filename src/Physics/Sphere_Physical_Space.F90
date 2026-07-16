@@ -233,7 +233,7 @@ Contains
             Write(6, *) "NU, " ,Maxval(RHSP)
 
             Call Compute_Phi_Visc()
-            Write(6, *) "PHI VISC, " ,Maxval(RHSP)
+            Write(6, *) "PHI VISC, ", Maxval(RHSP)
 
             If (debug) Then
                 Call Temperature_Diffusion()
@@ -1264,7 +1264,7 @@ Contains
         ! Checked:
         !           Nick (8/20/19)
         !          
-        Write(6, *) "MIN:MAX DENSITY FIELD", Maxval()
+        !Write(6, *) "MIN:MAX dhroFIELD", Maxval(FIELDSP(:, :, :, drhodr)), Minval(FIELDSP(:, :, :, drhodr))
         !$OMP PARALLEL DO PRIVATE(t,r,k)
         DO_IDX
             RHSP(IDX,rhovar) = -FIELDSP(IDX,vr)*FIELDSP(IDX,drhodr)    &
@@ -1374,6 +1374,15 @@ Contains
         !    
 
         kcoeff = gas_gamma/Prandtl_Number
+        !Write(6, *) "KCOEFF: gasgamma:prandtl", kcoeff, gas_gamma, Prandtl_Number
+
+        !Write(6, *) "kappa value", gkappa(:, :, :, 1)
+        !Write(6, *) "kappa deriv 1", gkappa(:, :, :, 2)
+        !Write(6, *) "kappa deriv 3", gkappa(:, :, :, 3)
+        !Write(6, *) "kappa deriv 4", gkappa(:, :, :, 4)
+        !Write(6, *) "d2tdr2 Min:max", FIELDSP(:, :, :, d2tdr2)
+        !Write(6, *) "dtdr Min:max", FIELDSP(:, :, :, dtdr)
+        !Write(6, *) "htvar Min:max", FIELDSP(:, :, :, htvar)
 
         If (ddebug) Then
             DO_IDX
