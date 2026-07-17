@@ -1436,7 +1436,12 @@ Contains
     Subroutine Enforce_Boundary_Conditions()
         Implicit None
 
-        Call Apply_Boundary_Mask(bc_values)
+        If (compressible) Then
+            Call Apply_Boundary_Mask(bc_values, skip_eq = rhoeq)
+        Else 
+            Call Apply_Boundary_Mask(bc_values)
+        Endif 
+        
         Call Domain_Continuity()
 
     End Subroutine Enforce_Boundary_Conditions

@@ -224,31 +224,44 @@ Contains
         !Brandon 
         If (compressible) Then
             Call Compute_DivU()
+            !Write(6, *) "DIVU,", Maxval(RHSP)
             Call Compute_Strain_Rate()
-
+            !Write(6, *) "STR, ",Maxval(RHSP)
             Call Compute_Grad_Kappa()
+            !Write(6, *) "KAPPA, ",Maxval(RHSP)
             Call Compute_Grad_Nu()
+            !Write(6, *) "NU, " ,Maxval(RHSP)
 
             Call Compute_Phi_Visc()
-
+            !Write(6, *) "PHI VISC, ", Maxval(RHSP)
 
             If (debug) Then
                 Call Temperature_Diffusion()
-                Call Temperature_Heating()
+                !Call Temperature_Heating()
             Else
                 Call Temperature_Advection_Compressible()
+                !Write(6, *) "TEP ADVECT COMP, ", Maxval(RHSP)
                 Call Temperature_Compression()
+                !Write(6, *) "TEMP COMPRESSIBLE, ", Maxval(RHSP)
                 Call Temperature_Diffusion()
-                Call Temperature_Heating()
+                !Write(6, *) "TEMP DIFFUSION,", Maxval(RHSP)
+                !Call Temperature_Heating()
                 Call Temperature_Viscous_Heating()
+                !Write(6, *) "TEMP VISCSOUS HEAT,", Maxval(RHSP)
 
                 Call Density_Advection()
+                !Write(6, *) "DENSITY ADVECT", Maxval(RHSP)
                 Call Density_Compression()
+                !Write(6, *) "DENSITY COMPRESS", Maxval(RHSP)
 
                 Call Velocity_Advection()
-                Call Velocity_Diffusion()
+                !Write(6, *) "VELCOITY ADVECT", Maxval(RHSP)
+                !Call Velocity_Diffusion()
+                !Write(6, *) "VELOCITY DIFFUSE", Maxval(RHSP)
                 Call Pressure_Force()
+                !Write(6, *) "PRESSURE FORCE", Maxval(RHSP)
                 
+                If (gravity) Call Compute_Gravity()
                 If (rotation) Call Coriolis_Centrifugal()
             Endif
         Else
@@ -891,6 +904,12 @@ Contains
 
         ! Add advection terms to RHS of vr, vtheta, and vphi equations
 
+        !Write(6, *) "Vr Max:min", Maxval(FIELDSP(:, :, :, vr)), Minval(FIELDSP(:, :, :, vr))
+        !Write(6, *) "Vtheta Max:min", Maxval(FIELDSP(:, :, :, vtheta)), Minval(FIELDSP(:, :, :, vtheta))
+        !Write(6, *) "Vphi Max:min", Maxval(FIELDSP(:, :, :, vphi)), Minval(FIELDSP(:, :, :, vphi))
+
+
+
         ! Radial component:  -[u dot grad u]_r
         !$OMP PARALLEL DO PRIVATE(t,r,k)
         DO_IDX
@@ -934,8 +953,9 @@ Contains
         !           Nick (8/20/19)
 
 
-
+        
         gfactor = (1.0-gas_gamma)*bigz
+
 
         ! Radial component
         !$OMP PARALLEL DO PRIVATE(t,r,k)
@@ -944,6 +964,14 @@ Contains
                                         +FIELDSP(IDX,tvar)*FIELDSP(IDX,drhodr))
         END_DO
         !$OMP END PARALLEL DO
+
+        If (Remove_Reference) Then     
+            !$OMP PARALLEL DO PRIVATE(t,r,k)       
+            DO_IDX
+                RHSP(IDX,vr) = RHSP(IDX,vr) - gfactor*(ref%dT(r) +  ref%temperature(r)*ref%dlnrho(r))
+            END_DO
+            !$OMP END PARALLEL DO
+        EndIf
 
         ! Theta component
         !$OMP PARALLEL DO PRIVATE(t,r,k)
@@ -983,7 +1011,6 @@ Contains
         
         ! Checked:
         !           Nick (8/27/2019)
-
 
         ! RADIAL DIFFUSION
         ! 1st:  nu*Del^2 {u_r}  (  NOT nu*[ Del^2{u} ]_r )
@@ -1169,8 +1196,9 @@ Contains
         Integer :: t, r,k
         ! Coriolis and centrifugal terms that appear on RHS of v-equations
         ! Checked:
-        !           Nick (8/20/2019)
-        
+        !           Nick (8/20/2019) 
+
+
         If (coriolis) Then
             ! Coriolis:  Radial
             ! [- z_hat cross u ]_r =  sintheta u_phi
@@ -1227,6 +1255,20 @@ Contains
 
     End Subroutine Coriolis_Centrifugal
 
+    Subroutine Compute_Gravity()
+        Implicit None
+        Integer :: t, r,k
+        ! compressible gravity term that is solved explicitly 
+
+        ! Gravity yerm:  Radial
+        !$OMP PARALLEL DO PRIVATE(t,r,k)
+        DO_IDX
+            RHSP(IDX,vr) = RHSP(IDX,vr) - ref%gravity(r) 
+        END_DO
+        !$OMP END PARALLEL DO
+
+    End Subroutine Compute_Gravity
+
     Subroutine Density_Advection()
         Implicit None
         Integer :: t, r,k
@@ -1236,7 +1278,7 @@ Contains
         ! Checked:
         !           Nick (8/20/19)
         !          
-
+        !Write(6, *) "MIN:MAX dhroFIELD", Maxval(FIELDSP(:, :, :, drhodr)), Minval(FIELDSP(:, :, :, drhodr))
         !$OMP PARALLEL DO PRIVATE(t,r,k)
         DO_IDX
             RHSP(IDX,rhovar) = -FIELDSP(IDX,vr)*FIELDSP(IDX,drhodr)    &
@@ -1310,6 +1352,7 @@ Contains
         zfactor = 1.0d0/bigz
         ! Add the PHI term to the temperature equation
         !$OMP PARALLEL DO PRIVATE(t,r,k)
+
         DO_IDX
             RHSP(IDX,tvar) = RHSP(IDX,tvar) +zfactor*Phi_Visc(IDX)
         END_DO
@@ -1324,11 +1367,11 @@ Contains
         ! Checked:
         !           Nick (8/20/19)
         !    
-    
+
         gfactor = 1.0D0-gas_gamma
         !$OMP PARALLEL DO PRIVATE(t,r,k)
         DO_IDX
-            RHSP(IDX,tvar) = RHSP(IDX,tvar) + gfactor*RHSP(IDX,tvar)*divu(IDX,1)! + div V term
+            RHSP(IDX,tvar) = RHSP(IDX,tvar) + gfactor*FIELDSP(IDX,tvar)*divu(IDX,1)! + div V term
         END_DO
         !$OMP END PARALLEL DO
     End Subroutine Temperature_Compression
@@ -1337,7 +1380,7 @@ Contains
         Implicit None
         Integer :: t, r,k
         Integer :: dtdtdt, dtdpdp
-        Real*8  ::kcoeff
+        Real*8  :: kcoeff
         Logical :: ddebug=.false.
         ! Add the diffusion term to the temperature equation
         ! Checked:
@@ -1347,7 +1390,6 @@ Contains
         kcoeff = gas_gamma/Prandtl_Number
 
         If (ddebug) Then
-
             DO_IDX
                 RHSP(IDX,tvar) = kcoeff*gkappa(IDX,1)*( &
                     Two_Over_R(r)*FIELDSP(IDX,dtdr)+FIELDSP(IDX,d2tdr2) &
@@ -1369,6 +1411,14 @@ Contains
         END_DO
         !$OMP END PARALLEL DO
 
+        If (Remove_Reference) Then
+            !$OMP PARALLEL DO PRIVATE(t,r,k)
+            DO_IDX
+                RHSP(IDX,tvar) = RHSP(IDX,tvar) - kcoeff*gkappa(IDX,1)*(ref%d2T(r) + 2*ref%dT(r)/radius(r) + ref%dlnrho(r)*ref%dT(r)) &
+                 - kcoeff*gkappa(IDX,2)*ref%dT(r)
+            END_DO
+            !$OMP END PARALLEL DO
+        EndIf
 
         !kcoeff = 0.0d0
         ! Grad T dot Grad Kappa
@@ -1406,10 +1456,16 @@ Contains
         ! For now, we set it (nondimensional kappa) to 1
         ! Checked:
         !           Nick (8/20/19)
-        !    
+ 
+        !nondimensional version
+        !gkappa(:,:,:,1) = One
+        !gkappa(:,:,:,2:4) = Zero
 
-        gkappa(:,:,:,1) = One
-        gkappa(:,:,:,2:4) = Zero
+        Do r = my_r%min, my_r%max
+            gkappa(:,r,:,1) = kappa(r)
+            gkappa(:,r,:,2) = kappa(r)*dlnkappa(r)
+            gkappa(:,r,:,3:4) = Zero
+        Enddo
         
     End Subroutine Compute_Grad_Kappa
 
@@ -1423,8 +1479,15 @@ Contains
         !           Nick (8/20/19)
         !    
 
-        gnu(:,:,:,1) = One
-        gnu(:,:,:,2:4) = Zero
+        !nondimensional version 
+        !gnu(:,:,:,1) = One
+        !gnu(:,:,:,2:4) = Zero
+
+        Do r = my_r%min, my_r%max
+            gnu(:,r,:,1) = nu(r)
+            gnu(:,r,:,2) = nu(r)*dlnu(r)
+            gnu(:,r,:,3:4) = Zero
+        Enddo
         
     End Subroutine Compute_Grad_Nu
 
@@ -1651,12 +1714,15 @@ Contains
     Subroutine Diagnostics_Prep()
         Implicit None
         Integer :: t,r,k
-        Call sintheta_div(dpdt)
         !convert d/dr(p/rho) to dpdr
-        DO_IDX
-            wsp%p3a(IDX,dpdr) = wsp%p3a(IDX,dpdr)*ref%density(r)+ &
-                                & wsp%p3a(IDX,pvar)*ref%dlnrho(r)
-        END_DO
+        
+        if (.not. compressible) Then
+            Call sintheta_div(dpdt)
+            DO_IDX
+                wsp%p3a(IDX,dpdr) = wsp%p3a(IDX,dpdr)*ref%density(r)+ &
+                                    & wsp%p3a(IDX,pvar)*ref%dlnrho(r)
+            END_DO
+        Endif 
 
         If (magnetism) Then
 
