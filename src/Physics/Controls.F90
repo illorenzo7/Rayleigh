@@ -105,7 +105,8 @@ Module Controls
     Namelist /Physical_Controls_Namelist/ magnetism, nonlinear, rotation, lorentz_forces, &
                 & viscous_heating, ohmic_heating, advect_reference_state, benchmark_mode, &
                 & benchmark_integration_interval, benchmark_report_interval, &
-                & momentum_advection, inertia, coriolis, centrifugal, gravity, remove_reference, n_active_scalars, n_passive_scalars, &
+                & momentum_advection, inertia, coriolis, centrifugal, gravity, remove_reference &
+                & n_active_scalars, n_passive_scalars, &
                 & newtonian_cooling, newtonian_cooling_type, newtonian_cooling_time, &
                 & newtonian_cooling_tvar_amp, newtonian_cooling_profile_file, &
                 & pseudo_incompressible, compressible, R_gas, pulse_freq, pulse_sharpness, &
