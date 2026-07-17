@@ -3112,16 +3112,13 @@ class TemporalFFT:
       windowed_data = self.data * w.reshape(shape)
 
     else:
-      try:
-        w = np.asarray(self.window)
+      w = np.asarray(self.window)
 
-        if len(w) != n_t:
-          raise ValueError(f"Window size (={len(w)}) does not match data size (={n_t}).")
-        shape = [1] * self.data.ndim
-        shape[self.axis] = n_t
-        windowed_data = self.data * w.reshape(shape)
-      except Exception as e:
-        raise TypeError(f"Window must be one of: None, string, or array-like. Error: {e}")
+      if len(w) != n_t:
+        raise ValueError(f"Window size (={len(w)}) does not match data size (={n_t}).")
+      shape = [1] * self.data.ndim
+      shape[self.axis] = n_t
+      windowed_data = self.data * w.reshape(shape)
 
     return windowed_data
 
