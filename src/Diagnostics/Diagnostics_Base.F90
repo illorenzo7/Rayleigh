@@ -144,6 +144,14 @@ Module Diagnostics_Base
     Integer :: aforcemm_r, aforcemm_theta, aforcemm_phi
     Integer :: vforce_r
     Integer :: lforce_r, lforcepp_r, lforcemm_r
+
+    ! Variables related to viscous force
+    Integer :: nvf = 0
+    Real*8, Allocatable :: vforce_buffer(:,:,:,:)
+    Integer :: vf_r, vf_t, vf_p
+    Integer :: vfp_r, vfp_t, vfp_p
+    Integer :: vfm_r, vfm_t, vfm_p
+
 Contains
 
 
