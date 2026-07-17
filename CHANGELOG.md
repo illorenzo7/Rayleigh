@@ -13,6 +13,8 @@ This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 
 - Extend custom references states to active and passive scalar fields by adding a new custom reference state file type (with an accompanying python preprocessing class and namelist options) for scalar fields.  This allows the scalar equations to include non-zero (and potentially radially dependent) reference state advection and source terms. \[Cian Wilson; 7-13-2026; [#586](https://github.com/geodynamics/Rayleigh/pull/586)\]
 
+- Added a temporal FFT transform class to spectral_utils.py that handles the forward and backward transforms, windowing, spectral filtering, and interpolation to a regular grid. \[Brad Hindman; 7-17-2026; [#631](https://github.com/geodynamics/Rayleigh/pull/631)\]
+
 ### Changed
 
 - Containers for the TACC systems are no longer supported. \[Philipp Edelmann; 7-12-2026; [#608](https://github.com/geodynamics/Rayleigh/pull/608)\]
