@@ -1095,7 +1095,8 @@ Contains
         
         !-----------------------------------------------------------
         ! Initialize reference structure
-        Gravity = Gravitational_Constant * poly_mass / Radius**2
+        ! The cast to real is here to prevent segfaults in nvfortran.
+        Gravity = real(Gravitational_Constant * poly_mass / Radius**2, kind(Gravity))
 
         ! The following is needed to calculate the entropy gradient
         volume_specific_heat = pressure_specific_heat / Specific_Heat_Ratio
