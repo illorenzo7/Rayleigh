@@ -339,13 +339,13 @@ Contains
             alpha_implicit = 0.50001d0
             cflmin = 0.4d0
             cflmax = 0.6d0
-   
+            
             !Boundary Conditions
             no_slip_boundaries = .false.
             strict_L_Conservation = .false.
             dtdr_bottom = 0.0d0
-            T_Top    = 28610.578735500316d0 
-            T_Bottom = 352782.20265746413d0 !111557.37012267619d0 !42.34d2
+            T_Top    = 28610.578735500316d0 !28610.578735500316d0 
+            T_Bottom = 352782.20265746413d0 !352782.20265746413d0 !111557.37012267619d0 !42.34d2
             fix_tvar_top = .true.
             fix_tvar_bottom = .true.
             fix_dtdr_bottom = .false.

@@ -256,7 +256,7 @@ Contains
 
                 Call Velocity_Advection()
                 !Write(6, *) "VELCOITY ADVECT", Maxval(RHSP)
-                Call Velocity_Diffusion()
+                !Call Velocity_Diffusion()
                 !Write(6, *) "VELOCITY DIFFUSE", Maxval(RHSP)
                 Call Pressure_Force()
                 !Write(6, *) "PRESSURE FORCE", Maxval(RHSP)
@@ -904,6 +904,12 @@ Contains
 
         ! Add advection terms to RHS of vr, vtheta, and vphi equations
 
+        !Write(6, *) "Vr Max:min", Maxval(FIELDSP(:, :, :, vr)), Minval(FIELDSP(:, :, :, vr))
+        !Write(6, *) "Vtheta Max:min", Maxval(FIELDSP(:, :, :, vtheta)), Minval(FIELDSP(:, :, :, vtheta))
+        !Write(6, *) "Vphi Max:min", Maxval(FIELDSP(:, :, :, vphi)), Minval(FIELDSP(:, :, :, vphi))
+
+
+
         ! Radial component:  -[u dot grad u]_r
         !$OMP PARALLEL DO PRIVATE(t,r,k)
         DO_IDX
@@ -1365,7 +1371,7 @@ Contains
         gfactor = 1.0D0-gas_gamma
         !$OMP PARALLEL DO PRIVATE(t,r,k)
         DO_IDX
-            RHSP(IDX,tvar) = RHSP(IDX,tvar) + gfactor*RHSP(IDX,tvar)*divu(IDX,1)! + div V term
+            RHSP(IDX,tvar) = RHSP(IDX,tvar) + gfactor*FIELDSP(IDX,tvar)*divu(IDX,1)! + div V term
         END_DO
         !$OMP END PARALLEL DO
     End Subroutine Temperature_Compression
