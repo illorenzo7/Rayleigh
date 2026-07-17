@@ -882,12 +882,12 @@ Contains
         Allocate(rfunc1(my_r%min: my_r%max))
         Allocate(rfunc2(my_r%min: my_r%max))
         !!!!!!!!!
-        temp_amp = 0.0d0
+        temp_amp = 1.0d0
 
         norm = 2.0d0*Pi/(radius(1)-radius(N_R))
         Do r = my_r%min, my_r%max
             
-            rfunc2(r) = T_bottom*((radius(N_R)/radius(r) - radius(N_R)/radius(1))/(1-radius(N_R)/radius(1)))
+            rfunc2(r) = 4234*((radius(N_R)/radius(r) - radius(N_R)/radius(1))/(1-radius(N_R)/radius(1)))
 
             rfunc1(r) = (1.0d0-Cos(norm*(radius(r)-radius(N_R))))*temp_amp
         Enddo
@@ -913,7 +913,7 @@ Contains
                 endif
                 if ( (l .eq. 0) .and. (m .eq. 0) ) Then
                     Do r = my_r%min, my_r%max
-                        tempfield%s2b(mp)%data(l,r,1,1) = (ref%temperature(r))*sqrt(4.0d0*pi) !+ rfunc2(r))*sqrt(4.0d0*pi)
+                        tempfield%s2b(mp)%data(l,r,1,1) = ((ref%temperature(r)) + rfunc2(r))*sqrt(4.0d0*pi)
                         tempfield%s2b(mp)%data(l,r,1,2) = log(ref%density(r))*sqrt(4.0d0*pi)
                     Enddo
                 endif

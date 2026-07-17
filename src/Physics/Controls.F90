@@ -63,10 +63,12 @@ Module Controls
     Logical :: Coriolis = .false.            ! turn off or on
     Logical :: Centrifugal = .false.         ! turn off or on
     Logical :: Gravity = .false.            ! Turn off or on. Specifically for compressible case
+    Logical :: Remove_Reference = .false.   ! Remove (or not) the reference state from hydrostatic balance and thermal diffusion (compressible only)
     Logical :: lorentz_forces = .true.      ! Turn Lorentz forces on or off (default is on - as long as magnetism is on)
     Logical :: viscous_heating = .true.     ! Turns viscous heating on/off
     Logical :: ohmic_heating = .true.
     Logical :: pseudo_incompressible = .false.  ! Switch from anelastic to pseudo-incompressible approximation
+    Logical :: compressible = .false.           !run compressible or not
     Logical :: advect_reference_state = .true.  ! Set to true to advect the reference state temperature or entropy
                                                 ! This has no effect for adiabatic reference states.
                                                 ! Generally only do this if reference state is nonadiabatic
@@ -75,7 +77,7 @@ Module Controls
     ! Allow up to 50 active/passive scalar fields
     Integer, Parameter :: n_scalar_max = 50
 
-    Logical :: compressible = .false.           !run compressible or not
+
     Integer :: n_active_scalars = 0         ! number of active scalar fields
     Integer :: n_passive_scalars = 0        ! number of passive scalar fields
 
@@ -103,7 +105,7 @@ Module Controls
     Namelist /Physical_Controls_Namelist/ magnetism, nonlinear, rotation, lorentz_forces, &
                 & viscous_heating, ohmic_heating, advect_reference_state, benchmark_mode, &
                 & benchmark_integration_interval, benchmark_report_interval, &
-                & momentum_advection, inertia, coriolis, centrifugal, gravity, n_active_scalars, n_passive_scalars, &
+                & momentum_advection, inertia, coriolis, centrifugal, gravity, remove_reference, n_active_scalars, n_passive_scalars, &
                 & newtonian_cooling, newtonian_cooling_type, newtonian_cooling_time, &
                 & newtonian_cooling_tvar_amp, newtonian_cooling_profile_file, &
                 & pseudo_incompressible, compressible, R_gas, pulse_freq, pulse_sharpness, &

@@ -224,42 +224,42 @@ Contains
         !Brandon 
         If (compressible) Then
             Call Compute_DivU()
-            Write(6, *) "DIVU,", Maxval(RHSP)
+            !Write(6, *) "DIVU,", Maxval(RHSP)
             Call Compute_Strain_Rate()
-            Write(6, *) "STR, ",Maxval(RHSP)
+            !Write(6, *) "STR, ",Maxval(RHSP)
             Call Compute_Grad_Kappa()
-            Write(6, *) "KAPPA, ",Maxval(RHSP)
+            !Write(6, *) "KAPPA, ",Maxval(RHSP)
             Call Compute_Grad_Nu()
-            Write(6, *) "NU, " ,Maxval(RHSP)
+            !Write(6, *) "NU, " ,Maxval(RHSP)
 
             Call Compute_Phi_Visc()
-            Write(6, *) "PHI VISC, ", Maxval(RHSP)
+            !Write(6, *) "PHI VISC, ", Maxval(RHSP)
 
             If (debug) Then
                 Call Temperature_Diffusion()
                 !Call Temperature_Heating()
             Else
                 Call Temperature_Advection_Compressible()
-                Write(6, *) "TEP ADVECT COMP, ", Maxval(RHSP)
+                !Write(6, *) "TEP ADVECT COMP, ", Maxval(RHSP)
                 Call Temperature_Compression()
-                Write(6, *) "TEMP COMPRESSIBLE, ", Maxval(RHSP)
+                !Write(6, *) "TEMP COMPRESSIBLE, ", Maxval(RHSP)
                 Call Temperature_Diffusion()
-                Write(6, *) "TEMP DIFFUSION,", Maxval(RHSP)
+                !Write(6, *) "TEMP DIFFUSION,", Maxval(RHSP)
                 !Call Temperature_Heating()
                 Call Temperature_Viscous_Heating()
-                Write(6, *) "TEMP VISCSOUS HEAT,", Maxval(RHSP)
+                !Write(6, *) "TEMP VISCSOUS HEAT,", Maxval(RHSP)
 
                 Call Density_Advection()
-                Write(6, *) "DENSITY ADVECT", Maxval(RHSP)
+                !Write(6, *) "DENSITY ADVECT", Maxval(RHSP)
                 Call Density_Compression()
-                Write(6, *) "DENSITY COMPRESS", Maxval(RHSP)
+                !Write(6, *) "DENSITY COMPRESS", Maxval(RHSP)
 
                 Call Velocity_Advection()
-                Write(6, *) "VELCOITY ADVECT", Maxval(RHSP)
+                !Write(6, *) "VELCOITY ADVECT", Maxval(RHSP)
                 Call Velocity_Diffusion()
-                Write(6, *) "VELOCITY DIFFUSE", Maxval(RHSP)
+                !Write(6, *) "VELOCITY DIFFUSE", Maxval(RHSP)
                 Call Pressure_Force()
-                Write(6, *) "PRESSURE FORCE", Maxval(RHSP)
+                !Write(6, *) "PRESSURE FORCE", Maxval(RHSP)
                 
                 If (gravity) Call Compute_Gravity()
                 If (rotation) Call Coriolis_Centrifugal()
@@ -949,17 +949,7 @@ Contains
 
         
         gfactor = (1.0-gas_gamma)*bigz
-        Write(6, *) "G_factor", gfactor
-        Write(6, *) "tvar inside pressure max:min", Maxval(FIELDSP(:, :, :, tvar)), Minval(FIELDSP(:, :, :, tvar))
-        Write(6, *) "dtdr inside pressure max:min", Maxval(FIELDSP(:, :, :, dtdr)), Minval(FIELDSP(:, :, :, dtdr))
-        Write(6, *) "dtdt inside pressure max:min", Maxval(FIELDSP(:, :, :, dtdt)), Minval(FIELDSP(:, :, :, dtdt))
-        Write(6, *) "dtdp inside pressure max:min", Maxval(FIELDSP(:, :, :, dtdp)), Minval(FIELDSP(:, :, :, dtdp))
-        Write(6, *) "vr inside pressure max:min", Maxval(FIELDSP(:, :, :, vr)), Minval(FIELDSP(:, :, :, vr))
-        Write(6, *) "vtheta inside pressure max:min", Maxval(FIELDSP(:, :, :, vtheta)), Minval(FIELDSP(:, :, :, vtheta))
-        Write(6, *) "vphi inside pressure max:min",   Maxval(FIELDSP(:, :, :, vphi)), Minval(FIELDSP(:, :, :, vphi))
-        Write(6, *) "drhodr inside pressure max:min", Maxval(FIELDSP(:, :, :, drhodr)), Minval(FIELDSP(:, :, :, drhodr))
-        Write(6, *) "drhodt inside pressure max:min", Maxval(FIELDSP(:, :, :, drhodt)), Minval(FIELDSP(:, :, :, drhodt))
-        Write(6, *) "drhodp inside pressure max:min", Maxval(FIELDSP(:, :, :, drhodp)), Minval(FIELDSP(:, :, :, drhodp))
+
 
         ! Radial component
         !$OMP PARALLEL DO PRIVATE(t,r,k)
@@ -968,6 +958,14 @@ Contains
                                         +FIELDSP(IDX,tvar)*FIELDSP(IDX,drhodr))
         END_DO
         !$OMP END PARALLEL DO
+
+        If (Remove_Reference) Then     
+            !$OMP PARALLEL DO PRIVATE(t,r,k)       
+            DO_IDX
+                RHSP(IDX,vr) = RHSP(IDX,vr) - gfactor*(ref%dT(r) +  ref%temperature(r)*ref%dlnrho(r))
+            END_DO
+            !$OMP END PARALLEL DO
+        EndIf
 
         ! Theta component
         !$OMP PARALLEL DO PRIVATE(t,r,k)
@@ -1007,11 +1005,6 @@ Contains
         
         ! Checked:
         !           Nick (8/27/2019)
-
-        Write(6, *) "tvar inside divU max:min", Maxval(FIELDSP(1:N_phi, :, :, tvar)), Minval(FIELDSP(1:N_phi, :, :, tvar))
-        Write(6, *) "dtdr inside divU max:min", Maxval(FIELDSP(1:N_phi, :, :, dtdr)), Minval(FIELDSP(1:N_phi, :, :, dtdr))
-        Write(6, *) "dtdt inside divU max:min", Maxval(FIELDSP(1:N_phi, :, :, dtdt)), Minval(FIELDSP(1:N_phi, :, :, dtdt))
-        Write(6, *) "dtdp inside divU max:min", Maxval(FIELDSP(1:N_phi, :, :, dtdp)), Minval(FIELDSP(1:N_phi, :, :, dtdp))
 
         ! RADIAL DIFFUSION
         ! 1st:  nu*Del^2 {u_r}  (  NOT nu*[ Del^2{u} ]_r )
@@ -1312,10 +1305,6 @@ Contains
         ! Checked:
         !           Nick (8/20/19)
         !    
-        Write(6, *) "tvar inside temperature advection max:min", Maxval(FIELDSP(:, :, :, tvar)), Minval(FIELDSP(:, :, :, tvar))
-        Write(6, *) "dtdr inside temperature advection max:min", Maxval(FIELDSP(:, :, :, dtdr)), Minval(FIELDSP(:, :, :, dtdr))
-        Write(6, *) "dtdt inside temperature advection max:min", Maxval(FIELDSP(:, :, :, dtdt)), Minval(FIELDSP(:, :, :, dtdt))
-        Write(6, *) "dtdp inside temperature advection max:min", Maxval(FIELDSP(:, :, :, dtdp)), Minval(FIELDSP(:, :, :, dtdp))
 
         !$OMP PARALLEL DO PRIVATE(t,r,k)
         DO_IDX
@@ -1357,10 +1346,6 @@ Contains
         zfactor = 1.0d0/bigz
         ! Add the PHI term to the temperature equation
         !$OMP PARALLEL DO PRIVATE(t,r,k)
-        Write(6, *) "tvar inside temperature viscous heating max:min", Maxval(FIELDSP(:, :, :, tvar)), Minval(FIELDSP(:, :, :, tvar))
-        Write(6, *) "dtdr inside temperature viscous heating max:min", Maxval(FIELDSP(:, :, :, dtdr)), Minval(FIELDSP(:, :, :, dtdr))
-        Write(6, *) "dtdt inside temperature viscous heating max:min", Maxval(FIELDSP(:, :, :, dtdt)), Minval(FIELDSP(:, :, :, dtdt))
-        Write(6, *) "dtdp inside temperature viscous heating max:min", Maxval(FIELDSP(:, :, :, dtdp)), Minval(FIELDSP(:, :, :, dtdp))
 
         DO_IDX
             RHSP(IDX,tvar) = RHSP(IDX,tvar) +zfactor*Phi_Visc(IDX)
@@ -1376,10 +1361,6 @@ Contains
         ! Checked:
         !           Nick (8/20/19)
         !    
-        Write(6, *) "tvar inside temperature compression max:min", Maxval(FIELDSP(:, :, :, tvar)), Minval(FIELDSP(:, :, :, tvar))
-        Write(6, *) "dtdr inside temperature compression max:min", Maxval(FIELDSP(:, :, :, dtdr)), Minval(FIELDSP(:, :, :, dtdr))
-        Write(6, *) "dtdt inside temperature compression max:min", Maxval(FIELDSP(:, :, :, dtdt)), Minval(FIELDSP(:, :, :, dtdt))
-        Write(6, *) "dtdp inside temperature compression max:min", Maxval(FIELDSP(:, :, :, dtdp)), Minval(FIELDSP(:, :, :, dtdp))
 
         gfactor = 1.0D0-gas_gamma
         !$OMP PARALLEL DO PRIVATE(t,r,k)
@@ -1401,19 +1382,6 @@ Contains
         !    
 
         kcoeff = gas_gamma/Prandtl_Number
-        !Write(6, *) "KCOEFF: gasgamma:prandtl", kcoeff, gas_gamma, Prandtl_Number
-        Write(6, *) "tvar inside temperature diffusion max:min", Maxval(FIELDSP(:, :, :, tvar)), Minval(FIELDSP(:, :, :, tvar))
-        Write(6, *) "dtdr inside temperature diffusion max:min", Maxval(FIELDSP(:, :, :, dtdr)), Minval(FIELDSP(:, :, :, dtdr))
-        Write(6, *) "dtdt inside temperature diffusion max:min", Maxval(FIELDSP(:, :, :, dtdt)), Minval(FIELDSP(:, :, :, dtdt))
-        Write(6, *) "dtdp inside temperature diffusion max:min", Maxval(FIELDSP(:, :, :, dtdp)), Minval(FIELDSP(:, :, :, dtdp))
-
-        !Write(6, *) "kappa value", gkappa(:, :, :, 1)
-        !Write(6, *) "kappa deriv 1", gkappa(:, :, :, 2)
-        !Write(6, *) "kappa deriv 3", gkappa(:, :, :, 3)
-        !Write(6, *) "kappa deriv 4", gkappa(:, :, :, 4)
-        !Write(6, *) "d2tdr2 Min:max", FIELDSP(:, :, :, d2tdr2)
-        !Write(6, *) "dtdr Min:max", FIELDSP(:, :, :, dtdr)
-        !Write(6, *) "htvar Min:max", FIELDSP(:, :, :, htvar)
 
         If (ddebug) Then
             DO_IDX
@@ -1437,6 +1405,14 @@ Contains
         END_DO
         !$OMP END PARALLEL DO
 
+        If (Remove_Reference) Then
+            !$OMP PARALLEL DO PRIVATE(t,r,k)
+            DO_IDX
+                RHSP(IDX,tvar) = RHSP(IDX,tvar) - kcoeff*gkappa(IDX,1)*(ref%d2T(r) + 2*ref%dT(r)/radius(r) + ref%dlnrho(r)*ref%dT(r)) &
+                 - kcoeff*gkappa(IDX,2)*ref%dT(r)
+            END_DO
+            !$OMP END PARALLEL DO
+        EndIf
 
         !kcoeff = 0.0d0
         ! Grad T dot Grad Kappa
@@ -1474,12 +1450,7 @@ Contains
         ! For now, we set it (nondimensional kappa) to 1
         ! Checked:
         !           Nick (8/20/19)
-        !   
-        Write(6, *) "tvar inside gradkappa max:min", Maxval(FIELDSP(:, :, :, tvar)), Minval(FIELDSP(:, :, :, tvar))
-        Write(6, *) "dtdr inside gradkappa max:min", Maxval(FIELDSP(:, :, :, dtdr)), Minval(FIELDSP(:, :, :, dtdr))
-        Write(6, *) "dtdt inside gradkappa max:min", Maxval(FIELDSP(:, :, :, dtdt)), Minval(FIELDSP(:, :, :, dtdt))
-        Write(6, *) "dtdp inside gradkappa max:min", Maxval(FIELDSP(:, :, :, dtdp)), Minval(FIELDSP(:, :, :, dtdp))
-
+ 
         !nondimensional version
         !gkappa(:,:,:,1) = One
         !gkappa(:,:,:,2:4) = Zero
@@ -1505,10 +1476,6 @@ Contains
         !nondimensional version 
         !gnu(:,:,:,1) = One
         !gnu(:,:,:,2:4) = Zero
-        Write(6, *) "tvar inside gradnu max:min", Maxval(FIELDSP(:, :, :, tvar)), Minval(FIELDSP(:, :, :, tvar))
-        Write(6, *) "dtdr inside gradnu max:min", Maxval(FIELDSP(:, :, :, dtdr)), Minval(FIELDSP(:, :, :, dtdr))
-        Write(6, *) "dtdt inside gradnu max:min", Maxval(FIELDSP(:, :, :, dtdt)), Minval(FIELDSP(:, :, :, dtdt))
-        Write(6, *) "dtdp inside gradnu max:min", Maxval(FIELDSP(:, :, :, dtdp)), Minval(FIELDSP(:, :, :, dtdp))
 
         Do r = my_r%min, my_r%max
             gnu(:,r,:,1) = nu(r)
@@ -1525,10 +1492,6 @@ Contains
         ! Checked:
         !       Fredy (8/22/19)
         !       Nick  (8/27/19)
-        Write(6, *) "tvar inside strain max:min", Maxval(FIELDSP(:, :, :, tvar)), Minval(FIELDSP(:, :, :, tvar))
-        Write(6, *) "dtdr inside strain max:min", Maxval(FIELDSP(:, :, :, dtdr)), Minval(FIELDSP(:, :, :, dtdr))
-        Write(6, *) "dtdt inside strain max:min", Maxval(FIELDSP(:, :, :, dtdt)), Minval(FIELDSP(:, :, :, dtdt))
-        Write(6, *) "dtdp inside strain max:min", Maxval(FIELDSP(:, :, :, dtdp)), Minval(FIELDSP(:, :, :, dtdp))
 
         ! e_rr = du_r/dr
         !$OMP PARALLEL DO PRIVATE(t,r,k)
@@ -1590,10 +1553,6 @@ Contains
         ! Checked:
         !       Fredy (8/22/19)
         !       Nick  (8/27/19)
-        Write(6, *) "tvar inside phivisc max:min", Maxval(FIELDSP(:, :, :, tvar)), Minval(FIELDSP(:, :, :, tvar))
-        Write(6, *) "dtdr inside phivisc max:min", Maxval(FIELDSP(:, :, :, dtdr)), Minval(FIELDSP(:, :, :, dtdr))
-        Write(6, *) "dtdt inside phivisc max:min", Maxval(FIELDSP(:, :, :, dtdt)), Minval(FIELDSP(:, :, :, dtdt))
-        Write(6, *) "dtdp inside phivisc max:min", Maxval(FIELDSP(:, :, :, dtdp)), Minval(FIELDSP(:, :, :, dtdp))
 
         ! Step 1.  divu term
         !$OMP PARALLEL DO PRIVATE(t,r,k)
