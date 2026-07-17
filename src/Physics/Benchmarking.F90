@@ -327,14 +327,14 @@ Contains
             rotation = .false.
             advect_reference_state = .false.   
             compressible = .true.
-            coriolis = .true.
+            coriolis = .false.
             centrifugal = .false. 
-            gravity = .false.
+            gravity = .true.
             R_gas = 3.503d7        
             gas_gamma = 1.5d0 
 
             !Temporal Controls
-            max_time_step = 1d0
+            max_time_step = 1.0d-2
             alpha_implicit = 0.50001d0
             cflmin = 0.4d0
             cflmax = 0.6d0
@@ -343,8 +343,8 @@ Contains
             no_slip_boundaries = .false.
             strict_L_Conservation = .false.
             dtdr_bottom = 0.0d0
-            T_Top    = 111577.0d0
-            T_Bottom = 111577.0d0 !42.34d2
+            T_Top    = 348548.20265746413d0
+            T_Bottom = 28610.578735500316d0!111557.37012267619d0 !42.34d2
             fix_tvar_top = .true.
             fix_tvar_bottom = .true.
             fix_dtdr_bottom = .false.
@@ -360,7 +360,7 @@ Contains
             !Reference_Namelist
             reference_type = 2
             heating_type = 0
-            luminosity = 3.846d33
+            luminosity = 7.014464d32
             poly_n = 2.0d0
             poly_Nrho = 5.0d0
             poly_mass = 1.9D30

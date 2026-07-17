@@ -51,7 +51,6 @@ Module PDE_Coefficients
         Real*8, Allocatable :: dlnrho(:)
         Real*8, Allocatable :: d2lnrho(:)
 
-
         Real*8, Allocatable :: Temperature(:)
         Real*8, Allocatable :: dlnT(:)
 
@@ -1094,13 +1093,14 @@ Contains
         ! The following is needed to calculate the entropy gradient
         volume_specific_heat = pressure_specific_heat / Specific_Heat_Ratio
 
-        Ref%Density = rho_c !* zeta**poly_n
+        Ref%Density = rho_c*zeta**poly_n
 
         Ref%dlnrho = - poly_n * c1 * d / (zeta * Radius**2)
         Ref%d2lnrho = - Ref%dlnrho*(2.0d0/Radius-c1*d/zeta/Radius**2)
 
-        Ref%Temperature = T_c !* zeta
+        Ref%Temperature = T_c*zeta
         Ref%dlnT = dlnzeta
+
 
 	! Set the entropy to zero at the upper surface
 	ref%entropy = volume_specific_heat * (log(ref%Temperature) - (specific_heat_ratio - 1.0d0) * log(ref%density))
@@ -1118,8 +1118,8 @@ Contains
                 bigZ = bigZ 
             EndIf
         EndIf
-        Write(6, *) "TC", T_c
-        
+
+
 
         Ref%Buoyancy_Coeff = gravity/Pressure_Specific_Heat*ref%density
 

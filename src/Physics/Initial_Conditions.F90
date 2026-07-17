@@ -913,8 +913,8 @@ Contains
                 endif
                 if ( (l .eq. 0) .and. (m .eq. 0) ) Then
                     Do r = my_r%min, my_r%max
-                        tempfield%s2b(mp)%data(l,r,1,1) = (ref%temperature(r) + rfunc2(r))*sqrt(4.0d0*pi)
-                        tempfield%s2b(mp)%data(l,r,1,2) = (ref%density(r))*sqrt(4.0d0*pi)
+                        tempfield%s2b(mp)%data(l,r,1,1) = (ref%temperature(r))*sqrt(4.0d0*pi) !+ rfunc2(r))*sqrt(4.0d0*pi)
+                        tempfield%s2b(mp)%data(l,r,1,2) = log(ref%density(r))*sqrt(4.0d0*pi)
                     Enddo
                 endif
             Enddo

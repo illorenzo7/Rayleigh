@@ -949,6 +949,17 @@ Contains
 
         
         gfactor = (1.0-gas_gamma)*bigz
+        Write(6, *) "G_factor", gfactor
+        Write(6, *) "tvar inside pressure max:min", Maxval(FIELDSP(:, :, :, tvar)), Minval(FIELDSP(:, :, :, tvar))
+        Write(6, *) "dtdr inside pressure max:min", Maxval(FIELDSP(:, :, :, dtdr)), Minval(FIELDSP(:, :, :, dtdr))
+        Write(6, *) "dtdt inside pressure max:min", Maxval(FIELDSP(:, :, :, dtdt)), Minval(FIELDSP(:, :, :, dtdt))
+        Write(6, *) "dtdp inside pressure max:min", Maxval(FIELDSP(:, :, :, dtdp)), Minval(FIELDSP(:, :, :, dtdp))
+        Write(6, *) "vr inside pressure max:min", Maxval(FIELDSP(:, :, :, vr)), Minval(FIELDSP(:, :, :, vr))
+        Write(6, *) "vtheta inside pressure max:min", Maxval(FIELDSP(:, :, :, vtheta)), Minval(FIELDSP(:, :, :, vtheta))
+        Write(6, *) "vphi inside pressure max:min",   Maxval(FIELDSP(:, :, :, vphi)), Minval(FIELDSP(:, :, :, vphi))
+        Write(6, *) "drhodr inside pressure max:min", Maxval(FIELDSP(:, :, :, drhodr)), Minval(FIELDSP(:, :, :, drhodr))
+        Write(6, *) "drhodt inside pressure max:min", Maxval(FIELDSP(:, :, :, drhodt)), Minval(FIELDSP(:, :, :, drhodt))
+        Write(6, *) "drhodp inside pressure max:min", Maxval(FIELDSP(:, :, :, drhodp)), Minval(FIELDSP(:, :, :, drhodp))
 
         ! Radial component
         !$OMP PARALLEL DO PRIVATE(t,r,k)
@@ -997,6 +1008,10 @@ Contains
         ! Checked:
         !           Nick (8/27/2019)
 
+        Write(6, *) "tvar inside divU max:min", Maxval(FIELDSP(1:N_phi, :, :, tvar)), Minval(FIELDSP(1:N_phi, :, :, tvar))
+        Write(6, *) "dtdr inside divU max:min", Maxval(FIELDSP(1:N_phi, :, :, dtdr)), Minval(FIELDSP(1:N_phi, :, :, dtdr))
+        Write(6, *) "dtdt inside divU max:min", Maxval(FIELDSP(1:N_phi, :, :, dtdt)), Minval(FIELDSP(1:N_phi, :, :, dtdt))
+        Write(6, *) "dtdp inside divU max:min", Maxval(FIELDSP(1:N_phi, :, :, dtdp)), Minval(FIELDSP(1:N_phi, :, :, dtdp))
 
         ! RADIAL DIFFUSION
         ! 1st:  nu*Del^2 {u_r}  (  NOT nu*[ Del^2{u} ]_r )
@@ -1275,7 +1290,6 @@ Contains
         !$OMP END PARALLEL DO
     End Subroutine Density_Advection
 
-    
     Subroutine Density_Compression()
         Implicit None
         Integer :: t, r,k
@@ -1298,6 +1312,10 @@ Contains
         ! Checked:
         !           Nick (8/20/19)
         !    
+        Write(6, *) "tvar inside temperature advection max:min", Maxval(FIELDSP(:, :, :, tvar)), Minval(FIELDSP(:, :, :, tvar))
+        Write(6, *) "dtdr inside temperature advection max:min", Maxval(FIELDSP(:, :, :, dtdr)), Minval(FIELDSP(:, :, :, dtdr))
+        Write(6, *) "dtdt inside temperature advection max:min", Maxval(FIELDSP(:, :, :, dtdt)), Minval(FIELDSP(:, :, :, dtdt))
+        Write(6, *) "dtdp inside temperature advection max:min", Maxval(FIELDSP(:, :, :, dtdp)), Minval(FIELDSP(:, :, :, dtdp))
 
         !$OMP PARALLEL DO PRIVATE(t,r,k)
         DO_IDX
@@ -1339,8 +1357,13 @@ Contains
         zfactor = 1.0d0/bigz
         ! Add the PHI term to the temperature equation
         !$OMP PARALLEL DO PRIVATE(t,r,k)
+        Write(6, *) "tvar inside temperature viscous heating max:min", Maxval(FIELDSP(:, :, :, tvar)), Minval(FIELDSP(:, :, :, tvar))
+        Write(6, *) "dtdr inside temperature viscous heating max:min", Maxval(FIELDSP(:, :, :, dtdr)), Minval(FIELDSP(:, :, :, dtdr))
+        Write(6, *) "dtdt inside temperature viscous heating max:min", Maxval(FIELDSP(:, :, :, dtdt)), Minval(FIELDSP(:, :, :, dtdt))
+        Write(6, *) "dtdp inside temperature viscous heating max:min", Maxval(FIELDSP(:, :, :, dtdp)), Minval(FIELDSP(:, :, :, dtdp))
+
         DO_IDX
-            RHSP(IDX,tvar) = RHSP(IDX,tvar) +zfactor*gnu(IDX, 1)*Phi_Visc(IDX)
+            RHSP(IDX,tvar) = RHSP(IDX,tvar) +zfactor*Phi_Visc(IDX)
         END_DO
         !$OMP END PARALLEL DO
     End Subroutine Temperature_Viscous_Heating
@@ -1353,7 +1376,11 @@ Contains
         ! Checked:
         !           Nick (8/20/19)
         !    
-    
+        Write(6, *) "tvar inside temperature compression max:min", Maxval(FIELDSP(:, :, :, tvar)), Minval(FIELDSP(:, :, :, tvar))
+        Write(6, *) "dtdr inside temperature compression max:min", Maxval(FIELDSP(:, :, :, dtdr)), Minval(FIELDSP(:, :, :, dtdr))
+        Write(6, *) "dtdt inside temperature compression max:min", Maxval(FIELDSP(:, :, :, dtdt)), Minval(FIELDSP(:, :, :, dtdt))
+        Write(6, *) "dtdp inside temperature compression max:min", Maxval(FIELDSP(:, :, :, dtdp)), Minval(FIELDSP(:, :, :, dtdp))
+
         gfactor = 1.0D0-gas_gamma
         !$OMP PARALLEL DO PRIVATE(t,r,k)
         DO_IDX
@@ -1375,6 +1402,10 @@ Contains
 
         kcoeff = gas_gamma/Prandtl_Number
         !Write(6, *) "KCOEFF: gasgamma:prandtl", kcoeff, gas_gamma, Prandtl_Number
+        Write(6, *) "tvar inside temperature diffusion max:min", Maxval(FIELDSP(:, :, :, tvar)), Minval(FIELDSP(:, :, :, tvar))
+        Write(6, *) "dtdr inside temperature diffusion max:min", Maxval(FIELDSP(:, :, :, dtdr)), Minval(FIELDSP(:, :, :, dtdr))
+        Write(6, *) "dtdt inside temperature diffusion max:min", Maxval(FIELDSP(:, :, :, dtdt)), Minval(FIELDSP(:, :, :, dtdt))
+        Write(6, *) "dtdp inside temperature diffusion max:min", Maxval(FIELDSP(:, :, :, dtdp)), Minval(FIELDSP(:, :, :, dtdp))
 
         !Write(6, *) "kappa value", gkappa(:, :, :, 1)
         !Write(6, *) "kappa deriv 1", gkappa(:, :, :, 2)
@@ -1444,6 +1475,10 @@ Contains
         ! Checked:
         !           Nick (8/20/19)
         !   
+        Write(6, *) "tvar inside gradkappa max:min", Maxval(FIELDSP(:, :, :, tvar)), Minval(FIELDSP(:, :, :, tvar))
+        Write(6, *) "dtdr inside gradkappa max:min", Maxval(FIELDSP(:, :, :, dtdr)), Minval(FIELDSP(:, :, :, dtdr))
+        Write(6, *) "dtdt inside gradkappa max:min", Maxval(FIELDSP(:, :, :, dtdt)), Minval(FIELDSP(:, :, :, dtdt))
+        Write(6, *) "dtdp inside gradkappa max:min", Maxval(FIELDSP(:, :, :, dtdp)), Minval(FIELDSP(:, :, :, dtdp))
 
         !nondimensional version
         !gkappa(:,:,:,1) = One
@@ -1470,7 +1505,11 @@ Contains
         !nondimensional version 
         !gnu(:,:,:,1) = One
         !gnu(:,:,:,2:4) = Zero
-        
+        Write(6, *) "tvar inside gradnu max:min", Maxval(FIELDSP(:, :, :, tvar)), Minval(FIELDSP(:, :, :, tvar))
+        Write(6, *) "dtdr inside gradnu max:min", Maxval(FIELDSP(:, :, :, dtdr)), Minval(FIELDSP(:, :, :, dtdr))
+        Write(6, *) "dtdt inside gradnu max:min", Maxval(FIELDSP(:, :, :, dtdt)), Minval(FIELDSP(:, :, :, dtdt))
+        Write(6, *) "dtdp inside gradnu max:min", Maxval(FIELDSP(:, :, :, dtdp)), Minval(FIELDSP(:, :, :, dtdp))
+
         Do r = my_r%min, my_r%max
             gnu(:,r,:,1) = nu(r)
             gnu(:,r,:,2) = nu(r)*dlnu(r)
@@ -1486,6 +1525,10 @@ Contains
         ! Checked:
         !       Fredy (8/22/19)
         !       Nick  (8/27/19)
+        Write(6, *) "tvar inside strain max:min", Maxval(FIELDSP(:, :, :, tvar)), Minval(FIELDSP(:, :, :, tvar))
+        Write(6, *) "dtdr inside strain max:min", Maxval(FIELDSP(:, :, :, dtdr)), Minval(FIELDSP(:, :, :, dtdr))
+        Write(6, *) "dtdt inside strain max:min", Maxval(FIELDSP(:, :, :, dtdt)), Minval(FIELDSP(:, :, :, dtdt))
+        Write(6, *) "dtdp inside strain max:min", Maxval(FIELDSP(:, :, :, dtdp)), Minval(FIELDSP(:, :, :, dtdp))
 
         ! e_rr = du_r/dr
         !$OMP PARALLEL DO PRIVATE(t,r,k)
@@ -1547,6 +1590,10 @@ Contains
         ! Checked:
         !       Fredy (8/22/19)
         !       Nick  (8/27/19)
+        Write(6, *) "tvar inside phivisc max:min", Maxval(FIELDSP(:, :, :, tvar)), Minval(FIELDSP(:, :, :, tvar))
+        Write(6, *) "dtdr inside phivisc max:min", Maxval(FIELDSP(:, :, :, dtdr)), Minval(FIELDSP(:, :, :, dtdr))
+        Write(6, *) "dtdt inside phivisc max:min", Maxval(FIELDSP(:, :, :, dtdt)), Minval(FIELDSP(:, :, :, dtdt))
+        Write(6, *) "dtdp inside phivisc max:min", Maxval(FIELDSP(:, :, :, dtdp)), Minval(FIELDSP(:, :, :, dtdp))
 
         ! Step 1.  divu term
         !$OMP PARALLEL DO PRIVATE(t,r,k)
@@ -1702,12 +1749,15 @@ Contains
     Subroutine Diagnostics_Prep()
         Implicit None
         Integer :: t,r,k
-        Call sintheta_div(dpdt)
         !convert d/dr(p/rho) to dpdr
-        DO_IDX
-            wsp%p3a(IDX,dpdr) = wsp%p3a(IDX,dpdr)*ref%density(r)+ &
-                                & wsp%p3a(IDX,pvar)*ref%dlnrho(r)
-        END_DO
+        
+        if (.not. compressible) Then
+            Call sintheta_div(dpdt)
+            DO_IDX
+                wsp%p3a(IDX,dpdr) = wsp%p3a(IDX,dpdr)*ref%density(r)+ &
+                                    & wsp%p3a(IDX,pvar)*ref%dlnrho(r)
+            END_DO
+        Endif 
 
         If (magnetism) Then
 
