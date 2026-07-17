@@ -1414,7 +1414,8 @@ Contains
         If (Remove_Reference) Then
             !$OMP PARALLEL DO PRIVATE(t,r,k)
             DO_IDX
-                RHSP(IDX,tvar) = RHSP(IDX,tvar) - kcoeff*gkappa(IDX,1)*(ref%d2T(r) + 2*ref%dT(r)/radius(r) + ref%dlnrho(r)*ref%dT(r)) &
+                RHSP(IDX,tvar) = RHSP(IDX,tvar) - kcoeff*gkappa(IDX,1)*(ref%d2T(r) + &
+                2*ref%dT(r)/radius(r) + ref%dlnrho(r)*ref%dT(r)) &
                  - kcoeff*gkappa(IDX,2)*ref%dT(r)
             END_DO
             !$OMP END PARALLEL DO
