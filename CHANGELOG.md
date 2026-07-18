@@ -13,6 +13,7 @@ This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 
 - Extend custom references states to active and passive scalar fields by adding a new custom reference state file type (with an accompanying python preprocessing class and namelist options) for scalar fields.  This allows the scalar equations to include non-zero (and potentially radially dependent) reference state advection and source terms. \[Cian Wilson; 7-13-2026; [#586](https://github.com/geodynamics/Rayleigh/pull/586)\]
 
+- Added a temporal FFT transform class to spectral_utils.py that handles the forward and backward transforms, windowing, spectral filtering, and interpolation to a regular grid. \[Brad Hindman; 7-17-2026; [#631](https://github.com/geodynamics/Rayleigh/pull/631)\]
 - WIP: Added the basis for a fully compressible mode to be implemented into Rayleigh. This includes physical control variables and the basis for a dimensionalized version of the compressible equations in a sphere. \[Brandon Lazard; 7-17-2026 [#611](https://github.com/geodynamics/Rayleigh/pull/611)\]
 
 - Implemented new diagnostic quantity codes for scalar fields.  Added buoyancy forces, buoyancy work, and buoyant KE production associated with the active chi fields.  These are documented in the "Under Development" section of the User Guide.  Additional placeholders have been included for future codes to be added. \[Cian Wilson; 7-13-2026; [#582](https://github.com/geodynamics/Rayleigh/pull/582)\]
