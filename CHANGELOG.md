@@ -26,6 +26,8 @@ This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 
 - Rayleigh no longer produces a segmentation fault if all theta values local to a particular process are requested for the Point_Probe output. \[Nick Featherstone; 7-16-2026; [#622](https://github.com/geodynamics/Rayleigh/pull/622)\]
 
+- Fixed a bug in the initialization method of the SPH_Modes class in rayleigh_diagnostics.py that caused data corruption whenever multiple quantities were output. \[Nick Featherstone; 7-16-2026; [#624](https://github.com/geodynamics/Rayleigh/pull/624)\]
+
 ## [1.3.0] - 5-8-2026
 
 ### Added
