@@ -25,11 +25,13 @@ This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 
 ### Fixed
 
-- Fixed a bug in rayleigh_diagnostics.py (Shell_Slices). The time and iteration number were read incorrectly if the user specified that only a single shell slice be read (a single iteration, a single quantity code, and a single radius). The code did not skip to the end of the record to read the time and iteration number.  \[Brad Hindman; 6-13-202; [#612](https://github.com/geodynamics/Rayleigh/pull/612)\]
+- Fixed a bug in rayleigh_diagnostics.py (Shell_Slices). The time and iteration number were read incorrectly if the user specified that only a single shell slice be read (a single iteration, a single quantity code, and a single radius). The code did not skip to the end of the record to read the time and iteration number.  \[Brad Hindman; 7-13-2026; [#612](https://github.com/geodynamics/Rayleigh/pull/612)\]
 
 - Rayleigh no longer produces a segmentation fault if all theta values local to a particular process are requested for the Point_Probe output. \[Nick Featherstone; 7-16-2026; [#622](https://github.com/geodynamics/Rayleigh/pull/622)\]
 
 - Fixed a bug in the initialization method of the SPH_Modes class in rayleigh_diagnostics.py that caused data corruption whenever multiple quantities were output. \[Nick Featherstone; 7-16-2026; [#624](https://github.com/geodynamics/Rayleigh/pull/624)\]
+
+- Fixed a bug that was causing some second derivatives to be incorrectly calculated at output time when finite-difference mode was active. \[Cian Wilson; 7-22-2026; [#633](https://github.com/geodynamics/Rayleigh/pull/633)\]
 
 ## [1.3.0] - 5-8-2026
 
